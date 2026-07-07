@@ -88,3 +88,73 @@ Next things to do:
 Consistency is more important than intensity.
 
 Small stable steps are better than one overloaded session.
+
+---
+
+## Project setup progress
+
+### Completed files
+
+I created and updated the main project files:
+
+- README.md
+- CHATGPT_GUIDE.md
+- ENGLISH_PROFILE.md
+- ROADMAP.md
+- PROGRESS.md
+- DAILY_ROUTINE.md
+- WEEKLY_PLAN.md
+- English/Mistakes.md
+- English/Grammar/Past_Simple.md
+- English/Vocabulary/General.md
+- DevOps/Linux.md
+
+### What I learned
+
+I practiced:
+
+- creating files and folders in Linux
+- using terminal commands
+- writing Markdown notes
+- using Git
+- making commits
+- documenting my progress
+- combining English with Linux and DevOps
+
+### Git practice
+
+I used these Git commands:
+
+- git init
+- git status
+- git add
+- git commit
+- git branch -m main
+
+### English progress
+
+I documented:
+
+- my English level
+- my current grammar focus
+- Past Simple notes
+- my common mistakes
+- useful vocabulary
+- writing practice rules
+
+### Technical progress
+
+I documented:
+
+- basic Linux commands
+- Git commands
+- Ubuntu setup progress
+- project path
+- next Linux topics
+
+### Personal note
+
+This is the first real step of my Learning Journey project.
+
+I am not only learning theory.  
+I am building a real system for learning English, Linux, Git, and DevOps.
