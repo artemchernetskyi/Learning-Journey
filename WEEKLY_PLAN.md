@@ -18,8 +18,16 @@ Consistency is more important than intensity.
 
 Current stage:
 
-- English: 60%
-- Linux / Git / Markdown: 40%
+- System / Linux / Git / Markdown practice: 60%
+- English: 40%
+
+This balance is flexible and depends on context.
+
+If I am at home and I have access to my computer, the main focus is Linux, Git, VS Code, terminal, Markdown, and practical technical work.
+
+If I am at work or using only my phone, the main focus is English practice, writing, grammar, and explaining what I did in my technical sessions.
+
+English is still included in technical sessions, but in a lighter form: vocabulary, short phrases, and simple explanations of commands.
 
 At this stage, I should not rush into Docker, Kubernetes, Terraform, or cloud.
 
