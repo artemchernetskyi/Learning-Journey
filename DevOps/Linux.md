@@ -384,3 +384,27 @@ It shows the current state of the Git repository.
 ### My sentence
 
 I practiced basic Linux commands and updated my Linux notes.
+---
+
+## Lesson 02 — Git log and git diff
+
+Today I learned two Git commands.
+
+### git log --oneline
+
+It shows the commit history in a short format.
+
+### git diff
+
+It shows changes that are not committed yet.
+
+### New vocabulary
+
+- commit history — історія комітів
+- short format — короткий формат
+- difference — різниця
+- uncommitted changes — незакомічені зміни
+
+### My sentence
+
+I learned how to check commit history and see file changes.
