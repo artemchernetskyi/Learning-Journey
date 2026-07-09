@@ -408,3 +408,40 @@ It shows changes that are not committed yet.
 ### My sentence
 
 I learned how to check commit history and see file changes.
+---
+
+## Lesson 03 — Git show and git log stat
+
+Today I learned how to check commit details.
+
+### git show --stat
+
+It shows details of the latest commit.
+
+It shows:
+
+- commit message
+- changed files
+- insertions
+- deletions
+
+### git show
+
+It shows the full changes from the latest commit.
+
+### git log --stat
+
+It shows commit history with changed files.
+
+### New vocabulary
+
+- latest commit — останній коміт
+- commit hash — унікальний код коміта
+- details — деталі
+- insertions — додані рядки
+- deletions — видалені рядки
+- changed files — змінені файли
+
+### My sentence
+
+I learned how to check commit details and file statistics.
