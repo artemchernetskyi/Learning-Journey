@@ -349,3 +349,38 @@ Do not rush.
 Linux is a foundation.
 
 I need to understand the basics before Docker, Kubernetes, Terraform, and cloud.
+---
+
+## Lesson 01 — Basic Linux navigation
+
+Today I practiced basic Linux commands.
+
+### Commands
+
+pwd
+
+It shows the current directory.
+
+ls
+
+It shows files and folders in the current directory.
+
+ls -la
+
+It shows all files, including hidden files.
+
+git status
+
+It shows the current state of the Git repository.
+
+### New vocabulary
+
+- current directory — поточна папка
+- hidden files — приховані файли
+- repository — репозиторій
+- working tree clean — робоча папка чиста
+- command — команда
+
+### My sentence
+
+I practiced basic Linux commands and updated my Linux notes.
