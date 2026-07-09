@@ -490,3 +490,58 @@ Important: I should be careful with rm and rm -r.
 ### My sentence
 
 I practiced creating, copying, renaming, and removing files in Linux.
+---
+
+## Lesson 05 — Linux paths and hidden files
+
+Today I learned about Linux paths and hidden files.
+
+### Absolute path
+
+An absolute path starts from the root directory.
+
+Example:
+
+/home/artem/Projects/Learning-Journey
+
+### Relative path
+
+A relative path starts from the current directory.
+
+Example:
+
+DevOps/Linux.md
+
+### Special symbols
+
+. means current directory.
+
+.. means parent directory.
+
+~ means home directory.
+
+### Hidden files
+
+Hidden files and folders start with a dot.
+
+Example:
+
+.git
+
+### ls -la
+
+It shows all files, including hidden files.
+
+### New vocabulary
+
+- absolute path — абсолютний шлях
+- relative path — відносний шлях
+- root directory — головна директорія
+- current directory — поточна папка
+- parent directory — папка вище
+- hidden file — прихований файл
+- hidden folder — прихована папка
+
+### My sentence
+
+I learned how to use absolute paths, relative paths, and hidden files in Linux.
