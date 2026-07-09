@@ -445,3 +445,48 @@ It shows commit history with changed files.
 ### My sentence
 
 I learned how to check commit details and file statistics.
+---
+
+## Lesson 04 — Linux file operations
+
+Today I practiced basic Linux file operations.
+
+### mkdir
+
+It creates a directory.
+
+### touch
+
+It creates an empty file.
+
+### cp
+
+It copies a file.
+
+### mv
+
+It moves or renames a file.
+
+### rm
+
+It removes a file.
+
+### rm -r
+
+It removes a directory with files inside.
+
+Important: I should be careful with rm and rm -r.
+
+### New vocabulary
+
+- create — створити
+- copy — копіювати
+- move — перемістити
+- rename — перейменувати
+- remove — видалити
+- empty file — порожній файл
+- directory — папка / директорія
+
+### My sentence
+
+I practiced creating, copying, renaming, and removing files in Linux.
