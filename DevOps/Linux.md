@@ -545,3 +545,58 @@ It shows all files, including hidden files.
 ### My sentence
 
 I learned how to use absolute paths, relative paths, and hidden files in Linux.
+---
+
+## Lesson 06 — Linux system information
+
+Today I learned how to check basic Linux system information.
+
+### uname
+
+`uname -a` shows information about the Linux kernel and system.
+
+`uname -r` shows only the kernel version.
+
+### hostnamectl
+
+`hostnamectl` shows basic information about the operating system.
+
+It can show:
+
+- hostname
+- operating system
+- kernel
+- architecture
+
+### lscpu
+
+`lscpu` shows information about the CPU.
+
+### free -h
+
+`free -h` shows RAM usage in a human-readable format.
+
+### df -h
+
+`df -h` shows disk space usage in a human-readable format.
+
+### uptime
+
+`uptime` shows how long the system has been running.
+
+### New vocabulary
+
+- kernel — ядро системи
+- operating system — операційна система
+- CPU — процесор
+- memory / RAM — оперативна памʼять
+- disk space — місце на диску
+- used — використано
+- available — доступно
+- human-readable — зручно для людини
+- uptime — час роботи системи
+- load average — середнє навантаження
+
+### My sentence
+
+I learned how to check Linux system information from the terminal.
