@@ -600,3 +600,82 @@ It can show:
 ### My sentence
 
 I learned how to check Linux system information from the terminal.
+---
+
+## Lesson 07 — Linux processes and system monitoring
+
+Today I learned how to check running processes in Linux.
+
+### Process
+
+A process is a running program.
+
+Examples:
+
+- terminal
+- browser
+- VS Code
+- system service
+
+### ps
+
+`ps` shows processes connected to the current terminal.
+
+### ps aux
+
+`ps aux` shows all running processes.
+
+Important columns:
+
+- USER — who started the process
+- PID — process ID
+- %CPU — CPU usage
+- %MEM — memory usage
+- COMMAND — command or program name
+
+### top
+
+`top` shows live system activity.
+
+To exit `top`, press `q`.
+
+### pgrep
+
+`pgrep` finds a process by name.
+
+Example:
+
+`pgrep -a bash`
+
+### kill
+
+`kill` stops a process by PID.
+
+Safe practice:
+
+`sleep 300 &`
+
+Then find it:
+
+`pgrep -a sleep`
+
+Then stop it:
+
+`kill PID`
+
+Important: I should not kill random system processes.
+
+### New vocabulary
+
+- process — процес
+- running program — запущена програма
+- PID / process ID — номер процесу
+- CPU usage — використання процесора
+- memory usage — використання памʼяті
+- live system activity — активність системи в реальному часі
+- background process — процес у фоні
+- stop a process — зупинити процес
+
+### My sentence
+
+I learned how to find and stop a process safely in Linux.
