@@ -679,3 +679,59 @@ Important: I should not kill random system processes.
 ### My sentence
 
 I learned how to find and stop a process safely in Linux.
+---
+
+## Lesson 08 — Linux services with systemctl
+
+Today I learned how to check Linux services.
+
+### Service
+
+A service is a background program.
+
+Examples:
+
+- network service
+- Bluetooth service
+- printing service
+- update service
+
+### systemctl status
+
+`systemctl status` shows general system and service status.
+
+To exit, press `q`.
+
+### Running services
+
+`systemctl list-units --type=service --state=running`
+
+This command shows running services.
+
+### NetworkManager
+
+`systemctl status NetworkManager`
+
+This command shows the network service status.
+
+### Failed services
+
+`systemctl --failed`
+
+This command shows failed services.
+
+### Important vocabulary
+
+- service — сервіс / фонова програма
+- background program — програма у фоні
+- running — працює
+- active — активний
+- inactive — неактивний
+- failed — помилка
+- enabled — запускається автоматично
+- disabled — не запускається автоматично
+- status — стан
+
+### My sentence
+
+I learned how to check Linux services with systemctl.
