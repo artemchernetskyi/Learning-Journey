@@ -735,3 +735,126 @@ This command shows failed services.
 ### My sentence
 
 I learned how to check Linux services with systemctl.
+## Lesson 09 — Linux logs with journalctl
+
+Today I learned how to check Linux logs and troubleshoot service problems.
+
+### Linux logs
+
+Linux logs contain information about system events.
+
+Logs can show:
+
+- service activity
+- warnings
+- errors
+- system startup events
+- hardware messages
+
+### Recent logs
+
+`journalctl -n 15 --no-pager`
+
+This command shows the last 15 log entries.
+
+`--no-pager` shows the result directly in the terminal.
+
+### Current boot logs
+
+`journalctl -b -n 20 --no-pager`
+
+This command shows logs from the current system boot.
+
+`-b` means current boot.
+
+### Warnings and errors
+
+`journalctl -b -p warning --no-pager`
+
+This command shows warnings and more serious messages from the current boot.
+
+`journalctl -b -p err --no-pager`
+
+This command shows only errors and more serious messages.
+
+### Service logs
+
+`journalctl -b -u fwupd --no-pager`
+
+This command shows logs for the `fwupd` service.
+
+`-u` means systemd unit.
+
+### Service status
+
+`systemctl status fwupd --no-pager`
+
+This command shows the current status of the `fwupd` service.
+
+### Logs from a specific time
+
+`journalctl -u fwupd --since "10 minutes ago" --no-pager`
+
+This command shows `fwupd` logs from the last 10 minutes.
+
+### Troubleshooting example
+
+The `fwupd` service failed because two package versions did not match.
+
+The installed versions were:
+
+- `fwupd` — version `1.9.31`
+- `libfwupd2` — version `1.9.34`
+
+The log message showed:
+
+`libfwupd version 1.9.34 does not match daemon 1.9.31`
+
+I checked the installed package versions with:
+
+`dpkg -l | grep -E 'fwupd|libfwupd'`
+
+I checked available package versions with:
+
+`apt policy fwupd libfwupd2`
+
+I simulated the update before changing the system:
+
+`apt install --simulate fwupd`
+
+Then I updated the package:
+
+`sudo apt install fwupd`
+
+After the update, the `fwupd` service became active and started successfully.
+
+### Important lesson
+
+Old errors stay in the journal after a problem is fixed.
+
+To confirm that a problem is resolved, I should check:
+
+- the latest log entries
+- the service status
+- new logs after the fix
+
+### Important vocabulary
+
+- log — журнал подій
+- log entry — запис у журналі
+- warning — попередження
+- error — помилка
+- current boot — поточний запуск системи
+- service logs — логи сервісу
+- troubleshooting — пошук і усунення проблем
+- root cause — першопричина
+- version mismatch — невідповідність версій
+- failed — завершився з помилкою
+- active — активний
+- running — працює
+- successful — успішний
+- package — пакет
+
+### My sentence
+
+I learned how to use journalctl to find and resolve a real Linux service problem.
