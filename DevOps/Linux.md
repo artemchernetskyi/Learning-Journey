@@ -858,3 +858,226 @@ To confirm that a problem is resolved, I should check:
 ### My sentence
 
 I learned how to use journalctl to find and resolve a real Linux service problem.
+## Lesson 10 — Linux networking fundamentals
+
+Today I learned how to check Linux network interfaces, connectivity, DNS, routes, and listening ports.
+
+### IP address
+
+An IP address identifies a computer inside a network.
+
+My local IP address was:
+
+`192.168.0.193`
+
+An IP address can change when the computer reconnects to the network.
+
+### MAC address
+
+A MAC address is a hardware identifier of a network adapter.
+
+A MAC address normally stays the same.
+
+### Check the IP address
+
+`hostname -I`
+
+This command shows the computer's IP addresses.
+
+### Network interfaces
+
+`ip addr`
+
+This command shows network interfaces and their IP addresses.
+
+`ip link`
+
+This command shows network interfaces and their current state.
+
+### Loopback interface
+
+The `lo` interface is the loopback interface.
+
+Its IPv4 address is:
+
+`127.0.0.1`
+
+It always points to the same computer.
+
+Network traffic sent to `127.0.0.1` does not leave the computer.
+
+### Ethernet interface
+
+My Ethernet interface is:
+
+`enp8s0`
+
+It showed:
+
+- `NO-CARRIER`
+- `state DOWN`
+
+This means Linux can see the Ethernet adapter, but no network cable is connected.
+
+### Wi-Fi interface
+
+My Wi-Fi interface is:
+
+`wlp7s0`
+
+It showed:
+
+- `UP`
+- `LOWER_UP`
+- `state UP`
+
+This means the Wi-Fi interface is enabled and connected.
+
+### Test Internet connectivity
+
+`ping -c 4 8.8.8.8`
+
+This command tests whether the computer can reach another IP address on the Internet.
+
+`-c 4` means send four packets.
+
+### Test DNS
+
+`ping -c 4 google.com`
+
+This command checks Internet connectivity and DNS resolution.
+
+If `ping 8.8.8.8` works but `ping google.com` fails, the most likely problem is DNS resolution.
+
+### Packet loss
+
+The ping result showed:
+
+`0% packet loss`
+
+This means all packets were received successfully.
+
+### Ports
+
+A port identifies a service or application on a computer.
+
+Examples:
+
+- port `22` — SSH
+- port `53` — DNS
+- port `80` — HTTP
+- port `443` — HTTPS
+- port `631` — printing service
+
+### Listening TCP ports
+
+`ss -lnt`
+
+This command shows listening TCP ports.
+
+Options:
+
+- `-l` — listening sockets
+- `-n` — numeric addresses and ports
+- `-t` — TCP sockets
+
+### Show listening processes
+
+`sudo ss -lntp`
+
+This command shows listening TCP ports and the processes that use them.
+
+`-p` means process.
+
+### UDP sockets
+
+`sudo ss -lnup`
+
+This command shows UDP sockets and their processes.
+
+`-u` means UDP.
+
+### Local and external listening addresses
+
+`127.0.0.1:631`
+
+This means the service is available only on the local computer.
+
+`0.0.0.0:631`
+
+This means the service is listening on all IPv4 network interfaces.
+
+A firewall can still block external connections.
+
+### DNS service
+
+The `systemd-resolved` process was listening on port `53`.
+
+It helps the system resolve domain names into IP addresses.
+
+### Printing service
+
+The `cupsd` process was listening on:
+
+`127.0.0.1:631`
+
+This means the printing service was available only locally.
+
+### Default route
+
+`ip route`
+
+This command shows the routing table.
+
+My default route was:
+
+`default via 192.168.0.1 dev wlp7s0`
+
+This means Internet traffic goes through the router `192.168.0.1` using the Wi-Fi interface `wlp7s0`.
+
+### DNS configuration
+
+`resolvectl status`
+
+This command shows the current DNS configuration.
+
+My current DNS server was:
+
+`192.168.0.1`
+
+This means my router handles DNS requests.
+
+### Basic network troubleshooting workflow
+
+1. Check the IP address with `hostname -I`.
+2. Check interfaces with `ip addr` and `ip link`.
+3. Check the default route with `ip route`.
+4. Test Internet connectivity with `ping 8.8.8.8`.
+5. Test DNS with `ping google.com`.
+6. Check DNS configuration with `resolvectl status`.
+7. Check listening ports with `sudo ss -lntp`.
+
+### Important vocabulary
+
+- network — мережа
+- interface — мережевий інтерфейс
+- IP address — IP-адреса
+- MAC address — MAC-адреса
+- loopback — зворотний локальний інтерфейс
+- localhost — цей самий комп’ютер
+- packet — пакет
+- packet loss — втрата пакетів
+- port — порт
+- socket — мережевий сокет
+- listening — очікує з’єднання
+- route — маршрут
+- default route — маршрут за замовчуванням
+- router — роутер
+- DNS resolution — перетворення доменного імені в IP-адресу
+- connectivity — мережеве з’єднання
+- TCP — протокол зі встановленням з’єднання
+- UDP — протокол без постійного з’єднання
+
+### My sentence
+
+I learned how to check network interfaces, Internet connectivity, DNS, routes, and listening ports in Linux.
