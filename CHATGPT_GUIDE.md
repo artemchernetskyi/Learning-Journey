@@ -595,4 +595,19 @@ Today I practiced Past Simple and worked on my Learning Journey project.
 - Learn by doing, not only by watching courses.
 - Build two portfolio projects.
 - Consistency is more important than intensity.
+## Progress and commit rule
 
+Every 10 lessons, we should:
+
+1. Review the completed lessons.
+2. Complete a checkpoint or short assessment.
+3. Update `PROGRESS.md`.
+4. Update `ENGLISH_PROFILE.md` if my English level or priorities changed.
+5. Update other relevant project notes.
+6. Review all changes with Git.
+7. Commit the completed progress.
+8. Confirm that the working tree is clean.
+
+Before switching to a new major topic, tool, or application, we should also finish and commit all related notes and project changes.
+
+The repository should remain organized, current, and clean.
