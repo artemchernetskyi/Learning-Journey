@@ -373,3 +373,145 @@ I need to build strong foundations in:
 - Cloud and DevOps tools later
 
 Small stable steps are better than one big overloaded session.
+# English Profile — Artem
+
+Updated: 2026-07-13
+
+## Main goal
+
+My main goal is to reach a confident B1 level and later reach B2.
+
+I want to use English for:
+
+- daily conversations
+- Linux and DevOps learning
+- reading technical documentation
+- writing technical notes
+- communicating with developers and engineers
+- future DevOps interviews
+- future work in IT
+
+## Current level
+
+My approximate current level is:
+
+- Overall English: A2+ / approaching B1
+- Reading comprehension: around B1
+- Technical vocabulary: A2+ / B1-
+- Writing: B1-
+- Grammar: A2+ / B1-
+- Speaking: approximately A2+ / B1-
+
+My speaking level is approximate because most of my current practice is written.
+
+## Current progress
+
+I can now write longer answers in English and explain technical ideas in my own words.
+
+I can explain topics such as:
+
+- IP addresses and MAC addresses
+- Internet connectivity and DNS
+- Linux services
+- processes and PIDs
+- logs and troubleshooting
+- Git status and commits
+- network interfaces and ports
+
+My sentences are not always grammatically correct, but my meaning is usually clear.
+
+I am becoming more confident when writing without a translator.
+
+## Strengths
+
+My English strengths are:
+
+- I am not afraid to make mistakes.
+- I try to answer in English.
+- I can explain ideas using my own words.
+- I understand most technical explanations.
+- I ask for clarification when I do not understand something.
+- I learn vocabulary through practical Linux and DevOps tasks.
+- I can understand corrections and use improved versions.
+- I am starting to think in English instead of translating every word.
+
+## Main grammar problems
+
+I still need to improve:
+
+- Present Simple versus Present Continuous
+- Past Simple
+- irregular verbs
+- `do`, `does`, and `did`
+- verb forms after `do`, `does`, and `did`
+- `he`, `she`, and `it` with `-s`
+- articles: `a`, `an`, and `the`
+- prepositions
+- word order
+- singular and plural nouns
+- spelling
+- natural sentence structure
+- Ukrainian and Polish interference
+
+## Common mistakes
+
+Examples of mistakes I often make:
+
+- `I am understand` instead of `I understand`
+- `must to` instead of `must`
+- `I have must` instead of `I have to`
+- `command show` instead of `command shows`
+- `a Internet connection` instead of `an Internet connection`
+- `I dont` instead of `I don’t`
+- `I dont remember` instead of `I don’t remember`
+- `it status` instead of `its status`
+- `can acces` instead of `can access`
+
+## Technical English progress
+
+I learned and used vocabulary such as:
+
+- working tree
+- staged changes
+- untracked file
+- process
+- service
+- failed state
+- log entry
+- warning
+- root cause
+- version mismatch
+- troubleshooting
+- network interface
+- packet loss
+- default route
+- listening port
+- DNS resolution
+- Internet connectivity
+
+## Preferred lesson format
+
+My preferred English lesson format is:
+
+- English as the main language
+- Ukrainian explanations for difficult technical or grammar topics
+- practical conversations and writing
+- corrections of only 3–5 important mistakes
+- a natural corrected version of my answer
+- technical vocabulary from Linux and DevOps
+- short review questions from previous lessons
+
+## Current priority
+
+My current English priorities are:
+
+1. Speak and write more naturally.
+2. Improve Present Simple and Past Simple.
+3. Improve articles and prepositions.
+4. Build technical vocabulary.
+5. explain Linux and DevOps concepts in English.
+6. Prepare for future technical interviews.
+
+## My current sentence
+
+I am learning English together with Linux and DevOps, and I am becoming more confident when I explain technical topics in my own words.
