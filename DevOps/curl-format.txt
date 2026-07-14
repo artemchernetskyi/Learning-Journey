@@ -1,0 +1,6 @@
+DNS lookup: %{time_namelookup} seconds
+TCP connected: %{time_connect} seconds
+TLS ready: %{time_appconnect} seconds
+First byte: %{time_starttransfer} seconds
+Total time: %{time_total} seconds
+HTTP status: %{http_code}
