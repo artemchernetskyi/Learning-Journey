@@ -1081,3 +1081,691 @@ This means my router handles DNS requests.
 ### My sentence
 
 I learned how to check network interfaces, Internet connectivity, DNS, routes, and listening ports in Linux.
+## Lesson 11 — DNS and HTTP connectivity tools
+
+Today I learned how to inspect DNS records, test HTTP connectivity, follow redirects, download files, check command exit codes, and create a basic website health-check script.
+
+### HTTP request and response
+
+A client sends an HTTP request to a server.
+
+The server processes the request and sends an HTTP response.
+
+The response contains:
+
+- an HTTP status code
+- response headers
+- an optional response body
+
+### Display a webpage
+
+`curl https://example.com`
+
+This command sends an HTTP request and displays the response body in the terminal.
+
+For a website, the response body is usually HTML.
+
+### Display HTTP response headers
+
+`curl -I https://example.com`
+
+This command displays the HTTP response headers without displaying the page body.
+
+The `-I` option normally sends a `HEAD` request.
+
+### Verbose curl output
+
+`curl -v https://example.com`
+
+This command displays detailed information about the connection.
+
+It can show:
+
+- DNS resolution
+- the selected IP address
+- TCP connection details
+- TLS connection details
+- the HTTP request
+- the HTTP response headers
+
+Verbose mode is useful for troubleshooting connectivity problems.
+
+### HTTP status code 200
+
+The request to `https://example.com` returned:
+
+`HTTP/2 200`
+
+The `200 OK` status means the requested resource was found and returned successfully.
+
+### HTTP status code 404
+
+The request to:
+
+`https://example.com/not-existing-page`
+
+returned:
+
+`HTTP/2 404`
+
+The `404 Not Found` status means the server is available, but the requested page or resource does not exist.
+
+A `404` response means:
+
+- DNS resolution worked
+- the server was reached
+- the TLS connection worked
+- the HTTP request was received
+- the requested resource was not found
+
+### Important HTTP headers
+
+The response from `example.com` contained headers such as:
+
+`content-type: text/html`
+
+This means the response body contains HTML.
+
+`content-length: 2108`
+
+The `Content-Length` header shows the response-body size in bytes.
+
+`server: cloudflare`
+
+The `Server` header can identify the web server, proxy, or CDN that handled the request.
+
+`last-modified: Wed, 01 Jul 2026 17:50:18 GMT`
+
+The `Last-Modified` header shows when the resource was last changed.
+
+`allow: GET, HEAD`
+
+The `Allow` header shows which HTTP methods are supported by the resource.
+
+`accept-ranges: bytes`
+
+This means the server supports requests for selected parts of the resource.
+
+### Cache headers
+
+The response contained:
+
+`cf-cache-status: HIT`
+
+`HIT` means Cloudflare already had a cached copy of the resource and returned it from its cache.
+
+The response also contained an `Age` header.
+
+For example:
+
+`Age: 2431`
+
+The `Age` value is measured in seconds.
+
+It shows how long the response has been stored in a proxy or CDN cache.
+
+It does not show the file size.
+
+### HTTP redirects
+
+`curl -I http://github.com`
+
+This command returned:
+
+`HTTP/1.1 301 Moved Permanently`
+
+It also returned:
+
+`Location: https://github.com/`
+
+The `301 Moved Permanently` status means the resource has permanently moved to another URL.
+
+The `Location` header tells the client where the resource is now located.
+
+### Follow redirects
+
+`curl -IL http://github.com`
+
+Options:
+
+- `-I` — display response headers
+- `-L` — follow redirects
+
+The request produced two HTTP status lines:
+
+`HTTP/1.1 301 Moved Permanently`
+
+and then:
+
+`HTTP/2 200`
+
+This means curl followed one redirect from HTTP to HTTPS and successfully reached the final page.
+
+### Service unavailable
+
+A request to `httpbin.org` returned:
+
+`HTTP/2 503`
+
+The `503 Service Unavailable` status means the server or application is temporarily unable to handle the request.
+
+This does not necessarily mean there is a problem with the local computer or Internet connection.
+
+### Compact curl report
+
+`curl -sIL -o /dev/null -w '...' http://github.com`
+
+Important options:
+
+- `-s` — silent mode
+- `-I` — request headers only
+- `-L` — follow redirects
+- `-o /dev/null` — discard the normal response output
+- `-w` — display selected information after the request
+
+The compact report showed:
+
+- final HTTP status
+- final URL
+- number of redirects
+- remote IP address
+- total request time
+
+My result included:
+
+`Final status: 200`
+
+`Final URL: https://github.com/`
+
+`Redirects: 1`
+
+`Remote IP: 140.82.121.3`
+
+### Silent mode with errors
+
+`curl -sS`
+
+Options:
+
+- `-s` — hide progress and normal diagnostic output
+- `-S` — still display errors
+
+The combination `-sS` is useful in scripts because it hides unnecessary progress information but still shows failures.
+
+### Discard the response body
+
+`curl -o /dev/null https://example.com`
+
+The `-o` option selects the output destination.
+
+`/dev/null` is a special Linux device that discards everything written to it.
+
+This is useful when only the response status or timing information is needed.
+
+### Measure request timing
+
+Curl can measure different connection stages with `-w`.
+
+Important variables include:
+
+- `%{time_namelookup}` — time until DNS resolution completed
+- `%{time_connect}` — time until the TCP connection was established
+- `%{time_appconnect}` — time until the TLS connection was ready
+- `%{time_starttransfer}` — time until the first response byte arrived
+- `%{time_total}` — total request duration
+- `%{http_code}` — final HTTP status code
+
+These timing values are cumulative.
+
+Each value shows the time from the beginning of the request, not the separate duration of only that stage.
+
+### Time to First Byte
+
+`time_starttransfer` shows the time until the first byte was received.
+
+This is often called:
+
+`TTFB — Time to First Byte`
+
+A high TTFB can indicate a slow server, application, database, proxy, or network path.
+
+### Reusable curl format file
+
+I created:
+
+`DevOps/curl-format.txt`
+
+It stores the long curl output format.
+
+The file can be used with:
+
+`curl -sS -o /dev/null -w '@DevOps/curl-format.txt' https://github.com`
+
+This is easier than remembering and typing every curl timing variable manually.
+
+### Download a file with wget
+
+`wget https://example.com -O /tmp/example.html`
+
+This command downloaded the webpage and saved it as:
+
+`/tmp/example.html`
+
+Options:
+
+- `wget` — download a resource
+- `-O` — choose the output filename
+- `/tmp/example.html` — output file path
+
+The response returned:
+
+`200 OK`
+
+The downloaded file size was:
+
+`559 bytes`
+
+### Inspect a downloaded file
+
+`ls -lh /tmp/example.html`
+
+This command displayed the file size and file information.
+
+`head -n 5 /tmp/example.html`
+
+This command displayed the first five lines of the file.
+
+The HTML was mostly stored on one physical line, so `head` displayed almost the entire document.
+
+### Check a resource without downloading it
+
+`wget --spider https://example.com`
+
+The `--spider` option checks whether a remote resource exists without saving it.
+
+The existing page returned:
+
+`200 OK`
+
+The missing page returned:
+
+`404 Not Found`
+
+### Display response headers with wget
+
+`wget -S --spider https://example.com/not-existing-page`
+
+Options:
+
+- `-S` — display server response headers
+- `--spider` — check the resource without downloading it
+
+This command is useful for checking a URL and inspecting its HTTP response.
+
+### Detailed DNS lookup
+
+`dig example.com`
+
+This command performs a detailed DNS lookup.
+
+The output contains sections such as:
+
+- header
+- question section
+- answer section
+- DNS server
+- query time
+
+The DNS status was:
+
+`NOERROR`
+
+This means the DNS query completed successfully.
+
+### DNS A records
+
+An `A` record maps a domain name to an IPv4 address.
+
+The query returned two IPv4 addresses:
+
+- `104.20.23.154`
+- `172.66.147.243`
+
+### DNS AAAA records
+
+An `AAAA` record maps a domain name to an IPv6 address.
+
+`dig +short AAAA example.com`
+
+The query returned two IPv6 addresses.
+
+### Compact DNS output
+
+`dig +short example.com`
+
+This command displays only the DNS answer values.
+
+It is useful in shell scripts because it does not display the full diagnostic output.
+
+The full `dig` command is better for detailed troubleshooting.
+
+`dig +short` is better when only the returned IP addresses are needed.
+
+### DNS TTL
+
+The `dig` output showed a TTL value.
+
+TTL means:
+
+`Time To Live`
+
+It tells a DNS resolver how long it may cache a DNS record before requesting it again.
+
+The TTL value is measured in seconds.
+
+### Local DNS resolver
+
+The DNS server shown by `dig` and `nslookup` was:
+
+`127.0.0.53#53`
+
+This means:
+
+- `127.0.0.53` — Ubuntu's local DNS stub resolver
+- `53` — the standard DNS port
+
+The local resolver is normally managed by `systemd-resolved`.
+
+It receives DNS requests from local applications and forwards them to configured DNS servers.
+
+### Simple DNS lookup
+
+`nslookup example.com`
+
+This command performs a simple DNS lookup.
+
+It showed:
+
+- the DNS server
+- the domain name
+- IPv4 addresses
+- IPv6 addresses
+
+`nslookup` is easier to read for a quick manual check.
+
+`dig` provides more detailed information for DNS troubleshooting.
+
+### Non-authoritative answer
+
+The `nslookup` output showed:
+
+`Non-authoritative answer`
+
+This means the response came from a recursive DNS resolver or its cache, not directly from the authoritative DNS server for the domain.
+
+This is normal for everyday DNS queries.
+
+### Query a specific DNS record
+
+`nslookup -type=AAAA example.com`
+
+The `-type=AAAA` option requests only IPv6 records.
+
+### Nonexistent domain
+
+I tested:
+
+`this-domain-should-not-exist-987654321.com`
+
+The `dig` command returned:
+
+`NXDOMAIN`
+
+NXDOMAIN means:
+
+`Non-Existent Domain`
+
+It means DNS could not find the requested domain name.
+
+### Curl DNS error
+
+The curl request to the nonexistent domain returned:
+
+`curl: (6) Could not resolve host`
+
+Curl exit code `6` means the hostname could not be resolved into an IP address.
+
+Because DNS failed:
+
+- no IP address was found
+- no TCP connection was created
+- no TLS connection was created
+- no HTTP request reached a web server
+
+### NXDOMAIN and HTTP 404
+
+`NXDOMAIN` and `404 Not Found` describe different failures.
+
+`NXDOMAIN` means the domain name does not exist in DNS.
+
+The connection cannot begin because no IP address is available.
+
+`404 Not Found` means DNS worked and the server was reached, but the requested page or resource does not exist.
+
+### Command exit codes
+
+`echo $?`
+
+This command displays the exit code of the most recently completed command.
+
+An exit code of:
+
+`0`
+
+normally means the command succeeded.
+
+A non-zero exit code normally means the command failed.
+
+### Curl exit code 0
+
+A successful request to `https://example.com` returned:
+
+`0`
+
+Without the `--fail` option, a request that receives HTTP `404` can also return exit code `0`.
+
+This happens because curl successfully connected to the server and received a valid HTTP response.
+
+### Curl exit code 6
+
+A DNS resolution failure returned:
+
+`6`
+
+This means curl could not resolve the hostname.
+
+### Curl exit code 22
+
+`curl --fail -I https://example.com/not-existing-page`
+
+The `--fail` option makes curl treat HTTP `4xx` and `5xx` responses as command failures.
+
+The missing page returned:
+
+`curl: (22) The requested URL returned error: 404`
+
+Curl exit code `22` means an HTTP error was received while using `--fail`.
+
+### Basic shell condition
+
+A Bash `if` statement can check a command's exit code.
+
+Example:
+
+`if curl -fsS -o /dev/null URL; then`
+
+If curl returns exit code `0`, Bash executes the `then` branch.
+
+If curl returns a non-zero exit code, Bash executes the `else` branch.
+
+The tests produced:
+
+- available page — `then`
+- missing page — `else`
+- nonexistent domain — `else`
+
+### Curl health-check options
+
+The health check used:
+
+`curl -fsS -o /dev/null`
+
+Options:
+
+- `-f` — fail on HTTP `4xx` and `5xx` responses
+- `-s` — hide normal progress output
+- `-S` — show errors
+- `-o /dev/null` — discard the response body
+
+### Health-check script
+
+I created:
+
+`DevOps/Scripts/check-url.sh`
+
+The script checks whether a URL is available.
+
+It can be run with:
+
+`./DevOps/Scripts/check-url.sh`
+
+Without an argument, it checks:
+
+`https://example.com`
+
+A custom URL can be passed as the first argument:
+
+`./DevOps/Scripts/check-url.sh https://github.com`
+
+### Script interpreter
+
+The script begins with:
+
+`#!/usr/bin/env bash`
+
+This is the shebang.
+
+It tells Linux to execute the script using Bash.
+
+### Script argument and default value
+
+The script contains:
+
+`url="${1:-https://example.com}"`
+
+`$1` is the first argument passed to the script.
+
+If no first argument is provided, the script uses `https://example.com` as the default value.
+
+### Save an exit code
+
+The script contains:
+
+`status=$?`
+
+`$?` stores the exit code of the previous command.
+
+The value is saved immediately because the next command would replace it.
+
+### Return the curl exit code
+
+The script contains:
+
+`exit "$status"`
+
+This makes the script return the same failure exit code as curl.
+
+This is useful for:
+
+- monitoring
+- CI/CD pipelines
+- cron jobs
+- other shell scripts
+- automated health checks
+
+### Make the script executable
+
+`chmod +x DevOps/Scripts/check-url.sh`
+
+This command added execute permission to the script.
+
+The file permissions showed:
+
+`-rwx------`
+
+The `x` means the file can be executed.
+
+### Health-check results
+
+The available page returned:
+
+- `Website check: OK`
+- exit code `0`
+
+The missing page returned:
+
+- `Website check: FAILED`
+- curl exit code `22`
+
+The nonexistent domain returned:
+
+- `Website check: FAILED`
+- curl exit code `6`
+
+### Basic DNS and HTTP troubleshooting workflow
+
+1. Check DNS records with `dig DOMAIN`.
+2. Use `dig +short DOMAIN` for a compact IP address result.
+3. Use `nslookup DOMAIN` for a simple DNS check.
+4. Check response headers with `curl -I URL`.
+5. Use `curl -v URL` for detailed connection information.
+6. Use `curl -L URL` when redirects must be followed.
+7. Check the HTTP status and timing with `curl -w`.
+8. Use `wget --spider URL` to test a resource without downloading it.
+9. Check the previous command's exit code with `echo $?`.
+10. Use `curl --fail` when HTTP `4xx` and `5xx` responses must count as command failures.
+
+### Important vocabulary
+
+- request — запит
+- response — відповідь
+- response body — тіло відповіді
+- response header — заголовок відповіді
+- status code — код стану
+- redirect — перенаправлення
+- permanent redirect — постійне перенаправлення
+- resource — ресурс
+- content type — тип вмісту
+- content length — розмір вмісту
+- cache — кеш
+- cached copy — кешована копія
+- DNS record — DNS-запис
+- A record — запис IPv4-адреси
+- AAAA record — запис IPv6-адреси
+- resolver — DNS-резолвер
+- authoritative server — авторитетний DNS-сервер
+- hostname — ім’я хоста
+- resolve — перетворити доменне ім’я в IP-адресу
+- NXDOMAIN — домен не існує
+- exit code — код завершення
+- success — успішне виконання
+- failure — невдале виконання
+- health check — перевірка працездатності
+- script argument — аргумент скрипта
+- default value — значення за замовчуванням
+- shebang — рядок, який визначає інтерпретатор скрипта
+- troubleshooting — пошук і усунення несправностей
+
+### My sentence
+
+I learned how to inspect DNS records, check HTTP responses, follow redirects, identify DNS and HTTP failures, use command exit codes, and create a basic website health-check script.
