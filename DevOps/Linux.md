@@ -1081,7 +1081,7 @@ This means my router handles DNS requests.
 ### My sentence
 
 I learned how to check network interfaces, Internet connectivity, DNS, routes, and listening ports in Linux.
-## Lesson 11 — DNS and HTTP connectivity tools
+ ## Lesson 11 — DNS and HTTP connectivity tools
 
 Today I learned how to inspect DNS records, test HTTP connectivity, follow redirects, download files, check command exit codes, and create a basic website health-check script.
 
@@ -1769,3 +1769,772 @@ The nonexistent domain returned:
 ### My sentence
 
 I learned how to inspect DNS records, check HTTP responses, follow redirects, identify DNS and HTTP failures, use command exit codes, and create a basic website health-check script.
+## Lesson 12 — Bash scripting fundamentals
+
+Today I learned how Bash scripts use variables, arguments, conditions, command output, file checks, logical operators, and exit codes.
+
+I also improved my website health-check script so that it displays the HTTP status and response time.
+
+### Bash script
+
+A Bash script is a text file containing commands that Bash executes in order.
+
+Bash scripts normally use the `.sh` filename extension.
+
+My script is:
+
+`DevOps/Scripts/check-url.sh`
+
+### Shebang
+
+The script begins with:
+
+`#!/usr/bin/env bash`
+
+This line is called the shebang.
+
+It tells Linux to execute the script using Bash.
+
+`/usr/bin/env` searches for Bash using the current `PATH`.
+
+### Bash location
+
+`which bash`
+
+This command shows the location of Bash.
+
+My result was:
+
+`/usr/bin/bash`
+
+### Run a script with Bash
+
+`bash DevOps/Scripts/check-url.sh`
+
+This command explicitly starts Bash and gives the script file to it.
+
+The script does not need executable permission when it is started this way.
+
+### Run a script directly
+
+`./DevOps/Scripts/check-url.sh`
+
+This command asks Linux to execute the file directly.
+
+For this method, the script needs:
+
+- executable permission
+- a valid shebang
+
+### Executable permission
+
+`chmod +x DevOps/Scripts/check-url.sh`
+
+This command adds executable permission to the script.
+
+`+x` means add execute permission.
+
+`-x` would remove execute permission.
+
+### Variables
+
+A variable stores a value under a name.
+
+Example:
+
+`name="Artem"`
+
+The variable name is:
+
+`name`
+
+The stored value is:
+
+`Artem`
+
+### Variable assignment
+
+A correct variable assignment has no spaces around `=`:
+
+`project="Learning Journey"`
+
+This is incorrect:
+
+`project = "Learning Journey"`
+
+With spaces, Bash interprets `project` as a command instead of a variable assignment.
+
+The result was:
+
+`Command 'project' not found`
+
+### Read a variable
+
+`echo "$project"`
+
+The `$` tells Bash to read or expand the value stored in the variable.
+
+Without `$`, Bash prints the variable name as normal text.
+
+### Quote variables
+
+Variables should normally be placed inside double quotes:
+
+`"$project"`
+
+Quotes preserve the complete value as one argument.
+
+Without quotes, Bash can split a value at spaces.
+
+For example:
+
+`Learning Journey`
+
+could be interpreted as two separate arguments:
+
+- `Learning`
+- `Journey`
+
+With quotes, it remains one argument.
+
+### Curly braces around variables
+
+Curly braces can clearly separate a variable name from surrounding text.
+
+Example:
+
+`echo "${project}.md"`
+
+The result was:
+
+`Learning Journey.md`
+
+### Script arguments
+
+Arguments are values provided when starting a script.
+
+Example:
+
+`bash /tmp/arguments.sh Artem DevOps`
+
+The script received:
+
+- first argument — `Artem`
+- second argument — `DevOps`
+
+### Special argument variables
+
+Bash provides special variables for script arguments:
+
+- `$0` — script name or path
+- `$1` — first argument
+- `$2` — second argument
+- `$#` — number of arguments
+- `$@` — all arguments
+
+My script name appeared as:
+
+`/tmp/arguments.sh`
+
+### Script name and argument count
+
+The script name in `$0` is not included in `$#`.
+
+For:
+
+`bash /tmp/arguments.sh Artem DevOps`
+
+the number of arguments was:
+
+`2`
+
+### Arguments containing spaces
+
+`bash /tmp/arguments.sh "Learning Journey" 12`
+
+The quotes keep `Learning Journey` together as one argument.
+
+Without quotes, Bash would treat it as two arguments.
+
+With quotes, the result was:
+
+- `$1` — `Learning Journey`
+- `$2` — `12`
+- `$#` — `2`
+
+### Default values
+
+Bash can use a default value when an argument or variable is missing.
+
+Example:
+
+`name="${1:-Guest}"`
+
+This means:
+
+- use `$1` when it contains a value
+- use `Guest` when `$1` is missing or empty
+
+Without an argument, the result was:
+
+`Hello, Guest!`
+
+With `Artem` as an argument, the result was:
+
+`Hello, Artem!`
+
+### Empty argument
+
+`bash /tmp/default-value.sh ""`
+
+The empty quotes pass one argument, but its value is an empty string.
+
+The expression:
+
+`${1:-Guest}`
+
+uses the default value when the first argument is missing or empty.
+
+Therefore, the result was:
+
+`Hello, Guest!`
+
+### Default URL
+
+My health-check script uses:
+
+`url="${1:-https://example.com}"`
+
+Without an argument, it checks:
+
+`https://example.com`
+
+When a custom URL is provided, it checks that URL instead.
+
+### Read keyboard input
+
+`read` allows a Bash script to receive input from the keyboard.
+
+Example:
+
+`read -r -p "Enter your name: " name`
+
+Options:
+
+- `read` — read user input
+- `-r` — treat backslashes as normal characters
+- `-p` — display a prompt
+- `name` — variable where the entered text is stored
+
+### Variable name in read
+
+There is no `$` before the variable in:
+
+`read -r name`
+
+The `read` command needs the variable name where it should store the input.
+
+The `$` is used later when reading the stored value:
+
+`echo "$name"`
+
+### User input with a default value
+
+A script can first read input:
+
+`read -r -p "Enter a URL [https://example.com]: " url`
+
+Then apply a default value:
+
+`url="${url:-https://example.com}"`
+
+When Enter is pressed without typing anything, the default URL is selected.
+
+### Check an empty string
+
+`[[ -z "$name" ]]`
+
+The `-z` operator checks whether a string has zero characters.
+
+It is true when the value is empty.
+
+Examples:
+
+- `name=""` — true
+- `name="Artem"` — false
+
+### Check a non-empty string
+
+`[[ -n "$value" ]]`
+
+The `-n` operator checks whether a string contains one or more characters.
+
+Examples:
+
+- `value=""` — false
+- `value="DevOps"` — true
+
+### Bash condition
+
+A basic Bash condition has this structure:
+
+`if [[ condition ]]; then`
+
+If the condition is true, Bash executes the `then` branch.
+
+If the condition is false, Bash can execute the `else` branch.
+
+The condition is closed with:
+
+`fi`
+
+### Compare strings
+
+`[[ "$environment" == "production" ]]`
+
+The `==` operator checks whether two string values are equal.
+
+The `!=` operator checks whether two string values are different.
+
+### Multiple conditions with elif
+
+`elif` checks another condition when the previous condition was false.
+
+The structure is:
+
+`if`
+
+`elif`
+
+`else`
+
+`fi`
+
+I used it to distinguish:
+
+- production
+- staging
+- development
+- invalid values
+
+### Invalid values
+
+An unsupported environment produced:
+
+`Invalid environment: testing`
+
+The script then used:
+
+`exit 1`
+
+This indicates that the script did not complete successfully.
+
+### File tests
+
+Bash can check different types of filesystem paths.
+
+Important operators:
+
+- `-f` — a regular file exists
+- `-d` — a directory exists
+- `-e` — any type of path exists
+- `-x` — a path exists and is executable
+
+### Check a regular file
+
+`[[ -f DevOps/Linux.md ]]`
+
+This condition checks whether `DevOps/Linux.md` exists as a regular file.
+
+My result was:
+
+`Regular file exists: DevOps/Linux.md`
+
+### Check a directory
+
+`[[ -d DevOps ]]`
+
+This condition checks whether `DevOps` exists as a directory.
+
+My result was:
+
+`Directory exists: DevOps`
+
+### Check a missing path
+
+The test for:
+
+`missing-file.txt`
+
+entered the `else` branch.
+
+The result was:
+
+`Path does not exist: missing-file.txt`
+
+### Check executable permission
+
+`[[ -x DevOps/Scripts/check-url.sh ]]`
+
+This condition checks whether the health-check script is executable.
+
+My result was:
+
+`The script is executable.`
+
+A script can be both:
+
+- a regular file
+- an executable file
+
+### Logical AND operator
+
+`command1 && command2`
+
+The command after `&&` runs only when the first command succeeds.
+
+A successful command normally returns exit code `0`.
+
+Example:
+
+`ls DevOps/Linux.md && echo "The file exists."`
+
+Because the file exists, the second command runs.
+
+### Logical OR operator
+
+`command1 || command2`
+
+The command after `||` runs only when the first command fails.
+
+Example:
+
+`ls missing-file.txt || echo "The file was not found."`
+
+Because `ls` fails, the second command runs.
+
+### Combine logical operators
+
+`command && success_command || failure_command`
+
+This can produce a simple success or failure result.
+
+My website tests produced:
+
+- available page — `HEALTHY`
+- missing page — `UNHEALTHY`
+
+### Command substitution
+
+`$(command)`
+
+Command substitution runs a command and captures its output.
+
+Example:
+
+`current_date="$(date)"`
+
+The `date` command runs, and its output is stored in `current_date`.
+
+### Store the kernel version
+
+`kernel_version="$(uname -r)"`
+
+This command stores the kernel version in a variable.
+
+My result was:
+
+`6.17.0-35-generic`
+
+### Capture an HTTP status
+
+`http_status="$(curl -sS -o /dev/null -w '%{http_code}' https://example.com)"`
+
+This command runs curl and stores only the HTTP status code.
+
+My result was:
+
+`200`
+
+### Capture response time
+
+`response_time="$(curl -sS -o /dev/null -w '%{time_total}' https://example.com)"`
+
+This command stores the total request duration.
+
+One of my results was:
+
+`0.206552`
+
+The value is measured in seconds.
+
+### Capture multiple values
+
+Curl can print multiple values during one request:
+
+`result="$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' https://example.com)"`
+
+The result looked like:
+
+`200 0.181285`
+
+The first value was the HTTP status.
+
+The second value was the response time.
+
+### Read multiple values
+
+`read -r http_status response_time <<< "$result"`
+
+This command separates the result and stores it in two variables.
+
+The first value is stored in:
+
+`http_status`
+
+The second value is stored in:
+
+`response_time`
+
+### Here string
+
+`<<< "$result"`
+
+This is called a here string.
+
+It sends the contents of a variable as input to a command.
+
+In this example, it sends the value of `result` to `read`.
+
+### HTTP health result
+
+I compared the captured HTTP status:
+
+`[[ "$http_status" == "200" ]]`
+
+Status `200` entered the `then` branch and printed:
+
+`Result: HEALTHY`
+
+Status `404` entered the `else` branch and printed:
+
+`Result: UNHEALTHY`
+
+### Numeric comparisons
+
+Bash provides operators for comparing numbers:
+
+- `-eq` — equal
+- `-ne` — not equal
+- `-gt` — greater than
+- `-ge` — greater than or equal
+- `-lt` — less than
+- `-le` — less than or equal
+
+### Successful HTTP range
+
+`[[ "$status" -ge 200 && "$status" -lt 300 ]]`
+
+This condition checks whether the status is between `200` and `299`.
+
+Both comparisons must be true.
+
+This accepts all successful HTTP `2xx` status codes.
+
+### HTTP status 204
+
+Status `204` is successful because it is:
+
+- greater than or equal to `200`
+- less than `300`
+
+`204 No Content` is a valid successful HTTP response.
+
+### HTTP status 301
+
+Status `301` is not considered successful by this condition because it is not less than `300`.
+
+It is an HTTP redirect in the `3xx` range.
+
+### Improved health-check script
+
+I updated:
+
+`DevOps/Scripts/check-url.sh`
+
+The script now displays:
+
+- checked URL
+- HTTP status
+- response time
+- health result
+- curl exit code for connection failures
+
+### Capture curl result
+
+The improved script uses:
+
+`result="$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' "$url")"`
+
+Curl prints the HTTP status and response time.
+
+Command substitution stores both values in `result`.
+
+### Save curl exit status
+
+Immediately after curl, the script uses:
+
+`curl_status=$?`
+
+This saves curl's exit code before another command changes `$?`.
+
+### Check curl failure
+
+`[[ "$curl_status" -ne 0 ]]`
+
+The `-ne` operator means not equal.
+
+This condition checks whether curl returned an error.
+
+If curl failed, the script:
+
+- prints `FAILED`
+- displays the curl exit code
+- exits with the same code
+
+### Split the curl result
+
+When curl succeeds, the script uses:
+
+`read -r http_status response_time <<< "$result"`
+
+This stores the HTTP status and response time in separate variables.
+
+### Check the 2xx range
+
+The improved script uses:
+
+`[[ "$http_status" -ge 200 && "$http_status" -lt 300 ]]`
+
+All HTTP responses from `200` to `299` are considered healthy.
+
+Other HTTP statuses are considered unhealthy.
+
+### Improved health-check results
+
+The successful page returned:
+
+- HTTP status `200`
+- result `HEALTHY`
+- script exit code `0`
+
+The missing page returned:
+
+- HTTP status `404`
+- result `UNHEALTHY`
+- script exit code `1`
+
+The nonexistent domain returned:
+
+- result `FAILED`
+- curl exit code `6`
+- script exit code `6`
+
+### Exit code 0
+
+The script returns:
+
+`0`
+
+when the HTTP response is in the `2xx` range.
+
+This means the health check succeeded.
+
+### Exit code 1
+
+The script returns:
+
+`1`
+
+when the server responds, but the HTTP status is outside the `2xx` range.
+
+For example, HTTP `404` produces script exit code `1`.
+
+### Preserve curl errors
+
+When curl itself fails, the script preserves curl's error code.
+
+For example:
+
+`curl: (6) Could not resolve host`
+
+The script also returns:
+
+`6`
+
+This distinguishes an HTTP failure from a DNS or connection failure.
+
+### Why 404 returns 1 instead of 22
+
+The updated curl command does not use:
+
+`-f`
+
+Therefore, curl can successfully receive HTTP `404` and return exit code `0`.
+
+The script then reads the HTTP status and decides that `404` is unhealthy.
+
+The `else` branch explicitly contains:
+
+`exit 1`
+
+Therefore, HTTP `404` now returns script exit code `1`, not curl exit code `22`.
+
+### Basic Bash script workflow
+
+1. Add a shebang.
+2. Define variables.
+3. Read script arguments.
+4. Apply default values when needed.
+5. Quote variable expansions.
+6. Run commands and capture their output.
+7. Save command exit codes immediately.
+8. Use `if`, `elif`, and `else` to make decisions.
+9. Use string or numeric comparisons.
+10. Return a meaningful exit code.
+
+### Important vocabulary
+
+- Bash script — Bash-скрипт
+- interpreter — інтерпретатор
+- shebang — рядок, який визначає інтерпретатор
+- executable — виконуваний
+- permission — право доступу
+- variable — змінна
+- variable assignment — присвоєння значення змінній
+- variable expansion — підстановка значення змінної
+- quote — лапка
+- argument — аргумент
+- positional argument — позиційний аргумент
+- default value — значення за замовчуванням
+- empty string — порожній рядок
+- user input — введення користувача
+- condition — умова
+- string comparison — порівняння рядків
+- numeric comparison — числове порівняння
+- regular file — звичайний файл
+- directory — директорія
+- logical operator — логічний оператор
+- command substitution — підстановка команди
+- command output — результат команди
+- here string — передавання рядка як вводу
+- exit status — код завершення
+- successful — успішний
+- unsuccessful — неуспішний
+- healthy — працездатний
+- unhealthy — непрацездатний
+- invalid value — неправильне значення
+
+### My sentence
+
+I learned how to create Bash scripts with variables, arguments, default values, conditions, command substitution, file tests, logical operators, and meaningful exit codes.
