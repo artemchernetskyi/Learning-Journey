@@ -2538,3 +2538,810 @@ Therefore, HTTP `404` now returns script exit code `1`, not curl exit code `22`.
 ### My sentence
 
 I learned how to create Bash scripts with variables, arguments, default values, conditions, command substitution, file tests, logical operators, and meaningful exit codes.
+## Lesson 13 — Bash loops and functions
+
+Today I learned how to repeat commands with loops, store multiple values in arrays, create reusable functions, check several URLs, count results, and return one overall exit code.
+
+I also created a multi-URL health-check script:
+
+`DevOps/Scripts/check-urls.sh`
+
+### Bash loop
+
+A loop repeats the same commands several times.
+
+A basic `for` loop has this structure:
+
+```bash
+for variable in value1 value2 value3; do
+    commands
+done
+```
+
+During every iteration, Bash stores the current value in the loop variable.
+
+### Loop through words
+
+```bash
+for word in Linux Bash DevOps; do
+    echo "Topic: $word"
+done
+```
+
+The loop ran three times.
+
+The values were:
+
+- first iteration — `Linux`
+- second iteration — `Bash`
+- third iteration — `DevOps`
+
+The output was:
+
+```text
+Topic: Linux
+Topic: Bash
+Topic: DevOps
+```
+
+### The do and done keywords
+
+`do` begins the commands that Bash should repeat.
+
+`done` closes the loop.
+
+### Loop through numbers
+
+```bash
+for number in 1 2 3 4 5; do
+    echo "Number: $number"
+done
+```
+
+This loop printed the numbers from `1` to `5`.
+
+### Brace expansion
+
+```bash
+for number in {1..5}; do
+    echo "Number: $number"
+done
+```
+
+The expression:
+
+`{1..5}`
+
+expands into:
+
+```text
+1 2 3 4 5
+```
+
+Brace expansion is useful for generating a simple sequence of values.
+
+### Loop through URLs
+
+```bash
+for url in \
+    https://example.com \
+    https://github.com \
+    https://example.com/not-existing-page
+do
+    echo "Checking: $url"
+done
+```
+
+This loop processed every URL one at a time.
+
+The backslash:
+
+`\`
+
+continues the same command on the next line.
+
+### Why loops are useful
+
+Without a loop, the same command must be copied for every value.
+
+A loop reduces repeated code and applies the same operation consistently to every URL.
+
+### Run a script inside a loop
+
+```bash
+for url in \
+    https://example.com \
+    https://example.com/not-existing-page
+do
+    ./DevOps/Scripts/check-url.sh "$url"
+    script_status=$?
+done
+```
+
+The current URL is passed to the script as its first argument.
+
+The exit code is saved immediately with:
+
+`script_status=$?`
+
+This is important because the next command would replace the value of `$?`.
+
+### Loop continues after a failure
+
+The health-check script returned different exit codes:
+
+- `0` — healthy URL
+- `1` — unhealthy HTTP result
+- `6` — DNS resolution failure
+
+The parent loop continued after every result.
+
+An exit code returned by a separately executed script does not automatically stop the loop.
+
+### Bash array
+
+An array stores several values under one variable name.
+
+Example:
+
+```bash
+urls=(
+    "https://example.com"
+    "https://github.com"
+    "https://example.com/not-existing-page"
+)
+```
+
+The `urls` array contained three elements.
+
+### Array indexes
+
+Bash arrays are zero-indexed.
+
+This means the first element has index `0`.
+
+```text
+urls[0] — first element
+urls[1] — second element
+urls[2] — third element
+```
+
+For my array:
+
+```bash
+echo "${urls[1]}"
+```
+
+returned:
+
+```text
+https://github.com
+```
+
+### Display all array elements
+
+```bash
+printf '%s\n' "${urls[@]}"
+```
+
+The expression:
+
+`"${urls[@]}"`
+
+expands all elements of the array.
+
+Each element remains a separate, safely quoted argument.
+
+### Count array elements
+
+```bash
+echo "${#urls[@]}"
+```
+
+`${#urls[@]}` returns the number of elements stored in the array.
+
+My result was:
+
+```text
+3
+```
+
+### Loop through an array
+
+```bash
+for url in "${urls[@]}"; do
+    echo "Checking: $url"
+done
+```
+
+The loop processes every array element one at a time.
+
+### Bash function
+
+A function stores reusable commands under one name.
+
+A basic function has this structure:
+
+```bash
+function_name() {
+    commands
+}
+```
+
+Calling the function name executes the commands inside it.
+
+### Simple function
+
+```bash
+greet() {
+    echo "Hello from Bash!"
+}
+```
+
+The function is called with:
+
+```bash
+greet
+```
+
+The result was:
+
+```text
+Hello from Bash!
+```
+
+### Function arguments
+
+Functions can receive arguments.
+
+```bash
+greet_user() {
+    local name="${1:-Guest}"
+    echo "Hello, $name!"
+}
+```
+
+Inside a function:
+
+- `$1` — first function argument
+- `$2` — second function argument
+- `$#` — number of function arguments
+
+For:
+
+```bash
+greet_user Artem
+```
+
+the value of `$1` was:
+
+```text
+Artem
+```
+
+### Function default value
+
+```bash
+local name="${1:-Guest}"
+```
+
+When no argument is provided, the function uses:
+
+```text
+Guest
+```
+
+When an argument is provided, the function uses that value instead.
+
+### Local variable
+
+```bash
+local name="Local value"
+```
+
+The `local` keyword creates a variable that belongs only to the function.
+
+It prevents the function from accidentally changing a variable with the same name outside the function.
+
+### Return from a function
+
+```bash
+return 0
+```
+
+`return` ends the current function and provides a function exit status.
+
+It does not end the complete script.
+
+### Exit from a script
+
+```bash
+exit 1
+```
+
+`exit` ends the complete script.
+
+Commands written after `exit` are not executed.
+
+### Return and exit
+
+The difference is:
+
+- `return` — ends only the current function
+- `exit` — ends the complete script
+
+The multi-URL checker uses `return` inside its function so that the loop can continue checking the remaining URLs.
+
+### File-check function
+
+```bash
+check_file() {
+    local path="${1:-DevOps/Linux.md}"
+
+    if [[ -f "$path" ]]; then
+        echo "File found: $path"
+        return 0
+    else
+        echo "File not found: $path"
+        return 1
+    fi
+}
+```
+
+An existing file returned:
+
+```text
+0
+```
+
+A missing file returned:
+
+```text
+1
+```
+
+### URL-check function
+
+I moved the website-checking logic into a function:
+
+```bash
+check_url() {
+    ...
+}
+```
+
+The function receives the URL through:
+
+```bash
+local url="$1"
+```
+
+It uses local variables for:
+
+- curl result
+- curl exit code
+- HTTP status
+- response time
+
+### Capture curl information
+
+The function uses:
+
+```bash
+result="$(curl -sS -o /dev/null \
+    -w '%{http_code} %{time_total}' \
+    "$url")"
+```
+
+Curl prints:
+
+- HTTP status
+- total response time
+
+Command substitution stores both values in `result`.
+
+### Save curl exit code
+
+Immediately after curl, the function uses:
+
+```bash
+curl_status=$?
+```
+
+This saves curl’s exit code before another command changes `$?`.
+
+### Split the curl result
+
+```bash
+read -r http_status response_time <<< "$result"
+```
+
+The first value is stored in:
+
+`http_status`
+
+The second value is stored in:
+
+`response_time`
+
+### Function result codes
+
+The `check_url` function returns:
+
+- `0` — HTTP status is between `200` and `299`
+- `1` — the server responded, but the HTTP status is unhealthy
+- curl error code — curl could not complete the request
+
+My results were:
+
+```text
+Healthy page       → 0
+HTTP 404           → 1
+DNS failure        → 6
+```
+
+### Why the function uses return
+
+The function uses:
+
+```bash
+return "$curl_status"
+```
+
+instead of:
+
+```bash
+exit "$curl_status"
+```
+
+This allows the main loop to continue checking the next URL.
+
+If the function used `exit`, the complete script would stop after the first technical failure.
+
+### Command not found
+
+I received:
+
+```text
+check_url: command not found
+```
+
+The exit code was:
+
+```text
+127
+```
+
+Exit code `127` means Bash could not find the command or function.
+
+This happened because I ran the loop directly in the terminal without defining the `check_url` function in that terminal session.
+
+### Function scope
+
+The function was defined inside:
+
+`/tmp/check-urls.sh`
+
+It existed only inside the Bash process that ran that script.
+
+After the script finished, the function was not available in the original terminal.
+
+Therefore:
+
+```bash
+declare -F check_url
+```
+
+showed no output.
+
+### Check Bash syntax
+
+```bash
+bash -n DevOps/Scripts/check-urls.sh
+```
+
+The `-n` option checks the syntax without executing the script.
+
+No output means the syntax is valid.
+
+### Bash debug mode
+
+```bash
+bash -x DevOps/Scripts/check-urls.sh
+```
+
+The `-x` option displays commands as Bash executes them.
+
+Lines beginning with `+` show commands executed by Bash.
+
+Lines beginning with `++` can show commands executed inside command substitution.
+
+### Result counters
+
+I created three counters:
+
+```bash
+healthy_count=0
+unhealthy_count=0
+failed_count=0
+```
+
+They begin at zero because no URLs have been checked yet.
+
+### Increment a counter
+
+```bash
+((healthy_count++))
+```
+
+This increases `healthy_count` by one.
+
+It is similar to:
+
+```bash
+healthy_count=$((healthy_count + 1))
+```
+
+The same logic is used for the other counters.
+
+### Select a counter
+
+```bash
+if [[ "$function_status" -eq 0 ]]; then
+    ((healthy_count++))
+elif [[ "$function_status" -eq 1 ]]; then
+    ((unhealthy_count++))
+else
+    ((failed_count++))
+fi
+```
+
+The script selects a counter according to the function exit code.
+
+### Summary
+
+The script prints a final summary.
+
+One result was:
+
+```text
+Summary
+Total URLs: 3
+Healthy: 1
+Unhealthy: 1
+Failed: 1
+```
+
+The total number of URLs is calculated with:
+
+```bash
+${#urls[@]}
+```
+
+### Default URL list
+
+The script contains a default array of URLs.
+
+It uses that list when no arguments are provided:
+
+```bash
+./DevOps/Scripts/check-urls.sh
+```
+
+### Script argument count
+
+```bash
+$#
+```
+
+`$#` contains the number of arguments passed to the script.
+
+The condition:
+
+```bash
+[[ "$#" -gt 0 ]]
+```
+
+checks whether one or more arguments were provided.
+
+`-gt` means greater than.
+
+### All script arguments
+
+```bash
+"$@"
+```
+
+`"$@"` represents all arguments passed to the script.
+
+Every argument remains separate.
+
+### Store arguments in an array
+
+```bash
+urls=("$@")
+```
+
+This stores all provided arguments in the `urls` array.
+
+It allows the script to check one URL, several URLs, or only a specific failing URL without editing the script.
+
+### Default and custom URLs
+
+The script uses this logic:
+
+```bash
+if [[ "$#" -gt 0 ]]; then
+    urls=("$@")
+else
+    urls=(
+        "https://example.com"
+        "https://example.com/not-existing-page"
+        "https://this-domain-should-not-exist-987654321.com"
+    )
+fi
+```
+
+Custom arguments are used when they are provided.
+
+The default array is used when the script receives no arguments.
+
+### Check custom URLs
+
+```bash
+./DevOps/Scripts/check-urls.sh \
+    https://example.com \
+    https://github.com
+```
+
+The result was:
+
+```text
+Total URLs: 2
+Healthy: 2
+Unhealthy: 0
+Failed: 0
+```
+
+### Overall script status
+
+I created:
+
+```bash
+overall_status=0
+```
+
+This variable stores the final result of all URL checks.
+
+### Overall exit codes
+
+The multi-URL script defines:
+
+- `0` — all URLs are healthy
+- `1` — at least one URL returned an unhealthy HTTP status
+- `2` — at least one technical check failed
+
+These are summary exit codes created for the multi-URL script.
+
+### All URLs healthy
+
+Two healthy URLs produced:
+
+```text
+Healthy: 2
+Unhealthy: 0
+Failed: 0
+Whole script exit code: 0
+```
+
+### Unhealthy HTTP result
+
+One healthy page and one `404` page produced:
+
+```text
+Healthy: 1
+Unhealthy: 1
+Failed: 0
+Whole script exit code: 1
+```
+
+### Technical failure
+
+One healthy page and one DNS failure produced:
+
+```text
+Healthy: 1
+Unhealthy: 0
+Failed: 1
+Whole script exit code: 2
+```
+
+The `check_url` function returned curl exit code `6`.
+
+The main script converted the technical failure into its overall exit code `2`.
+
+### Exit must be last
+
+I originally placed:
+
+```bash
+exit "$overall_status"
+```
+
+before the summary information.
+
+The script stopped immediately, so the remaining `echo` commands did not run.
+
+The correct position is at the end:
+
+```bash
+echo "Summary"
+echo "Total URLs: ${#urls[@]}"
+echo "Healthy: $healthy_count"
+echo "Unhealthy: $unhealthy_count"
+echo "Failed: $failed_count"
+
+exit "$overall_status"
+```
+
+### Multi-URL health-check script
+
+I created:
+
+`DevOps/Scripts/check-urls.sh`
+
+The script:
+
+1. defines a reusable `check_url` function;
+2. accepts custom URL arguments;
+3. uses default URLs when no arguments are provided;
+4. loops through every URL;
+5. saves each function exit code;
+6. counts healthy, unhealthy, and failed results;
+7. prints a summary;
+8. returns one overall exit code.
+
+### Basic loop and function workflow
+
+1. Store values in an array.
+2. Loop through every array element.
+3. Pass the current value to a function.
+4. Use local variables inside the function.
+5. Return a meaningful function status.
+6. Save `$?` immediately.
+7. Update the correct counter.
+8. Continue processing the remaining values.
+9. Print a final summary.
+10. Exit with one overall script status.
+
+### Important vocabulary
+
+- loop — цикл
+- iteration — ітерація, один прохід циклу
+- repeat — повторювати
+- array — масив
+- array element — елемент масиву
+- index — індекс
+- zero-indexed — індексація починається з нуля
+- function — функція
+- reusable — придатний для повторного використання
+- function argument — аргумент функції
+- local variable — локальна змінна
+- global variable — глобальна змінна
+- return — завершити функцію та повернути статус
+- exit — завершити весь скрипт
+- counter — лічильник
+- increment — збільшити на одиницю
+- summary — підсумок
+- default list — список за замовчуванням
+- custom argument — користувацький аргумент
+- overall status — загальний статус
+- syntax check — перевірка синтаксису
+- debug mode — режим налагодження
+- command not found — команду не знайдено
+- function scope — область видимості функції
+- technical failure — технічна помилка
+
+### My sentence
+
+I learned how to use Bash loops, arrays, functions, local variables, counters, script arguments, and exit codes to check multiple websites and produce one overall health result.
