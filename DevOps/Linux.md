@@ -3345,3 +3345,1317 @@ The script:
 ### My sentence
 
 I learned how to use Bash loops, arrays, functions, local variables, counters, script arguments, and exit codes to check multiple websites and produce one overall health result.
+## Lesson 14 — Linux processes and job control
+
+Today I learned how Linux represents running programs as processes, how to inspect process relationships, manage foreground and background jobs, send signals, monitor resource usage, and change process priority.
+
+### Linux process
+
+A process is a running instance of a program.
+
+For example, when I run:
+
+```bash
+curl https://example.com
+```
+
+Linux creates a `curl` process.
+
+When the command finishes, the process ends.
+
+### Process ID
+
+Every process has a unique process ID called a PID.
+
+```text
+PID — Process ID
+```
+
+A PID identifies one currently running process.
+
+PIDs can be reused after a process finishes.
+
+### Parent process ID
+
+A process can be started by another process.
+
+```text
+PPID — Parent Process ID
+```
+
+The process that starts another process is called the parent.
+
+The new process is called the child.
+
+Example:
+
+```text
+bash
+└── curl
+```
+
+Bash is the parent process, and curl is its child.
+
+### Current Bash PID
+
+Bash provides:
+
+```bash
+$$
+```
+
+`$$` contains the PID of the current shell.
+
+I ran:
+
+```bash
+echo "Current Bash PID: $$"
+```
+
+My result was:
+
+```text
+Current Bash PID: 5114
+```
+
+### Inspect the current Bash process
+
+```bash
+ps -p $$ -f
+```
+
+The command showed:
+
+```text
+UID    PID   PPID  C  STIME  TTY    TIME      CMD
+artem  5114  3327  0  14:44  pts/0  00:00:00 bash
+```
+
+### The ps command
+
+`ps` displays information about running processes.
+
+In:
+
+```bash
+ps -p $$ -f
+```
+
+the options mean:
+
+- `-p` — select a process by PID
+- `$$` — current Bash PID
+- `-f` — display the full output format
+
+### Important ps columns
+
+Important process columns include:
+
+- `UID` — user who owns the process
+- `PID` — process ID
+- `PPID` — parent process ID
+- `C` — CPU usage indicator
+- `STIME` — process start time
+- `TTY` — associated terminal
+- `TIME` — total CPU time used
+- `CMD` — command that started the process
+
+### CPU time and elapsed time
+
+The `TIME` column shows CPU time consumed by the process.
+
+It does not show how long the process has existed in real time.
+
+The `ETIME` or `ELAPSED` column shows the real elapsed time since the process started.
+
+### Current parent PID
+
+Bash provides:
+
+```bash
+$PPID
+```
+
+`$PPID` contains the PID of the current shell’s parent process.
+
+I ran:
+
+```bash
+echo "Current PID: $$"
+echo "Parent PID: $PPID"
+ps -p "$PPID" -f
+```
+
+My result was:
+
+```text
+Current PID: 5114
+Parent PID: 3327
+```
+
+The parent process was also Bash.
+
+### Nested Bash process
+
+My relationship was:
+
+```text
+bash, PID 3327
+└── bash, PID 5114
+```
+
+This means one Bash process started another Bash process.
+
+This can happen after running:
+
+```bash
+bash
+```
+
+inside an existing Bash shell.
+
+### Display several PIDs
+
+```bash
+ps -o pid,ppid,tty,stat,cmd -p "$$,$PPID"
+```
+
+The PID values must be passed as one comma-separated argument.
+
+This is correct:
+
+```bash
+-p "$$,$PPID"
+```
+
+This produced an error:
+
+```bash
+-p "$$", "$PPID"
+```
+
+The space caused `ps` to receive an improper PID list.
+
+### Custom ps output
+
+The `-o` option selects which columns to display.
+
+Example:
+
+```bash
+ps -o pid,ppid,tty,stat,cmd -p "$$,$PPID"
+```
+
+This displays:
+
+- PID
+- PPID
+- terminal
+- process state
+- command
+
+### Process state
+
+The `STAT` column shows the process state.
+
+Common states include:
+
+- `R` — running
+- `S` — sleeping or waiting
+- `T` — stopped
+- `Z` — zombie
+- `I` — idle kernel thread
+
+A Bash shell waiting for keyboard input normally has state:
+
+```text
+S
+```
+
+This is normal.
+
+### Additional STAT characters
+
+Process states can contain additional characters.
+
+Examples:
+
+- `s` — session leader
+- `l` — multithreaded process
+- `+` — foreground process group
+- `N` — increased niceness, lower priority
+- `<` — higher priority
+
+For example:
+
+```text
+Ss
+```
+
+means the process is sleeping and is also a session leader.
+
+### Process tree with ps
+
+```bash
+ps -f --forest -p "$$,$PPID"
+```
+
+The `--forest` option displays parent-child relationships visually.
+
+My result showed:
+
+```text
+bash
+ \_ bash
+```
+
+The `\_` symbol marks the child process.
+
+### Foreground process
+
+A foreground process controls the terminal.
+
+When a foreground command runs, the shell normally waits for it to finish.
+
+Example:
+
+```bash
+sleep 300
+```
+
+The terminal cannot accept another command until `sleep` finishes or is stopped.
+
+### Background process
+
+The ampersand starts a command in the background:
+
+```bash
+sleep 300 &
+```
+
+The shell immediately returns the command prompt.
+
+My output looked like:
+
+```text
+[1] 5761
+```
+
+This contained:
+
+- `[1]` — shell job number
+- `5761` — process PID
+
+### Job number and PID
+
+A job number belongs to the current shell’s job-control system.
+
+A PID belongs to the Linux process system.
+
+They are not the same thing.
+
+Example:
+
+```text
+Job number: 1
+PID: 5761
+```
+
+A job is referenced with `%`:
+
+```bash
+%1
+```
+
+A process is referenced by its PID:
+
+```bash
+5761
+```
+
+### Last background PID
+
+Bash provides:
+
+```bash
+$!
+```
+
+`$!` contains the PID of the most recently started background process.
+
+Example:
+
+```bash
+sleep 300 &
+sleep_pid=$!
+```
+
+This saves the new process PID in `sleep_pid`.
+
+### Display shell jobs
+
+```bash
+jobs -l
+```
+
+The `jobs` command displays jobs managed by the current shell.
+
+The `-l` option also displays their PIDs.
+
+My output looked like:
+
+```text
+[1]+ 5761 Running    sleep 300 &
+```
+
+### Current job marker
+
+In `jobs` output:
+
+```text
++
+```
+
+marks the current or default job.
+
+It is the job used when a job-control command does not specify another job.
+
+### Bring a job to the foreground
+
+```bash
+fg %1
+```
+
+`fg` moves job number `1` into the foreground.
+
+The terminal then waits for that job.
+
+### Stop a foreground job
+
+I pressed:
+
+```text
+Ctrl+Z
+```
+
+This paused the foreground process.
+
+The result was:
+
+```text
+[1]+ Stopped    sleep 300
+```
+
+`Ctrl+Z` does not terminate the process.
+
+It normally sends:
+
+```text
+SIGTSTP
+```
+
+### Resume a job in the background
+
+```bash
+bg %1
+```
+
+`bg` resumes stopped job number `1` in the background.
+
+My job state changed:
+
+```text
+Running → Stopped → Running
+```
+
+### Commands are case-sensitive
+
+I accidentally entered:
+
+```bash
+BG %1
+```
+
+Bash returned:
+
+```text
+BG: command not found
+```
+
+The correct command was:
+
+```bash
+bg %1
+```
+
+Linux and Bash commands are case-sensitive.
+
+### Terminate a job
+
+```bash
+kill %1
+```
+
+This sends a termination signal to job number `1`.
+
+Here `%1` means shell job number `1`, not Linux PID `1`.
+
+### Normal completion
+
+A background command that finishes naturally can show:
+
+```text
+Done
+```
+
+`Done` means the command completed normally.
+
+### Terminated process
+
+A process stopped by `SIGTERM` can show:
+
+```text
+Terminated
+```
+
+The difference is:
+
+```text
+Done        — process completed normally
+Terminated  — process ended because of a signal
+```
+
+### The kill command
+
+Despite its name, `kill` sends signals to processes.
+
+A plain command:
+
+```bash
+kill "$process_pid"
+```
+
+sends:
+
+```text
+SIGTERM
+```
+
+`SIGTERM` is signal number:
+
+```text
+15
+```
+
+### SIGTERM
+
+`SIGTERM` asks a process to terminate.
+
+A program can catch this signal and perform cleanup before exiting.
+
+It should normally be the first signal used to stop a process.
+
+### SIGKILL
+
+```bash
+kill -KILL "$process_pid"
+```
+
+sends:
+
+```text
+SIGKILL
+```
+
+`SIGKILL` is signal number:
+
+```text
+9
+```
+
+It stops a process immediately.
+
+A process cannot catch, handle, or ignore `SIGKILL`.
+
+`SIGKILL` should normally be used only when `SIGTERM` does not work.
+
+### Wait for a background process
+
+```bash
+wait "$process_pid"
+```
+
+`wait` waits for a background process to finish.
+
+It then returns that process’s exit status.
+
+The status must be saved immediately:
+
+```bash
+wait "$process_pid"
+process_status=$?
+```
+
+### Signal-related exit status
+
+When a process is terminated by a signal, Bash commonly reports:
+
+```text
+128 + signal number
+```
+
+For `SIGTERM`:
+
+```text
+128 + 15 = 143
+```
+
+My result was:
+
+```text
+Process exit status: 143
+```
+
+For `SIGKILL`:
+
+```text
+128 + 9 = 137
+```
+
+My result was:
+
+```text
+Process exit status: 137
+```
+
+### Wait for several processes
+
+I started two background processes:
+
+```bash
+sleep 500 &
+first_pid=$!
+
+sleep 600 &
+second_pid=$!
+```
+
+I terminated both:
+
+```bash
+kill "$first_pid" "$second_pid"
+```
+
+Then I waited for them separately:
+
+```bash
+wait "$first_pid"
+first_status=$?
+
+wait "$second_pid"
+second_status=$?
+```
+
+Both returned:
+
+```text
+143
+```
+
+Waiting separately allowed me to save each process status.
+
+### Find processes with pgrep
+
+```bash
+pgrep -a -x sleep
+```
+
+Options:
+
+- `pgrep` — search for processes
+- `-a` — show PID and command arguments
+- `-x` — require an exact process-name match
+
+My result showed:
+
+```text
+6009 sleep 500
+6010 sleep 600
+```
+
+### Find processes with ps
+
+```bash
+ps -C sleep -o pid,ppid,stat,etime,cmd
+```
+
+The `-C sleep` option selects processes whose command name is `sleep`.
+
+The output included:
+
+- PID
+- PPID
+- state
+- elapsed time
+- command
+
+### System-wide process list
+
+```bash
+ps aux
+```
+
+This displays processes from all users.
+
+Important columns include:
+
+- `USER` — process owner
+- `PID` — process ID
+- `%CPU` — CPU usage
+- `%MEM` — memory usage
+- `VSZ` — virtual memory size
+- `RSS` — physical memory currently used
+- `TTY` — controlling terminal
+- `STAT` — process state
+- `START` — process start time
+- `TIME` — CPU time
+- `COMMAND` — complete command
+
+### Virtual memory
+
+`VSZ` shows the total virtual address space used by a process.
+
+It is not the same as physical RAM currently occupied.
+
+### Resident memory
+
+`RSS` shows the physical RAM currently used by a process.
+
+It is normally measured in KiB.
+
+For example:
+
+```text
+920084 KiB
+```
+
+is approximately:
+
+```text
+898 MiB
+```
+
+### Sort ps output by CPU
+
+```bash
+ps aux --sort=-%cpu | head
+```
+
+The minus sign sorts in descending order.
+
+Processes with the highest CPU usage appear first.
+
+### Sort ps output by memory
+
+```bash
+ps aux --sort=-%mem | head
+```
+
+Processes with the highest memory usage appear first.
+
+### Cleaner ps output
+
+Long graphical-application arguments made `ps aux` difficult to read.
+
+I used:
+
+```bash
+ps -eo user,pid,ppid,pcpu,pmem,stat,comm --sort=-pcpu | head
+```
+
+and:
+
+```bash
+ps -eo user,pid,ppid,pcpu,pmem,rss,stat,comm --sort=-pmem | head
+```
+
+The `comm` field displays a short process name instead of the complete command line.
+
+### Full command and short command
+
+The difference is:
+
+- `cmd` or `args` — complete command and arguments
+- `comm` — short executable name
+
+Some values in `comm` can appear shortened.
+
+To see a full command for one PID:
+
+```bash
+ps -p PID -o pid,ppid,cmd
+```
+
+### Processes without a terminal
+
+Graphical processes often showed:
+
+```text
+TTY: ?
+```
+
+This means they do not have a controlling terminal.
+
+For example, Firefox launched from the desktop is not connected to my current terminal.
+
+### Multiple application processes
+
+Firefox and VS Code used several processes.
+
+A modern application may use separate processes for:
+
+- the main application
+- web pages or tabs
+- extensions
+- GPU work
+- utility services
+
+This improves isolation and stability.
+
+### Monitor processes with top
+
+```bash
+top
+```
+
+`top` displays a continuously updating process list.
+
+Unlike `ps`, which shows one snapshot, `top` refreshes automatically.
+
+### Top summary
+
+The top section includes:
+
+- system uptime
+- number of users
+- load average
+- process totals
+- CPU usage
+- memory usage
+- swap usage
+
+### Top process columns
+
+Important `top` columns include:
+
+- `PID`
+- `USER`
+- `PR`
+- `NI`
+- `VIRT`
+- `RES`
+- `SHR`
+- `S`
+- `%CPU`
+- `%MEM`
+- `TIME+`
+- `COMMAND`
+
+### Sort processes in top
+
+The following uppercase keys change the sorting field:
+
+```text
+P — sort by CPU usage
+M — sort by memory usage
+N — sort by PID
+T — sort by total CPU time
+```
+
+Uppercase `P` means:
+
+```text
+Shift+p
+```
+
+Lowercase `p` does not perform the same action.
+
+### Reverse top sorting
+
+```text
+R
+```
+
+reverses the current sorting direction.
+
+For example, after sorting by memory:
+
+```text
+M
+```
+
+pressing:
+
+```text
+R
+```
+
+changes highest-first sorting to lowest-first sorting.
+
+### Highlight the sorting column
+
+In `top`:
+
+```text
+x
+```
+
+highlights the current sorting column.
+
+This helps confirm whether the list is sorted by `%CPU`, `%MEM`, or another field.
+
+### Filter top by user
+
+The `U` command can filter the displayed process list by username.
+
+It filters processes; it does not sort them alphabetically by username.
+
+### Toggle command display in top
+
+Lowercase:
+
+```text
+c
+```
+
+switches between a short command name and the complete command line.
+
+It does not sort by CPU usage.
+
+### Quit top
+
+```text
+q
+```
+
+closes `top`.
+
+### Process niceness
+
+Linux processes can have a niceness value.
+
+The common range is:
+
+```text
+-20 — highest priority
+  0 — default niceness
+ 19 — lowest priority
+```
+
+A process with a larger positive niceness value is “nicer” to other processes because it receives a lower scheduling priority.
+
+### NI column
+
+```text
+NI
+```
+
+shows the process niceness value.
+
+A normal process commonly starts with:
+
+```text
+NI: 0
+```
+
+### PR or PRI column
+
+```text
+PR
+```
+
+or:
+
+```text
+PRI
+```
+
+shows the scheduler’s process priority representation.
+
+For ordinary process management, the `NI` column is usually easier to interpret.
+
+### Change an existing process priority
+
+```bash
+renice 10 -p "$sleep_pid"
+```
+
+`renice` changes the niceness of an existing process.
+
+My result was:
+
+```text
+old priority 0, new priority 10
+```
+
+The `NI` value changed:
+
+```text
+0 → 10
+```
+
+### Niceness process state
+
+After increasing the niceness value, the process state showed:
+
+```text
+SN
+```
+
+This means:
+
+- `S` — sleeping
+- `N` — lower priority because of increased niceness
+
+### User priority permissions
+
+As a regular user, I could increase the niceness value:
+
+```text
+0 → 10
+```
+
+This lowered the process priority.
+
+I then tried:
+
+```bash
+renice 0 -p "$sleep_pid"
+```
+
+The result was:
+
+```text
+Permission denied
+renice exit status: 1
+```
+
+Changing:
+
+```text
+10 → 0
+```
+
+would increase the process priority.
+
+A regular user normally cannot increase process priority without additional privileges.
+
+### Start a process with nice
+
+```bash
+nice -n 15 sleep 300 &
+```
+
+`nice` starts a new command with a selected niceness value.
+
+The command means:
+
+- `nice` — start a command with modified niceness
+- `-n 15` — use niceness value `15`
+- `sleep 300` — command to run
+- `&` — run it in the background
+
+My process started with:
+
+```text
+NI: 15
+STAT: SN
+```
+
+### Nice and renice
+
+The difference is:
+
+```text
+nice    — start a new process with modified niceness
+renice  — change the niceness of an existing process
+```
+
+### Process tree with pstree
+
+```bash
+pstree -p "$$"
+```
+
+`pstree` displays parent-child relationships as a tree.
+
+The `-p` option includes PIDs.
+
+My output showed:
+
+```text
+bash(5114)─┬─pstree(7024)
+           └─sleep(7022)
+```
+
+This meant:
+
+```text
+bash, PID 5114
+├── pstree, PID 7024
+└── sleep, PID 7022
+```
+
+### Why pstree displayed itself
+
+Bash created a `pstree` process to run the command.
+
+While `pstree` inspected the process tree, it could see itself as a child of Bash.
+
+After printing the output, the `pstree` process ended.
+
+### The proc filesystem
+
+Linux exposes process and kernel information through:
+
+```text
+/proc
+```
+
+`/proc` is a virtual filesystem generated by the kernel.
+
+It is not a normal directory of files permanently stored on disk.
+
+### Process directory in proc
+
+Every running process has a directory:
+
+```text
+/proc/PID
+```
+
+For my process with PID `7057`, Linux created:
+
+```text
+/proc/7057
+```
+
+I checked it with:
+
+```bash
+ls -ld "/proc/$sleep_pid"
+```
+
+### Process command line in proc
+
+```bash
+tr '\0' ' ' < "/proc/$sleep_pid/cmdline"
+echo
+```
+
+The `cmdline` file stores command arguments separated by null characters.
+
+`tr` replaced the null characters with spaces.
+
+My result was:
+
+```text
+sleep 300
+```
+
+### Process status in proc
+
+```bash
+grep -E '^(Name|State|Pid|PPid|Threads):' "/proc/$sleep_pid/status"
+```
+
+My result was:
+
+```text
+Name:    sleep
+State:   S (sleeping)
+Pid:     7057
+PPid:    5114
+Threads: 1
+```
+
+This showed:
+
+- process name
+- current state
+- process PID
+- parent PID
+- number of threads
+
+### Proc directory disappears
+
+After terminating the process, I ran:
+
+```bash
+ls -ld "/proc/$sleep_pid"
+```
+
+The result was:
+
+```text
+No such file or directory
+```
+
+When a process ends, its `/proc/PID` directory disappears.
+
+This shows that `/proc` represents the processes that currently exist.
+
+### Pause a process with SIGSTOP
+
+```bash
+kill -STOP "$sleep_pid"
+```
+
+This sends:
+
+```text
+SIGSTOP
+```
+
+The signal pauses the process.
+
+`SIGSTOP` cannot be caught, handled, or ignored by the process.
+
+### Stopped process state
+
+After `SIGSTOP`, my process showed:
+
+```text
+STAT: T
+State: T (stopped)
+jobs: Stopped (signal)
+```
+
+The `T` state means the process is stopped.
+
+### Resume a process with SIGCONT
+
+```bash
+kill -CONT "$sleep_pid"
+```
+
+This sends:
+
+```text
+SIGCONT
+```
+
+The signal resumes the existing process.
+
+It does not create a new process, and the PID remains the same.
+
+### Resumed process state
+
+After `SIGCONT`, the process showed:
+
+```text
+STAT: S
+State: S (sleeping)
+jobs: Running
+```
+
+The state transition was:
+
+```text
+S (sleeping)
+→ T (stopped)
+→ S (sleeping)
+→ terminated
+```
+
+### SIGTSTP and SIGSTOP
+
+Both can pause a process, but they are different.
+
+```text
+Ctrl+Z       → SIGTSTP
+kill -STOP   → SIGSTOP
+```
+
+`SIGTSTP` is a terminal stop request and can potentially be handled by a program.
+
+`SIGSTOP` is enforced by the kernel and cannot be handled or ignored.
+
+### SIGCONT
+
+`SIGCONT` resumes a stopped process.
+
+It works for a process stopped by either `SIGTSTP` or `SIGSTOP`.
+
+### Basic process-management workflow
+
+1. Start a process.
+2. Save its PID with `$!` when it runs in the background.
+3. Inspect it with `ps`, `pgrep`, `pstree`, `top`, or `/proc`.
+4. Check its parent PID and process state.
+5. Move jobs between foreground and background when necessary.
+6. Pause a process with `Ctrl+Z` or `SIGSTOP`.
+7. Resume it with `bg`, `fg`, or `SIGCONT`.
+8. Send `SIGTERM` for a normal shutdown.
+9. Use `SIGKILL` only when necessary.
+10. Use `wait` to collect the final exit status.
+
+### Important signal summary
+
+```text
+SIGTERM  15 — request normal termination
+SIGKILL   9 — terminate immediately
+SIGSTOP  19 — pause immediately on Linux
+SIGCONT  18 — resume a stopped process on Linux
+SIGTSTP  20 — terminal stop request on Linux
+```
+
+Signal numbers can differ on some Unix-like systems, so signal names are usually clearer in commands.
+
+### Important exit statuses
+
+```text
+0   — successful completion
+1   — general failure
+127 — command not found
+137 — process terminated by SIGKILL
+143 — process terminated by SIGTERM
+```
+
+### Important vocabulary
+
+- process — процес
+- running program — запущена програма
+- process ID — ідентифікатор процесу
+- parent process — батьківський процес
+- child process — дочірній процес
+- process tree — дерево процесів
+- foreground — передній план
+- background — фоновий режим
+- job — завдання оболонки
+- job number — номер завдання
+- process state — стан процесу
+- running — виконується
+- sleeping — очікує
+- stopped — призупинений
+- zombie — зомбі-процес
+- signal — сигнал
+- terminate — завершити
+- pause — призупинити
+- resume — продовжити
+- elapsed time — час, що минув
+- CPU time — процесорний час
+- memory usage — використання пам’яті
+- virtual memory — віртуальна пам’ять
+- resident memory — фізична пам’ять процесу
+- process priority — пріоритет процесу
+- niceness — значення поступливості процесу
+- permission denied — доступ заборонено
+- virtual filesystem — віртуальна файлова система
+- thread — потік виконання
+- cleanup — очищення ресурсів
+- exit status — код завершення
+
+### My sentence
+
+I learned how to inspect and manage Linux processes, work with foreground and background jobs, send process signals, monitor CPU and memory usage, change process niceness, and read process information from the `/proc` filesystem.
