@@ -4659,3 +4659,1376 @@ Signal numbers can differ on some Unix-like systems, so signal names are usually
 ### My sentence
 
 I learned how to inspect and manage Linux processes, work with foreground and background jobs, send process signals, monitor CPU and memory usage, change process niceness, and read process information from the `/proc` filesystem.
+## Lesson 15 — Linux users, groups, and ownership
+
+Today I learned how Linux identifies users and groups, how file ownership affects access, how shared directories work, and how to manage users and groups safely.
+
+### Linux users
+
+A Linux user is an account that can own files, run processes, and receive permissions.
+
+I checked my current username with:
+
+```bash
+whoami
+```
+
+My result was:
+
+```text
+artem
+```
+
+### User ID
+
+Every Linux user has a numeric identifier:
+
+```text
+UID — User ID
+```
+
+I ran:
+
+```bash
+id
+```
+
+My user information included:
+
+```text
+uid=1000(artem)
+```
+
+This means:
+
+```text
+Username: artem
+UID:      1000
+```
+
+Linux internally uses numeric IDs, while usernames provide readable names for people.
+
+### Group ID
+
+Every Linux group also has a numeric identifier:
+
+```text
+GID — Group ID
+```
+
+My primary group information was:
+
+```text
+gid=1000(artem)
+```
+
+This means:
+
+```text
+Group name: artem
+GID:        1000
+```
+
+UIDs and GIDs use separate namespaces.
+
+For example:
+
+```text
+UID 1000 → user artem
+GID 1000 → group artem
+```
+
+The same number does not mean that the user and group are the same object.
+
+### Primary group
+
+A user has one primary group.
+
+I checked mine with:
+
+```bash
+id -gn
+```
+
+My primary group was:
+
+```text
+artem
+```
+
+The primary group is normally assigned to newly created files unless another mechanism, such as directory setgid, changes the inherited group.
+
+### Supplementary groups
+
+A user can also belong to several supplementary groups.
+
+I checked all my groups with:
+
+```bash
+groups
+```
+
+and:
+
+```bash
+id -Gn
+```
+
+My groups included:
+
+```text
+artem adm cdrom sudo dip plugdev users lpadmin
+```
+
+Examples:
+
+- `sudo` — permits authorized administrative commands through `sudo`
+- `adm` — can provide access to some system logs
+- `plugdev` — access related to connected devices
+- `lpadmin` — printer administration
+- `users` — a general supplementary group
+
+### Numeric group IDs
+
+I ran:
+
+```bash
+id -G
+```
+
+My numeric group IDs were:
+
+```text
+1000 4 24 27 30 46 100 114
+```
+
+The group names and IDs appeared in the same order:
+
+```text
+artem   → 1000
+adm     → 4
+cdrom   → 24
+sudo    → 27
+dip     → 30
+plugdev → 46
+users   → 100
+lpadmin → 114
+```
+
+### The Linux user database
+
+I inspected my account with:
+
+```bash
+getent passwd "$USER"
+```
+
+My record was:
+
+```text
+artem:x:1000:1000:Artem:/home/artem:/bin/bash
+```
+
+The fields are separated by colons:
+
+```text
+username:password:UID:GID:comment:home:shell
+```
+
+My fields mean:
+
+```text
+artem          → username
+x              → protected password data is stored elsewhere
+1000           → UID
+1000           → primary GID
+Artem          → account description
+/home/artem    → home directory
+/bin/bash      → login shell
+```
+
+### The Linux group database
+
+I inspected my primary group with:
+
+```bash
+getent group "$(id -gn)"
+```
+
+The result was:
+
+```text
+artem:x:1000:
+```
+
+The group fields are:
+
+```text
+group_name:password:GID:explicit_members
+```
+
+The empty final field does not mean that I am not a member.
+
+My primary membership is defined by the GID in my user account record.
+
+### Explicit supplementary membership
+
+I checked the `users` group:
+
+```bash
+getent group users
+```
+
+The result was:
+
+```text
+users:x:100:artem
+```
+
+This means that `artem` is explicitly listed as a supplementary member of the `users` group.
+
+### File ownership
+
+Every file has:
+
+- one owner;
+- one assigned group;
+- permissions for the owner;
+- permissions for the group;
+- permissions for others.
+
+I created a temporary file:
+
+```bash
+touch /tmp/lesson15-file
+```
+
+I inspected it with:
+
+```bash
+ls -l /tmp/lesson15-file
+```
+
+The result was similar to:
+
+```text
+-rw-rw-r-- 1 artem artem 0 ... /tmp/lesson15-file
+```
+
+The first `artem` was the owner.
+
+The second `artem` was the group.
+
+### Inspect ownership with stat
+
+I used:
+
+```bash
+stat -c 'Owner: %U (%u), Group: %G (%g), Permissions: %A' \
+    /tmp/lesson15-file
+```
+
+The result was:
+
+```text
+Owner: artem (1000), Group: artem (1000), Permissions: -rw-rw-r--
+```
+
+Format symbols:
+
+```text
+%U → owner name
+%u → numeric UID
+%G → group name
+%g → numeric GID
+%A → symbolic permissions
+%a → numeric permissions
+%n → filename
+```
+
+### Permission categories
+
+The permissions:
+
+```text
+-rw-rw-r--
+```
+
+can be divided into:
+
+```text
+-  rw-  rw-  r--
+│   │    │    └── others
+│   │    └─────── group
+│   └──────────── owner
+└──────────────── file type
+```
+
+For this file:
+
+```text
+Owner:  read and write
+Group:  read and write
+Others: read only
+```
+
+### Change a file group with chgrp
+
+I changed the group from `artem` to `users`:
+
+```bash
+chgrp users /tmp/lesson15-file
+```
+
+The result changed from:
+
+```text
+artem:artem
+```
+
+to:
+
+```text
+artem:users
+```
+
+The owner and permissions remained unchanged.
+
+A regular user can normally assign a file to a group that the user belongs to.
+
+### Change only the group with chown
+
+I also used:
+
+```bash
+chown :users /tmp/lesson15-file
+```
+
+The empty owner field before the colon means that only the group is changed.
+
+These commands can have the same effect:
+
+```bash
+chgrp users FILE
+chown :users FILE
+```
+
+### Forms of chown
+
+```bash
+chown USER FILE
+```
+
+Changes the owner.
+
+```bash
+chown USER:GROUP FILE
+```
+
+Changes the owner and group.
+
+```bash
+chown :GROUP FILE
+```
+
+Changes only the group.
+
+### Changing ownership without privileges
+
+I tried:
+
+```bash
+chown root:root /tmp/lesson15-file
+```
+
+The command failed:
+
+```text
+Operation not permitted
+```
+
+The exit status was:
+
+```text
+1
+```
+
+A regular user normally cannot transfer file ownership to another user.
+
+### Administrative commands with sudo
+
+My user belongs to the `sudo` group.
+
+I changed the ownership with:
+
+```bash
+sudo chown root:root /tmp/lesson15-file
+```
+
+The result was:
+
+```text
+Owner: root (0)
+Group: root (0)
+```
+
+`sudo` runs one command with elevated privileges, normally as `root`.
+
+It does not permanently change the user of the current terminal.
+
+### Password entry with sudo
+
+When `sudo` requests a password, typed characters are not displayed.
+
+This is normal security behaviour.
+
+If the password is incorrect, `sudo` prints:
+
+```text
+Sorry, try again.
+```
+
+### Permission selection order
+
+Linux checks permissions in this order:
+
+1. If the process user is the file owner, use owner permissions.
+2. Otherwise, if the user belongs to the file group, use group permissions.
+3. Otherwise, use others permissions.
+
+Linux does not combine owner, group, and others permissions.
+
+### Access as others
+
+After the file became:
+
+```text
+root:root
+-rw-rw-r--
+```
+
+my user `artem` was neither the owner nor a member of the `root` group.
+
+Linux therefore used:
+
+```text
+others: r--
+```
+
+Reading was allowed, but writing failed:
+
+```text
+Permission denied
+Write exit status: 1
+```
+
+### Group-based write access
+
+I changed the ownership to:
+
+```bash
+sudo chown root:users /tmp/lesson15-file
+```
+
+The file became:
+
+```text
+Owner: root
+Group: users
+Permissions: -rw-rw-r--
+```
+
+Because `artem` belongs to `users`, Linux applied group permissions:
+
+```text
+rw-
+```
+
+The write succeeded:
+
+```text
+Write exit status: 0
+```
+
+This demonstrated:
+
+```text
+group membership + group write permission = shared write access
+```
+
+### Remove and restore group write permission
+
+I removed group write permission:
+
+```bash
+sudo chmod g-w /tmp/lesson15-file
+```
+
+The permissions became:
+
+```text
+-rw-r--r--
+```
+
+Writing failed because the group had only:
+
+```text
+r--
+```
+
+Reading still worked.
+
+I restored group write permission:
+
+```bash
+sudo chmod g+w /tmp/lesson15-file
+```
+
+The permissions returned to:
+
+```text
+-rw-rw-r--
+```
+
+### File and directory permissions are different
+
+I created a directory and a file:
+
+```bash
+mkdir /tmp/lesson15-dir
+touch /tmp/lesson15-dir/first-file
+```
+
+The directory had:
+
+```text
+drwxrwxr-x
+```
+
+For directories:
+
+```text
+r → list entry names
+w → create, delete, or rename entries
+x → traverse the directory and access objects by name
+```
+
+The `x` permission on a directory does not mean running the directory.
+
+### Directory execute permission
+
+I removed execute permission from the directory owner:
+
+```bash
+chmod u-x /tmp/lesson15-dir
+```
+
+The owner permissions became:
+
+```text
+rw-
+```
+
+I could see the filename because the directory still had `r`.
+
+However, I could not access the file itself:
+
+```text
+Permission denied
+```
+
+Reading the file failed even though the file had read permission because the directory lacked `x`.
+
+Creating another file also failed.
+
+Creating or deleting entries normally requires:
+
+```text
+w + x
+```
+
+on the directory.
+
+### Owner permissions do not fall back to group permissions
+
+I was both:
+
+- the directory owner;
+- a member of its group.
+
+However, because I matched the owner category, Linux used only the owner permissions.
+
+It did not add the group’s permissions.
+
+After restoring:
+
+```bash
+chmod u+x /tmp/lesson15-dir
+```
+
+access worked again.
+
+### Shared directories and setgid
+
+I created a shared directory:
+
+```bash
+sudo mkdir /tmp/lesson15-shared
+sudo chown root:users /tmp/lesson15-shared
+sudo chmod 2775 /tmp/lesson15-shared
+```
+
+Its permissions were:
+
+```text
+drwxrwsr-x
+```
+
+Its numeric mode was:
+
+```text
+2775
+```
+
+The leading `2` enables the setgid bit on the directory.
+
+### Setgid on a directory
+
+The `s` in:
+
+```text
+rws
+```
+
+means:
+
+- group execute permission is enabled;
+- the directory has setgid;
+- new files and subdirectories inherit the directory group.
+
+I created:
+
+```bash
+touch /tmp/lesson15-shared/artem-file
+```
+
+The file became:
+
+```text
+Owner: artem
+Group: users
+```
+
+The owner was the user who created it.
+
+The group was inherited from the setgid directory.
+
+### Setgid and umask are separate
+
+Setgid controls the inherited group.
+
+It does not automatically grant group write permission.
+
+```text
+setgid → determines the inherited group
+umask  → determines initial permission bits
+```
+
+### The sticky bit
+
+I inspected `/tmp`:
+
+```bash
+ls -ld /tmp
+```
+
+Its permissions were:
+
+```text
+drwxrwxrwt
+```
+
+Its numeric mode was:
+
+```text
+1777
+```
+
+The leading `1` enables the sticky bit.
+
+The final `t` shows that the sticky bit is active.
+
+### Sticky-bit behaviour
+
+A sticky shared directory allows many users to create files.
+
+However, a file can normally be deleted only by:
+
+- the file owner;
+- the directory owner;
+- `root`.
+
+I created a file owned by `root`:
+
+```bash
+sudo touch /tmp/lesson15-root-file
+sudo chmod 666 /tmp/lesson15-root-file
+```
+
+Although all users could modify the file contents, I could not delete it as `artem`:
+
+```text
+Operation not permitted
+rm exit status: 1
+```
+
+Deleting a file modifies the parent directory entry.
+
+The sticky bit prevented me from deleting a file owned by another user.
+
+I removed it with:
+
+```bash
+sudo rm /tmp/lesson15-root-file
+```
+
+### Operation not permitted and no such file
+
+These errors mean different things:
+
+```text
+Operation not permitted
+```
+
+The file exists, but the requested action is not allowed.
+
+```text
+No such file or directory
+```
+
+The path does not exist.
+
+### Default permissions and umask
+
+I checked my current mask:
+
+```bash
+umask
+umask -S
+```
+
+My result was:
+
+```text
+0002
+u=rwx,g=rwx,o=rx
+```
+
+Maximum initial permissions are:
+
+```text
+Regular file: 666 → rw-rw-rw-
+Directory:    777 → rwxrwxrwx
+```
+
+Regular files do not receive execute permission automatically.
+
+With `umask 0002`, new objects normally receive:
+
+```text
+File:      664 → -rw-rw-r--
+Directory: 775 → drwxrwxr-x
+```
+
+`umask` removes selected permission bits.
+
+It is a bit mask, not ordinary decimal subtraction.
+
+### Temporary umask with a subshell
+
+I safely tested another mask in a child shell:
+
+```bash
+(
+    umask 0027
+
+    mkdir "$test_dir"
+    touch "$test_dir/test-file"
+)
+```
+
+Parentheses run the commands in a subshell.
+
+The temporary `umask` did not change my current shell permanently.
+
+With:
+
+```text
+umask 0027
+```
+
+the results were:
+
+```text
+New file:      640 → -rw-r-----
+New directory: 750 → drwxr-x---
+```
+
+After the subshell ended, my main shell still had:
+
+```text
+0002
+```
+
+### The root account
+
+I inspected `root`:
+
+```bash
+getent passwd root
+id root
+```
+
+The account information included:
+
+```text
+Username:       root
+UID:            0
+Primary GID:    0
+Home directory: /root
+Login shell:    /bin/bash
+```
+
+`root` is the administrative superuser.
+
+Commands run as `root` must be used carefully.
+
+### The nobody account
+
+I inspected the restricted account:
+
+```bash
+getent passwd nobody
+id nobody
+```
+
+Its record included:
+
+```text
+Username:       nobody
+UID:            65534
+Primary group:  nogroup
+Home directory: /nonexistent
+Login shell:    /usr/sbin/nologin
+```
+
+The account does not have a normal home directory or interactive login shell.
+
+### Run one command as another user
+
+I ran:
+
+```bash
+sudo -u nobody whoami
+sudo -u nobody id
+```
+
+The results confirmed that only those commands ran as `nobody`.
+
+Afterwards:
+
+```bash
+whoami
+```
+
+still returned:
+
+```text
+artem
+```
+
+The form is:
+
+```bash
+sudo -u USER COMMAND
+```
+
+It runs one command as the selected user.
+
+### Account database files
+
+Linux traditionally stores user and group information in:
+
+```text
+/etc/passwd
+/etc/group
+/etc/shadow
+```
+
+I inspected their permissions:
+
+```bash
+ls -l /etc/passwd /etc/group /etc/shadow
+```
+
+On my system:
+
+```text
+/etc/passwd → readable by ordinary users
+/etc/group  → readable by ordinary users
+/etc/shadow → restricted
+```
+
+### The passwd file
+
+`/etc/passwd` stores public account information such as:
+
+- username;
+- UID;
+- primary GID;
+- home directory;
+- login shell.
+
+It does not contain the real password hash.
+
+The `x` field points to protected password information stored in `/etc/shadow`.
+
+### The group file
+
+`/etc/group` stores:
+
+- group names;
+- GIDs;
+- explicit supplementary members.
+
+My `users` record was:
+
+```text
+users:x:100:artem
+```
+
+### The shadow file
+
+My `/etc/shadow` permissions were:
+
+```text
+-rw-r----- root shadow
+```
+
+The owner `root` had read and write access.
+
+The group `shadow` had read access.
+
+Others had no access.
+
+As `artem`, reading it failed:
+
+```text
+Permission denied
+Shadow read status: 1
+```
+
+### Create a group
+
+I created a temporary group:
+
+```bash
+sudo groupadd lesson15team
+```
+
+The group received:
+
+```text
+GID: 1001
+```
+
+### Create a restricted user
+
+I created a temporary user:
+
+```bash
+sudo useradd \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    --gid lesson15team \
+    lesson15user
+```
+
+Options:
+
+```text
+--no-create-home
+```
+
+Does not create the home directory.
+
+The account record can still contain a home-directory path.
+
+```text
+--shell /usr/sbin/nologin
+```
+
+Prevents normal interactive login.
+
+```text
+--gid lesson15team
+```
+
+Sets `lesson15team` as the primary group.
+
+### Temporary user information
+
+The result was:
+
+```text
+uid=1001(lesson15user)
+gid=1001(lesson15team)
+groups=1001(lesson15team)
+```
+
+The user initially had no supplementary groups.
+
+### Add a supplementary group
+
+I added the user to `users`:
+
+```bash
+sudo usermod -aG users lesson15user
+```
+
+The result was:
+
+```text
+Primary group:       lesson15team
+Supplementary group: users
+```
+
+The `users` group record became:
+
+```text
+users:x:100:artem,lesson15user
+```
+
+### usermod -G and -aG
+
+```bash
+usermod -G GROUPS USER
+```
+
+Replaces the user’s supplementary-group list with the specified list.
+
+```bash
+usermod -aG GROUPS USER
+```
+
+Appends groups while preserving existing supplementary groups.
+
+The options mean:
+
+```text
+-a → append
+-G → supplementary groups
+-g → primary group
+```
+
+Neither `-G` nor `-aG` changes the primary group.
+
+To change the primary group:
+
+```bash
+usermod -g GROUP USER
+```
+
+Existing login sessions may need to be restarted before new group memberships become active.
+
+### Supplementary groups grant filesystem access
+
+The temporary user belonged to `users` as a supplementary member.
+
+It could create a file in:
+
+```text
+/tmp/lesson15-shared
+```
+
+because the directory group was `users` and group permissions allowed writing.
+
+The new file became:
+
+```text
+Owner: lesson15user
+Group: users
+```
+
+This proved that supplementary-group membership grants real filesystem access.
+
+### Collaboration between users
+
+The file initially had:
+
+```text
+-rw-r--r--
+```
+
+The group had only read permission.
+
+My first write attempt as `artem` failed:
+
+```text
+Permission denied
+Append status: 1
+```
+
+The file owner added group write permission:
+
+```bash
+sudo -u lesson15user chmod g+w FILE
+```
+
+The permissions became:
+
+```text
+-rw-rw-r--
+```
+
+After that, `artem` could append text because both users belonged to the `users` group.
+
+### Principle of least privilege
+
+The principle of least privilege means:
+
+> A user or process should receive only the permissions required to perform its task.
+
+Services should not normally run as `root` when they can run under a restricted service account.
+
+Separate users and groups reduce the damage caused by:
+
+- software bugs;
+- incorrect commands;
+- compromised applications;
+- accidental file modification.
+
+### Safe cleanup
+
+At the end of the lesson, I removed the temporary resources.
+
+I removed files and directories first:
+
+```bash
+sudo rm -rf /tmp/lesson15-shared
+rm -rf /tmp/lesson15-dir
+sudo rm -f /tmp/lesson15-file
+```
+
+Then I removed the temporary user:
+
+```bash
+sudo userdel lesson15user
+```
+
+Then I removed the temporary group:
+
+```bash
+sudo groupdel lesson15team
+```
+
+### Verify removed users and groups
+
+I checked:
+
+```bash
+id lesson15user
+```
+
+The result was:
+
+```text
+no such user
+```
+
+I checked:
+
+```bash
+getent group lesson15team
+```
+
+It returned no group record.
+
+The `users` group returned to:
+
+```text
+users:x:100:artem
+```
+
+All temporary filesystem paths were also removed.
+
+### Important command summary
+
+```bash
+whoami
+```
+
+Show the current username.
+
+```bash
+id
+```
+
+Show UID, primary GID, and groups.
+
+```bash
+id -gn
+```
+
+Show the primary group name.
+
+```bash
+id -Gn
+```
+
+Show all group names.
+
+```bash
+id -G
+```
+
+Show all numeric group IDs.
+
+```bash
+groups
+```
+
+Show the user’s groups.
+
+```bash
+getent passwd USER
+```
+
+Read a user-database entry.
+
+```bash
+getent group GROUP
+```
+
+Read a group-database entry.
+
+```bash
+chgrp GROUP FILE
+```
+
+Change a file’s group.
+
+```bash
+chown USER:GROUP FILE
+```
+
+Change a file’s owner and group.
+
+```bash
+chown :GROUP FILE
+```
+
+Change only the group.
+
+```bash
+chmod g+w FILE
+```
+
+Add group write permission.
+
+```bash
+chmod g-w FILE
+```
+
+Remove group write permission.
+
+```bash
+sudo -u USER COMMAND
+```
+
+Run one command as another user.
+
+```bash
+groupadd GROUP
+```
+
+Create a group.
+
+```bash
+useradd OPTIONS USER
+```
+
+Create a user.
+
+```bash
+usermod -aG GROUP USER
+```
+
+Append a supplementary group.
+
+```bash
+userdel USER
+```
+
+Delete a user.
+
+```bash
+groupdel GROUP
+```
+
+Delete a group.
+
+```bash
+umask
+```
+
+Display the current permission mask.
+
+### Important numeric modes
+
+```text
+664  → -rw-rw-r--
+640  → -rw-r-----
+644  → -rw-r--r--
+750  → drwxr-x---
+775  → drwxrwxr-x
+1777 → sticky shared directory
+2775 → setgid shared directory
+```
+
+### Important vocabulary
+
+- user — користувач
+- user account — обліковий запис користувача
+- user ID — ідентифікатор користувача
+- group — група
+- group ID — ідентифікатор групи
+- primary group — основна група
+- supplementary group — додаткова група
+- owner — власник
+- ownership — право власності
+- permissions — права доступу
+- read — читання
+- write — запис
+- execute — виконання
+- traverse a directory — проходити через директорію
+- access denied — доступ заборонено
+- operation not permitted — операція не дозволена
+- administrative privileges — адміністративні привілеї
+- superuser — суперкористувач
+- restricted account — обмежений обліковий запис
+- shared directory — спільна директорія
+- inherit — успадковувати
+- setgid bit — біт setgid
+- sticky bit — sticky bit
+- permission mask — маска прав доступу
+- least privilege — найменші привілеї
+- append — додати без заміни
+- replace — замінити
+- explicit member — явно вказаний учасник
+- login shell — оболонка входу
+- home directory — домашня директорія
+
+### My sentence
+
+I learned how Linux users and groups control file access, how ownership and permissions work, and how to create secure shared directories using group permissions, setgid, and the sticky bit.
