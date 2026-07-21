@@ -6032,3 +6032,1947 @@ Display the current permission mask.
 ### My sentence
 
 I learned how Linux users and groups control file access, how ownership and permissions work, and how to create secure shared directories using group permissions, setgid, and the sticky bit.
+
+## Lesson 16 — Linux package management with APT and dpkg
+
+Today I learned how Ubuntu manages software packages, repositories, dependencies, package metadata, upgrades, local `.deb` archives, package caches, and safe package removal.
+
+I also practised inspecting package-manager plans before making changes.
+
+### Operating system information
+
+I inspected the Linux distribution with:
+
+```bash
+cat /etc/os-release
+```
+
+My system reported:
+
+```text
+Ubuntu 24.04.4 LTS
+Version codename: noble
+ID_LIKE: debian
+```
+
+Ubuntu belongs to the Debian family, so it uses:
+
+- Debian `.deb` package archives;
+- the `dpkg` low-level package manager;
+- APT as its high-level package manager.
+
+`LTS` means Long-Term Support.
+
+### Kernel and machine architecture
+
+I inspected the kernel with:
+
+```bash
+uname -a
+```
+
+My system included:
+
+```text
+Kernel:       7.0.0-28-generic
+Architecture: x86_64
+```
+
+In package-manager terminology, the same 64-bit PC architecture is normally called:
+
+```text
+amd64
+```
+
+The Linux distribution and Linux kernel are different:
+
+```text
+Ubuntu distribution → the complete operating system
+Linux kernel         → the core that manages hardware and system resources
+```
+
+### Package-management commands
+
+I located the main package-management tools:
+
+```bash
+command -v apt
+command -v apt-get
+command -v dpkg
+command -v snap
+```
+
+The commands were located at:
+
+```text
+/usr/bin/apt
+/usr/bin/apt-get
+/usr/bin/dpkg
+/usr/bin/snap
+```
+
+Their roles are different:
+
+```text
+apt      → convenient high-level package management
+apt-get  → stable command interface often used in scripts
+dpkg     → low-level management of installed packages and local .deb files
+snap     → a separate package system managed by snapd
+```
+
+### Tool versions
+
+I checked:
+
+```bash
+apt --version
+dpkg --version | head -n 1
+snap version
+```
+
+The versions included:
+
+```text
+APT:  2.8.3
+dpkg: 1.22.6
+snap: 2.76
+```
+
+### What is a package?
+
+A package is an archive containing software and metadata.
+
+Package metadata can include:
+
+```text
+package name
+version
+architecture
+dependencies
+description
+maintainer
+installed size
+download size
+list of files
+configuration files
+```
+
+On Ubuntu and Debian systems, package archives normally use the `.deb` extension.
+
+### What is a repository?
+
+A repository is a server or storage location containing:
+
+- package archives;
+- package metadata;
+- version information;
+- dependency information;
+- cryptographic signatures.
+
+APT reads repository metadata to determine which packages and versions are available.
+
+### Repository configuration
+
+I inspected:
+
+```text
+/etc/apt/sources.list
+/etc/apt/sources.list.d/
+```
+
+Ubuntu 24.04 commonly uses files ending in:
+
+```text
+.sources
+```
+
+Older one-line repository definitions often use:
+
+```text
+.list
+```
+
+Backup files ending in `.save` or `.orig` may exist but are not necessarily active APT source files.
+
+### Repository fields
+
+The Ubuntu `.sources` files contained fields such as:
+
+```text
+Types
+URIs
+Suites
+Components
+Signed-By
+```
+
+They mean:
+
+```text
+Types       → package source type, such as deb
+URIs        → repository server addresses
+Suites      → release and update channels
+Components  → package sections
+Signed-By   → key used to verify repository signatures
+```
+
+### Configured repositories
+
+My system included repositories from:
+
+```text
+archive.ubuntu.com
+security.ubuntu.com
+esm.ubuntu.com
+downloads.claude.ai
+```
+
+The Claude Desktop repository is a third-party repository maintained by Anthropic.
+
+Third-party repositories must be treated carefully because they are maintained outside Ubuntu.
+
+### Ubuntu suites
+
+The configured Ubuntu suites included:
+
+```text
+noble
+noble-updates
+noble-security
+noble-backports
+```
+
+Their roles are:
+
+```text
+noble           → packages released with Ubuntu 24.04
+noble-updates   → regular bug fixes and updates
+noble-security  → security updates
+noble-backports → newer packages rebuilt for the current Ubuntu release
+```
+
+### Ubuntu repository components
+
+My system enabled:
+
+```text
+main
+restricted
+universe
+multiverse
+```
+
+Their general meanings are:
+
+```text
+main        → officially supported software
+restricted  → supported software with licensing restrictions
+universe    → community-maintained software
+multiverse  → software with additional legal or licensing restrictions
+```
+
+### Repository signatures
+
+Repository definitions used `Signed-By` to identify trusted keyring files.
+
+APT verifies repository signatures to help ensure that package metadata came from an expected source and was not modified in transit.
+
+A valid signature does not guarantee that every package is safe, but it verifies the repository’s declared origin.
+
+### APT package indexes
+
+APT stores downloaded repository indexes in:
+
+```text
+/var/lib/apt/lists
+```
+
+These indexes allow APT to:
+
+- search for packages;
+- compare versions;
+- calculate dependencies;
+- determine upgrade candidates.
+
+### Inspect package policy
+
+I ran:
+
+```bash
+apt-cache policy
+apt-cache policy bash curl
+```
+
+Important fields included:
+
+```text
+Installed
+Candidate
+Version table
+```
+
+They mean:
+
+```text
+Installed → version currently installed
+Candidate → version APT would currently choose
+Version table → available versions and their repository sources
+```
+
+### Package priorities
+
+APT displayed priorities such as:
+
+```text
+500
+100
+```
+
+In my output:
+
+```text
+500 → normal repository version
+100 → installed version or lower-priority backports source
+```
+
+APT priorities help decide which available package version should become the candidate.
+
+### Bash package policy
+
+For Bash, the installed and candidate versions matched:
+
+```text
+Installed: 5.2.21-2ubuntu4
+Candidate: 5.2.21-2ubuntu4
+```
+
+The `***` marker identified the installed version.
+
+### Curl package policy
+
+For Curl, the installed and candidate versions also matched:
+
+```text
+Installed: 8.5.0-2ubuntu10.11
+Candidate: 8.5.0-2ubuntu10.11
+```
+
+APT also showed an older version from the original `noble` repository.
+
+### Inspect repository metadata with apt show
+
+I ran:
+
+```bash
+apt show bash
+```
+
+Important fields included:
+
+```text
+Package
+Version
+Priority
+Essential
+Section
+Architecture
+Installed-Size
+Download-Size
+Depends
+Pre-Depends
+Recommends
+Suggests
+```
+
+### Dependency strengths
+
+Package relationships have different strengths:
+
+```text
+Pre-Depends → must be satisfied before package configuration begins
+Depends     → required for normal operation
+Recommends  → strongly useful and normally installed
+Suggests    → optional related software
+```
+
+For Bash, examples included:
+
+```text
+Pre-Depends: libc6, libtinfo6
+Depends:     base-files, debianutils
+Recommends:  bash-completion
+Suggests:    bash-doc
+```
+
+### Essential packages
+
+Bash reported:
+
+```text
+Essential: yes
+Priority: required
+```
+
+Essential system packages should not be removed as ordinary exercises because doing so could seriously damage the operating system.
+
+### apt show versus dpkg -s
+
+These commands can show similar information but use different data sources:
+
+```text
+apt show PACKAGE → repository metadata known to APT
+dpkg -s PACKAGE  → local installed-package database
+```
+
+`apt show` can describe an available package that is not installed.
+
+`dpkg -s` describes the local package record.
+
+### Query installed packages with dpkg-query
+
+I inspected Bash and Curl with:
+
+```bash
+dpkg-query -W \
+    -f='Package: ${binary:Package}\nVersion: ${Version}\nStatus: ${db:Status-Abbrev} ${Status}\nArchitecture: ${Architecture}\n\n' \
+    bash curl
+```
+
+Both packages showed:
+
+```text
+Status: ii install ok installed
+Architecture: amd64
+```
+
+### Package-state abbreviations
+
+Important `dpkg` package states include:
+
+```text
+ii → requested for installation and installed correctly
+rc → package removed, configuration files remain
+un → package not installed or unknown
+```
+
+The full healthy status is:
+
+```text
+install ok installed
+```
+
+### List files installed by a package
+
+I ran:
+
+```bash
+dpkg -L bash
+```
+
+Examples included:
+
+```text
+/etc/bash.bashrc
+/etc/skel/.bashrc
+/usr/bin/bash
+/usr/bin/bashbug
+/usr/share/doc/bash
+```
+
+`dpkg -L PACKAGE` answers:
+
+> Which files and directories are registered for this installed package?
+
+Directories such as `/usr/bin` can appear in many package file lists because many packages place files there.
+
+### Find which package owns a file
+
+I ran:
+
+```bash
+dpkg -S /usr/bin/bash
+```
+
+The result was:
+
+```text
+bash: /usr/bin/bash
+```
+
+`dpkg -S PATH` answers:
+
+> Which installed package registered this path?
+
+### Inspect installed package status
+
+I ran:
+
+```bash
+dpkg -s bash
+```
+
+The local record included:
+
+```text
+Package: bash
+Essential: yes
+Status: install ok installed
+Architecture: amd64
+Version: 5.2.21-2ubuntu4
+```
+
+### Configuration files
+
+The Bash package listed files under:
+
+```text
+Conffiles:
+```
+
+`dpkg` tracks package-managed configuration files specially.
+
+The checksums beside conffiles help determine whether a local administrator modified them.
+
+During an upgrade, `dpkg` may ask whether to keep a locally modified configuration file or install the package maintainer’s new version.
+
+### Search for packages
+
+I searched for the exact package name `tree`:
+
+```bash
+apt search '^tree$'
+```
+
+The regular-expression anchors mean:
+
+```text
+^ → beginning
+$ → end
+```
+
+Therefore:
+
+```text
+^tree$ → exactly the package named tree
+```
+
+APT found:
+
+```text
+tree 2.1.1-2ubuntu3.24.04.2
+```
+
+The package belonged to:
+
+```text
+universe/utils
+```
+
+### Check whether a package is installed
+
+I ran:
+
+```bash
+dpkg-query -W tree
+```
+
+Before installation, the command returned:
+
+```text
+no packages found matching tree
+Exit status: 1
+```
+
+The package existed in the repository but was not installed.
+
+### Simulate package installation
+
+Before changing the system, I ran:
+
+```bash
+apt install --simulate tree
+```
+
+A simulation:
+
+- displays the planned actions;
+- shows dependencies;
+- reports packages that would be installed or removed;
+- does not download or install packages;
+- does not change the package database.
+
+The simulation planned:
+
+```text
+0 upgraded
+1 newly installed
+0 to remove
+1 not upgraded
+```
+
+The package was not really installed until I ran the non-simulated command.
+
+### Simulation limitations
+
+APT warns that locking is disabled during simulation.
+
+The real system state could change between simulation and execution, so a simulation is valuable but not an absolute guarantee.
+
+### apt update
+
+I refreshed package metadata with:
+
+```bash
+sudo apt update
+```
+
+`apt update`:
+
+- contacts configured repositories;
+- downloads current repository metadata;
+- updates local package indexes;
+- does not upgrade installed applications.
+
+Important distinction:
+
+```text
+apt update  → refresh available-package information
+apt upgrade → install available package upgrades
+```
+
+### Upgradable packages
+
+After updating the indexes, APT reported one available upgrade:
+
+```text
+snapd 2.75.2+ubuntu24.04 → 2.76+ubuntu24.04
+```
+
+I did not perform this unrelated upgrade during the lesson.
+
+### Install a package with APT
+
+I installed `tree` with:
+
+```bash
+sudo apt install tree
+```
+
+APT displayed stages such as:
+
+```text
+Selecting previously unselected package
+Preparing to unpack
+Unpacking
+Setting up
+Processing triggers
+```
+
+The installation completed successfully.
+
+### Installation triggers
+
+APT processed a trigger for:
+
+```text
+man-db
+```
+
+Package triggers allow one package to notify another subsystem that related data should be updated.
+
+Installing a manual page can cause the manual-page database to be refreshed.
+
+### Verify an installation
+
+I verified `tree` with:
+
+```bash
+command -v tree
+tree --version
+dpkg-query -W tree
+apt-cache policy tree
+```
+
+The results included:
+
+```text
+Executable:   /usr/bin/tree
+Version:      2.1.1-2ubuntu3.24.04.2
+Status:       install ok installed
+Architecture: amd64
+```
+
+The installed and candidate versions matched.
+
+### Manual package classification
+
+I checked:
+
+```bash
+apt-mark showmanual | grep -x tree
+```
+
+APT classified `tree` as manually installed because I explicitly requested it.
+
+```text
+manual package    → explicitly requested
+automatic package → installed as a dependency
+```
+
+### Use the installed command
+
+I ran:
+
+```bash
+tree -L 2 ~/Projects/Learning-Journey
+```
+
+The `-L 2` option limited recursion to two directory levels.
+
+The output reported:
+
+```text
+8 directories, 15 files
+```
+
+### APT history log
+
+High-level APT actions are recorded in:
+
+```text
+/var/log/apt/history.log
+```
+
+I inspected it with:
+
+```bash
+sudo tail -n 25 /var/log/apt/history.log
+```
+
+The `tree` installation entry included:
+
+```text
+Commandline: apt install tree
+Requested-By: artem (1000)
+Install: tree:amd64 (2.1.1-2ubuntu3.24.04.2)
+```
+
+The log records:
+
+- command line;
+- requesting user;
+- package action;
+- version;
+- start and end times.
+
+### Unattended upgrades
+
+Other history entries used:
+
+```text
+/usr/bin/unattended-upgrade
+```
+
+Ubuntu can automatically apply selected updates through its unattended-upgrade mechanism.
+
+### dpkg log
+
+Low-level package transitions are recorded in:
+
+```text
+/var/log/dpkg.log
+```
+
+The installation passed through states such as:
+
+```text
+half-installed
+unpacked
+half-configured
+installed
+```
+
+Temporary intermediate states are normal during package installation.
+
+A problem would exist if a package remained permanently in an incomplete state.
+
+### Inspect files installed by tree
+
+I ran:
+
+```bash
+dpkg -L tree
+```
+
+The package installed files including:
+
+```text
+/usr/bin/tree
+/usr/share/doc/tree/README.gz
+/usr/share/doc/tree/copyright
+/usr/share/man/man1/tree.1.gz
+```
+
+### Inspect the executable
+
+I ran:
+
+```bash
+ls -lh /usr/bin/tree
+file /usr/bin/tree
+```
+
+The executable was approximately:
+
+```text
+84 KiB
+Owner: root
+Group: root
+Permissions: -rwxr-xr-x
+```
+
+The `file` command reported terms such as:
+
+```text
+ELF 64-bit
+x86-64
+PIE executable
+dynamically linked
+stripped
+```
+
+### Executable terminology
+
+```text
+ELF                → standard executable format used by Linux
+64-bit x86-64      → built for the amd64 architecture
+PIE                → position-independent executable
+dynamically linked → uses shared libraries
+stripped           → unnecessary debugging symbols were removed
+```
+
+### Package configuration files for tree
+
+I checked:
+
+```bash
+dpkg-query -W \
+    -f='Conffiles:\n${Conffiles}\n' \
+    tree
+```
+
+The result contained no registered conffiles.
+
+This meant that the difference between removing and purging `tree` was very small.
+
+### Runtime library dependencies
+
+I inspected the executable with:
+
+```bash
+ldd /usr/bin/tree
+```
+
+Important results included:
+
+```text
+libc.so.6
+ld-linux-x86-64.so.2
+linux-vdso.so.1
+```
+
+Their roles are:
+
+```text
+libc.so.6            → GNU C library used by many Linux programs
+ld-linux...          → dynamic loader
+linux-vdso.so.1      → virtual kernel-supplied library interface
+```
+
+### Dynamic linking
+
+A dynamically linked executable does not contain every required library function internally.
+
+The dynamic loader locates and loads required shared libraries when the program starts.
+
+### Merged /usr filesystem
+
+`ldd` displayed a compatibility path:
+
+```text
+/lib/x86_64-linux-gnu/libc.so.6
+```
+
+A direct `dpkg -S` lookup did not find that exact path.
+
+I resolved the canonical path with:
+
+```bash
+readlink -f PATH
+```
+
+Modern Ubuntu uses a merged `/usr` layout in which paths such as:
+
+```text
+/lib
+/bin
+/sbin
+```
+
+are compatibility links to locations under:
+
+```text
+/usr/lib
+/usr/bin
+/usr/sbin
+```
+
+After resolving the canonical path, `dpkg -S` identified the owning `libc6` package.
+
+### dpkg diversions
+
+The dynamic loader lookup also showed a `dpkg` diversion related to the merged `/usr` transition.
+
+A diversion tells `dpkg` that a path has been redirected so another file can safely occupy or manage its original location.
+
+### Download a package without installing it
+
+I created a temporary directory with:
+
+```bash
+mktemp -d /tmp/lesson16-package-XXXXXX
+```
+
+Then I downloaded the package archive:
+
+```bash
+apt download tree
+```
+
+This downloaded a `.deb` file without installing it.
+
+The archive was owned by my normal user because `apt download` did not run with `sudo`.
+
+### Inspect a .deb archive
+
+I inspected package metadata with:
+
+```bash
+dpkg-deb --info package.deb
+```
+
+and:
+
+```bash
+dpkg-deb --field \
+    package.deb \
+    Package Version Architecture Depends
+```
+
+Important fields included:
+
+```text
+Package: tree
+Version: 2.1.1-2ubuntu3.24.04.2
+Architecture: amd64
+Depends: libc6 (>= 2.38)
+```
+
+### Inspect files inside a .deb
+
+I ran:
+
+```bash
+dpkg-deb --contents package.deb
+```
+
+This displayed archive paths such as:
+
+```text
+/usr/bin/tree
+/usr/share/doc/tree/
+usr/share/man/man1/tree.1.gz
+```
+
+Important distinction:
+
+```text
+dpkg-deb --contents PACKAGE.deb → files inside an archive
+dpkg -L PACKAGE                 → files registered for an installed package
+```
+
+### Package control archive
+
+The `.deb` control information included files such as:
+
+```text
+control
+md5sums
+```
+
+`control` stores package metadata.
+
+`md5sums` stores checksums for packaged files.
+
+### Archive ownership
+
+The `.deb` archive recorded installed system files as:
+
+```text
+root:root
+```
+
+When `dpkg` installs the package with administrative privileges, it applies the ownership and permissions stored in the archive.
+
+### Remove versus purge
+
+I simulated:
+
+```bash
+apt remove --simulate tree
+apt purge --simulate tree
+```
+
+The difference is:
+
+```text
+remove → remove program files but normally preserve conffiles
+purge  → remove program files and package-managed configuration
+```
+
+Because `tree` had no registered conffiles, the practical difference was minimal.
+
+### Remove tree with APT
+
+I removed the package with:
+
+```bash
+sudo apt remove tree
+```
+
+APT freed approximately:
+
+```text
+111 kB
+```
+
+After removal:
+
+```text
+Installed: (none)
+Candidate: 2.1.1-2ubuntu3.24.04.2
+```
+
+The package was absent from the system but remained available from the repositories.
+
+### Purge after removal
+
+I then ran:
+
+```bash
+sudo apt purge tree
+```
+
+APT reported that the package was not installed.
+
+The package had no remaining configuration files to purge.
+
+### Bash command-path cache
+
+After removal, this command temporarily returned:
+
+```text
+/usr/bin/tree
+```
+
+even though the executable no longer existed:
+
+```bash
+command -v tree
+```
+
+Bash had cached the command path in its command hash table.
+
+This was not related to the Git repository or current directory.
+
+### Inspect and clear the Bash command cache
+
+Useful Bash commands include:
+
+```bash
+hash
+hash -t COMMAND
+hash -d COMMAND
+hash -r
+```
+
+Their meanings are:
+
+```text
+hash             → display cached command paths
+hash -t COMMAND  → show one cached path
+hash -d COMMAND  → remove one cached entry
+hash -r          → clear the complete command cache
+```
+
+After removing `tree`, trying the stale path returned exit status:
+
+```text
+127
+```
+
+After:
+
+```bash
+hash -r
+```
+
+`command -v tree` correctly returned status `1`.
+
+### Package-system health checks
+
+I ran:
+
+```bash
+dpkg --audit
+```
+
+A healthy result produced no warning and exit status:
+
+```text
+0
+```
+
+I also ran:
+
+```bash
+sudo apt-get check
+```
+
+This verified dependency consistency and returned:
+
+```text
+0
+```
+
+Without `sudo`, `apt-get check` could not acquire the frontend package lock and returned status `100`.
+
+That error was caused by insufficient privileges, not broken dependencies.
+
+### Simulate autoremove
+
+I inspected:
+
+```bash
+apt autoremove --simulate
+```
+
+APT proposed removing:
+
+```text
+libfwupd2
+libwoff1
+nvidia-firmware-580-580.95.05
+```
+
+Nothing was removed because this was only a simulation.
+
+### What autoremove means
+
+`autoremove` removes installed packages that:
+
+- were marked automatic;
+- were originally installed as dependencies;
+- are no longer required by a manually installed package.
+
+An automatic classification does not automatically prove that removal is desirable.
+
+Critical packages must be investigated first.
+
+### Investigate automatic packages
+
+I confirmed the candidates with:
+
+```bash
+apt-mark showauto
+```
+
+All three candidates were marked automatic.
+
+I also inspected:
+
+- installed versions;
+- descriptions;
+- reverse dependencies;
+- current package dependency fields;
+- related NVIDIA packages;
+- the active NVIDIA driver.
+
+### Dependency versus reverse dependency
+
+```text
+dependency         → a package required by the current package
+reverse dependency → another package that requires the current package
+```
+
+I used:
+
+```bash
+apt-cache rdepends --installed PACKAGE
+```
+
+for reverse-dependency inspection.
+
+I also inspected exact installed package records with:
+
+```bash
+dpkg-query -W -f='${Depends}\n' PACKAGE
+```
+
+Installed package metadata is more useful than a general repository relationship when checking the current system state.
+
+### libfwupd2 investigation
+
+The current installed `fwupd` package depended on:
+
+```text
+libfwupd3
+```
+
+It did not depend on the older:
+
+```text
+libfwupd2
+```
+
+APT therefore classified `libfwupd2` as no longer required.
+
+### libwoff1 investigation
+
+Current installed WebKit package records did not list `libwoff1` in their required dependencies.
+
+APT classified it as an orphaned automatic dependency.
+
+### NVIDIA package investigation
+
+The installed packages included:
+
+```text
+nvidia-driver-550
+nvidia-driver-580
+nvidia-firmware-580-580.159.03
+nvidia-firmware-580-580.95.05
+nvidia-utils-580
+```
+
+I found:
+
+```text
+nvidia-driver-550
+Depends: nvidia-driver-580
+```
+
+This showed that `nvidia-driver-550` was a transitional package leading to the current 580 driver stack.
+
+### Current and old NVIDIA firmware
+
+Two firmware revisions were installed:
+
+```text
+580.159.03 → current revision
+580.95.05  → older revision
+```
+
+The current driver depended on the `580.159.03` package.
+
+The older `580.95.05` package had no displayed installed reverse dependencies and was proposed for automatic removal.
+
+I still did not remove it during the lesson.
+
+### Verify the active NVIDIA driver
+
+I ran:
+
+```bash
+nvidia-smi \
+    --query-gpu=name,driver_version \
+    --format=csv,noheader
+```
+
+The result was:
+
+```text
+NVIDIA GeForce GTX 1060 3GB, 580.159.03
+```
+
+Exit status was:
+
+```text
+0
+```
+
+The running driver matched the current version-580 package stack.
+
+### Safe autoremove procedure
+
+A safe process is:
+
+```text
+1. Simulate autoremove.
+2. Inspect every proposed package.
+3. Check dependencies and reverse dependencies.
+4. Pay special attention to drivers, firmware, kernels, and services.
+5. Verify currently active versions.
+6. Run the real operation only after confirming safety.
+```
+
+I did not run a real `autoremove`.
+
+### Held packages
+
+I checked:
+
+```bash
+apt-mark showhold
+```
+
+The command succeeded but printed no package names.
+
+This meant no packages were held.
+
+A package hold prevents normal automatic upgrading of that package.
+
+### Phased updates
+
+The available `snapd` version showed:
+
+```text
+2.76+ubuntu24.04
+phased 40%
+```
+
+Ubuntu was releasing the update gradually.
+
+The normal upgrade simulation reported:
+
+```text
+The following upgrades have been deferred due to phasing:
+  snapd
+```
+
+`deferred` means postponed or delayed.
+
+### Why phased updates exist
+
+A phased update is initially delivered to only part of the user population.
+
+This gives maintainers time to detect problems before sending the update to every system.
+
+The `snapd` package was not deferred because of:
+
+- broken dependencies;
+- a package hold;
+- a package-manager error.
+
+It was deferred because of the phased rollout.
+
+### Simulate normal and full upgrades
+
+I ran:
+
+```bash
+apt upgrade --simulate
+apt full-upgrade --simulate
+```
+
+Both deferred `snapd` because of phasing.
+
+The general difference is:
+
+```text
+apt upgrade      → upgrades packages while normally avoiding removals
+apt full-upgrade → may install or remove packages to resolve dependency changes
+```
+
+Both plans should be inspected carefully on servers and production systems.
+
+### Explicit package upgrade simulation
+
+I ran:
+
+```bash
+apt install --simulate --only-upgrade snapd
+```
+
+Because I explicitly requested the installed package, APT included the phased candidate in the plan.
+
+`--only-upgrade` means:
+
+> Upgrade the package only if it is already installed; do not install it as a new package.
+
+### Temporarily include phased updates
+
+I simulated:
+
+```bash
+apt-get \
+    --simulate \
+    -o APT::Get::Always-Include-Phased-Updates=true \
+    upgrade
+```
+
+This temporarily included the phased `snapd` update.
+
+The `-o` setting affected only that command and did not permanently modify APT configuration.
+
+### Package architectures
+
+I checked:
+
+```bash
+dpkg --print-architecture
+dpkg --print-foreign-architectures
+```
+
+The results were:
+
+```text
+Main architecture:    amd64
+Foreign architecture: i386
+```
+
+`i386` support allows selected 32-bit packages and libraries to coexist on the 64-bit system.
+
+### APT storage usage
+
+I inspected:
+
+```text
+/var/lib/apt/lists
+/var/cache/apt/archives
+```
+
+Observed usage was approximately:
+
+```text
+/var/lib/apt/lists      → 273 MB
+/var/cache/apt/archives → 487 MB
+```
+
+The package archive cache contained:
+
+```text
+218 .deb files
+```
+
+### APT archive cache
+
+Downloaded package archives may be retained in:
+
+```text
+/var/cache/apt/archives
+```
+
+A cached `.deb` archive is not necessarily currently installed.
+
+The cache contained large kernel and NVIDIA package archives.
+
+### tree archive cache check
+
+I searched for:
+
+```text
+tree_*.deb
+```
+
+in the APT archive cache.
+
+The exact count was:
+
+```text
+0
+```
+
+`find` can return status `0` even if it finds no matching files, because status `0` only means that the search completed successfully.
+
+Counting results with `wc -l` gave the reliable answer.
+
+### autoremove, autoclean, and clean
+
+These commands perform different tasks:
+
+```text
+autoremove → remove installed unused automatic dependencies
+autoclean  → remove obsolete cached .deb archives
+clean      → remove all cached .deb archives
+```
+
+`autoclean` and `clean` do not uninstall software.
+
+### Simulate autoclean
+
+I ran:
+
+```bash
+sudo apt-get --simulate autoclean
+```
+
+APT displayed obsolete cached archives that a real `autoclean` would remove.
+
+No files were deleted because this was a simulation.
+
+### Simulate clean
+
+I ran:
+
+```bash
+sudo apt-get --simulate clean
+```
+
+A real `clean` would clear retained `.deb` archives and generated package cache files.
+
+It would not remove installed packages.
+
+No real cache cleanup was performed during the lesson.
+
+### Install a local .deb with dpkg
+
+I downloaded `tree` again and installed the local archive with:
+
+```bash
+sudo dpkg -i ./tree_2.1.1-2ubuntu3.24.04.2_amd64.deb
+```
+
+The result included:
+
+```text
+Unpacking tree
+Setting up tree
+dpkg installation status: 0
+```
+
+The installation succeeded because the required `libc6` dependency was already installed.
+
+### apt install versus dpkg -i
+
+```text
+apt install PACKAGE
+```
+
+can:
+
+- find packages in repositories;
+- download packages;
+- calculate dependencies;
+- install missing dependencies.
+
+```text
+dpkg -i PACKAGE.deb
+```
+
+installs the specified local archive but does not download missing dependencies.
+
+### Repair missing dependencies
+
+If `dpkg -i` leaves a package unconfigured because dependencies are missing, APT can often repair the situation with:
+
+```bash
+sudo apt-get install --fix-broken
+```
+
+APT can then download and configure the required dependency packages.
+
+A local archive can also be installed through APT with:
+
+```bash
+sudo apt install ./package.deb
+```
+
+This allows APT to resolve dependencies.
+
+### Toggle manual and automatic marks
+
+I experimented with:
+
+```bash
+sudo apt-mark auto tree
+```
+
+After marking `tree` automatic, the autoremove simulation added it to the proposed removal list because no installed package required it.
+
+I restored the mark with:
+
+```bash
+sudo apt-mark manual tree
+```
+
+This demonstrated that APT’s manual and automatic marks directly affect autoremove decisions.
+
+### Remove with low-level dpkg
+
+I removed `tree` directly with:
+
+```bash
+sudo dpkg --remove tree
+```
+
+The result was:
+
+```text
+dpkg removal status: 0
+```
+
+Afterwards:
+
+```text
+Installed: (none)
+Candidate: 2.1.1-2ubuntu3.24.04.2
+```
+
+The package was removed locally but remained available from the repositories.
+
+### Safe temporary cleanup
+
+I created temporary directories using `mktemp`.
+
+After each exercise, I returned to the repository and removed only the known temporary directory stored in the variable:
+
+```bash
+rm -rf "$package_dir"
+```
+
+I verified cleanup with:
+
+```bash
+test ! -e "$package_dir"
+```
+
+The result was:
+
+```text
+Temporary-directory cleanup status: 0
+```
+
+### Final package verification
+
+At the end of the lesson:
+
+```text
+Final tree command status: 1
+Executable absent status: 0
+```
+
+This confirmed:
+
+- the `tree` command was no longer available;
+- `/usr/bin/tree` did not exist.
+
+### Final package-system health
+
+The final checks returned:
+
+```text
+Final dpkg audit status: 0
+Final APT dependency status: 0
+```
+
+The package database was healthy, and no broken dependencies remained.
+
+### Final unchanged operations
+
+During the lesson, I did not perform:
+
+- a real `apt autoremove`;
+- a real `apt clean`;
+- a real `apt autoclean`;
+- the unrelated `snapd` upgrade;
+- any forced phased update.
+
+The potentially destructive operations were inspected only through simulations.
+
+### Final Git verification
+
+I checked:
+
+```bash
+git status --short
+git log -1 --oneline
+```
+
+Before adding these notes, the working tree was clean.
+
+The latest previous commit was:
+
+```text
+a1cfa3f Complete Linux users, groups, and ownership lesson
+```
+
+### Important command summary
+
+```bash
+cat /etc/os-release
+```
+
+Show distribution information.
+
+```bash
+uname -a
+```
+
+Show kernel and machine information.
+
+```bash
+apt update
+```
+
+Refresh local repository indexes.
+
+```bash
+apt upgrade
+```
+
+Install available package upgrades.
+
+```bash
+apt full-upgrade
+```
+
+Upgrade packages and allow dependency-related removals when necessary.
+
+```bash
+apt search PATTERN
+```
+
+Search package names and descriptions.
+
+```bash
+apt show PACKAGE
+```
+
+Show repository metadata.
+
+```bash
+apt-cache policy PACKAGE
+```
+
+Show installed, candidate, and available versions.
+
+```bash
+apt install --simulate PACKAGE
+```
+
+Display an installation plan without applying it.
+
+```bash
+apt install PACKAGE
+```
+
+Install a package through APT.
+
+```bash
+apt install --only-upgrade PACKAGE
+```
+
+Upgrade the package only if it is already installed.
+
+```bash
+apt download PACKAGE
+```
+
+Download a `.deb` archive without installing it.
+
+```bash
+apt remove PACKAGE
+```
+
+Remove program files while normally preserving conffiles.
+
+```bash
+apt purge PACKAGE
+```
+
+Remove program files and package-managed configuration.
+
+```bash
+apt autoremove --simulate
+```
+
+Inspect unused automatic dependencies without removing them.
+
+```bash
+apt-get --simulate autoclean
+```
+
+Inspect obsolete cached archives.
+
+```bash
+apt-get --simulate clean
+```
+
+Inspect a complete archive-cache cleanup.
+
+```bash
+apt-mark showmanual
+```
+
+List manually installed packages.
+
+```bash
+apt-mark showauto
+```
+
+List automatically installed packages.
+
+```bash
+apt-mark manual PACKAGE
+```
+
+Mark a package as manually installed.
+
+```bash
+apt-mark auto PACKAGE
+```
+
+Mark a package as automatically installed.
+
+```bash
+apt-mark showhold
+```
+
+List held packages.
+
+```bash
+dpkg-query -W PACKAGE
+```
+
+Query an installed package record.
+
+```bash
+dpkg -s PACKAGE
+```
+
+Display installed package status.
+
+```bash
+dpkg -L PACKAGE
+```
+
+List files registered for an installed package.
+
+```bash
+dpkg -S PATH
+```
+
+Find which installed package owns a path.
+
+```bash
+dpkg -i PACKAGE.deb
+```
+
+Install a local `.deb` archive.
+
+```bash
+dpkg --remove PACKAGE
+```
+
+Remove a package using low-level `dpkg`.
+
+```bash
+dpkg --audit
+```
+
+Check for incomplete package installations.
+
+```bash
+dpkg-deb --info PACKAGE.deb
+```
+
+Inspect `.deb` package metadata.
+
+```bash
+dpkg-deb --field PACKAGE.deb FIELD
+```
+
+Display selected metadata fields.
+
+```bash
+dpkg-deb --contents PACKAGE.deb
+```
+
+List archive contents.
+
+```bash
+apt-get check
+```
+
+Check dependency consistency.
+
+```bash
+apt-get install --fix-broken
+```
+
+Ask APT to repair broken dependencies.
+
+```bash
+ldd EXECUTABLE
+```
+
+Show runtime shared-library dependencies.
+
+```bash
+readlink -f PATH
+```
+
+Resolve a canonical filesystem path.
+
+```bash
+hash -r
+```
+
+Clear Bash’s command-path cache.
+
+### Important vocabulary
+
+- package — пакет
+- package manager — менеджер пакетів
+- package archive — архів пакета
+- repository — репозиторій
+- package index — індекс пакетів
+- dependency — залежність
+- reverse dependency — зворотна залежність
+- installed version — встановлена версія
+- candidate version — запропонована версія
+- available version — доступна версія
+- upgrade — оновлення
+- deferred upgrade — відкладене оновлення
+- phased update — поетапне оновлення
+- manually installed — встановлений вручну
+- automatically installed — встановлений автоматично
+- package metadata — метадані пакета
+- configuration file — конфігураційний файл
+- package cache — кеш пакетів
+- obsolete archive — застарілий архів
+- local package — локальний пакет
+- shared library — спільна бібліотека
+- dynamically linked — динамічно скомпонований
+- dynamic loader — динамічний завантажувач
+- executable — виконуваний файл
+- package state — стан пакета
+- held package — утримуваний пакет
+- package signature — підпис пакета
+- third-party repository — сторонній репозиторій
+- remove — видалити пакет
+- purge — повністю видалити пакет і конфігурацію
+- simulate — симулювати
+- inspect — перевіряти
+- verify — підтверджувати
+- package ownership — належність файлу пакету
+- broken dependency — пошкоджена залежність
+- firmware — мікропрограма
+- transitional package — перехідний пакет
+- cleanup — очищення
+- command cache — кеш команд
+
+### My sentence
+
+I learned how APT and dpkg manage Ubuntu packages, how to inspect repositories and dependencies, and how to simulate, verify, install, remove, and troubleshoot packages safely.
