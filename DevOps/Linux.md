@@ -7976,3 +7976,2807 @@ Clear Bash’s command-path cache.
 ### My sentence
 
 I learned how APT and dpkg manage Ubuntu packages, how to inspect repositories and dependencies, and how to simulate, verify, install, remove, and troubleshoot packages safely.
+
+## Lesson 17 — Linux services with systemd and journalctl
+
+Today I learned how Linux starts, stops, supervises, and records the activity of services with systemd and `journalctl`.
+
+I practised:
+
+- inspecting PID 1 and the systemd version;
+- checking the overall system state;
+- listing running and failed services;
+- inspecting real system services;
+- reading unit files and systemd properties;
+- understanding dependencies and targets;
+- filtering structured journal entries;
+- investigating time synchronization;
+- inspecting socket activation;
+- creating safe user services;
+- starting, restarting, stopping, enabling, and disabling services;
+- intentionally creating and clearing a failed unit;
+- cleaning up all temporary lesson resources.
+
+All practical service-management exercises used safe user units without `sudo`.
+
+### Repository verification
+
+Before beginning the lesson, I checked the repository:
+
+```bash
+cd ~/Projects/Learning-Journey
+git status --short
+git log -1 --oneline
+```
+
+My first attempt contained a typo:
+
+```text
+git statis --short
+```
+
+Git suggested the correct command:
+
+```text
+git status
+```
+
+The corrected command produced no output, which meant that the working tree was clean.
+
+The latest commit was:
+
+```text
+d806cef (HEAD -> main) Complete Linux package management lesson
+```
+
+This confirmed:
+
+```text
+Current branch: main
+Working tree:   clean
+Latest lesson:  Lesson 16
+```
+
+### Inspect PID 1
+
+I inspected PID 1 with:
+
+```bash
+ps -p 1 -o pid,ppid,user,comm,args
+```
+
+The important output was:
+
+```text
+PID  PPID  USER  COMMAND  COMMAND
+1    0     root  systemd  /sbin/init splash
+```
+
+PID 1 is the first userspace process started by the Linux kernel.
+
+On my Ubuntu system, PID 1 is:
+
+```text
+systemd
+```
+
+`PPID 0` means that the process was started directly by the kernel.
+
+Important distinction:
+
+```text
+Linux kernel → starts the first userspace process
+systemd      → becomes PID 1 and manages system startup and services
+```
+
+### systemd version
+
+I checked:
+
+```bash
+systemctl --version | head -n 3
+```
+
+The result included:
+
+```text
+systemd 255 (255.4-1ubuntu8.16)
+```
+
+The long feature line contained items beginning with `+` and `-`.
+
+Their general meaning is:
+
+```text
++FEATURE → included in this systemd build
+-FEATURE → not included in this systemd build
+```
+
+### Overall system state
+
+I ran:
+
+```bash
+systemctl is-system-running
+printf 'Exit status: %s\n' "$?"
+```
+
+The result was:
+
+```text
+running
+Exit status: 0
+```
+
+`running` means systemd considers the system fully operational.
+
+Possible states include:
+
+```text
+running     → system is fully operational
+degraded    → system works, but one or more units failed
+starting    → system startup is still in progress
+maintenance → system is in a maintenance state
+```
+
+### What is a unit?
+
+A unit is an object or resource managed by systemd.
+
+Common unit types include:
+
+```text
+.service   → service
+.socket    → communication socket
+.target    → grouped system state
+.timer     → timer
+.mount     → mount point
+.automount → automatic mount
+.path      → filesystem-path watcher
+.device    → device
+.scope     → externally created process group
+.slice     → resource-management group
+```
+
+A service is only one type of systemd unit.
+
+### What is a service?
+
+A service unit starts, stops, or supervises a program.
+
+Service unit names normally end with:
+
+```text
+.service
+```
+
+Examples from my system included:
+
+```text
+cron.service
+NetworkManager.service
+systemd-journald.service
+systemd-timesyncd.service
+```
+
+### What is a daemon?
+
+A daemon is a program that normally runs in the background and provides a system function.
+
+Examples include:
+
+```text
+cron
+systemd-journald
+snapd
+```
+
+Important distinction:
+
+```text
+daemon  → background program or process
+service → systemd unit that manages a program
+```
+
+Not every service remains running permanently.
+
+A `oneshot` service can perform one action and exit.
+
+### Loaded, active, running, and enabled
+
+These words describe different properties:
+
+```text
+loaded  → systemd successfully read the unit definition
+active  → the unit is currently activated
+running → the service process is currently executing
+enabled → the unit is configured for automatic activation
+```
+
+They are not interchangeable.
+
+Examples:
+
+```text
+enabled + inactive → automatic activation configured, but stopped now
+disabled + active  → started manually, but not configured for autostart
+active (exited)    → logically active after its command finished
+static + running   → running through dependencies or activation
+```
+
+### List running services
+
+I listed running services with:
+
+```bash
+systemctl list-units \
+    --type=service \
+    --state=running \
+    --no-pager
+```
+
+Examples included:
+
+```text
+cron.service
+dbus.service
+fwupd.service
+NetworkManager.service
+systemd-journald.service
+systemd-logind.service
+systemd-resolved.service
+systemd-timesyncd.service
+systemd-udevd.service
+```
+
+I counted running services with:
+
+```bash
+systemctl list-units \
+    --type=service \
+    --state=running \
+    --no-legend \
+    --no-pager |
+wc -l
+```
+
+The result was:
+
+```text
+34
+```
+
+Therefore, 34 service units were running at that moment.
+
+### Check failed system units
+
+I ran:
+
+```bash
+systemctl --failed --no-pager
+systemctl --failed --no-legend --no-pager | wc -l
+```
+
+The result was:
+
+```text
+0 loaded units listed.
+0
+```
+
+There were no failed system-wide units.
+
+### Inspect cron.service
+
+I inspected a real running service:
+
+```bash
+systemctl status cron.service --no-pager
+```
+
+Important fields included:
+
+```text
+Loaded: loaded
+Active: active (running)
+Main PID: 973 (cron)
+```
+
+The service description was:
+
+```text
+Regular background program processing daemon
+```
+
+The unit file was loaded from:
+
+```text
+/usr/lib/systemd/system/cron.service
+```
+
+The service was:
+
+```text
+enabled
+```
+
+Its vendor preset was also:
+
+```text
+enabled
+```
+
+### Check active and enabled states
+
+I ran:
+
+```bash
+systemctl is-active cron.service
+printf 'is-active exit status: %s\n' "$?"
+
+systemctl is-enabled cron.service
+printf 'is-enabled exit status: %s\n' "$?"
+```
+
+The result was:
+
+```text
+active
+is-active exit status: 0
+
+enabled
+is-enabled exit status: 0
+```
+
+This confirmed two independent facts:
+
+```text
+active  → cron was running at that moment
+enabled → cron was configured for automatic activation
+```
+
+### Main PID
+
+The status output showed:
+
+```text
+Main PID: 973 (cron)
+```
+
+Systemd considered PID 973 the main process of the service.
+
+The process command was:
+
+```text
+/usr/sbin/cron -f -P
+```
+
+The `-f` option keeps cron in the foreground so systemd can supervise it directly.
+
+### Tasks, memory, and CPU
+
+The status output included information such as:
+
+```text
+Tasks: 1
+Memory: 468.0K
+CPU: 187ms
+```
+
+These values describe the resources used by the service.
+
+### Control groups
+
+The service belonged to:
+
+```text
+/system.slice/cron.service
+```
+
+A control group, or cgroup, lets Linux and systemd:
+
+- group related processes;
+- track resource usage;
+- apply limits;
+- stop all related processes when necessary.
+
+### Inspect the cron unit file
+
+I ran:
+
+```bash
+systemctl cat cron.service
+```
+
+The unit contained three main sections:
+
+```ini
+[Unit]
+[Service]
+[Install]
+```
+
+### The [Unit] section
+
+The unit included:
+
+```ini
+[Unit]
+Description=Regular background program processing daemon
+Documentation=man:cron(8)
+After=remote-fs.target nss-user-lookup.target
+```
+
+Their meanings are:
+
+```text
+Description=   → human-readable description
+Documentation= → documentation reference
+After=         → startup-ordering relationship
+```
+
+`After=` controls ordering.
+
+It does not automatically start the named unit.
+
+### The [Service] section
+
+The service section included:
+
+```ini
+[Service]
+EnvironmentFile=-/etc/default/cron
+ExecStart=/usr/sbin/cron -f -P $EXTRA_OPTS
+IgnoreSIGPIPE=false
+KillMode=process
+Restart=on-failure
+SyslogFacility=cron
+```
+
+Important meanings:
+
+```text
+EnvironmentFile=  → read environment variables from a file
+ExecStart=         → command used to start the service
+Restart=on-failure → restart after an unsuccessful termination
+KillMode=process   → target the main process when stopping
+SyslogFacility=    → traditional syslog category
+```
+
+The leading minus sign in:
+
+```ini
+EnvironmentFile=-/etc/default/cron
+```
+
+means:
+
+> Continue even if the environment file is missing or cannot be read.
+
+### The [Install] section
+
+The unit contained:
+
+```ini
+[Install]
+WantedBy=multi-user.target
+```
+
+This section is used when the service is enabled.
+
+It tells systemd to connect the service to:
+
+```text
+multi-user.target
+```
+
+### Inspect machine-readable properties
+
+I ran:
+
+```bash
+systemctl show cron.service \
+    -p Id \
+    -p Description \
+    -p LoadState \
+    -p ActiveState \
+    -p SubState \
+    -p UnitFileState \
+    -p MainPID \
+    -p FragmentPath
+```
+
+The output included:
+
+```text
+Id=cron.service
+Description=Regular background program processing daemon
+LoadState=loaded
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+MainPID=973
+FragmentPath=/usr/lib/systemd/system/cron.service
+```
+
+`systemctl show` is useful for scripts because it exposes machine-readable properties.
+
+### systemctl status and recent logs
+
+The bottom of `systemctl status` displayed recent journal entries.
+
+Examples included:
+
+```text
+session opened for user root
+(root) CMD (...)
+session closed for user root
+run-parts --report /etc/cron.hourly
+```
+
+This showed cron:
+
+1. opening a temporary session;
+2. executing a scheduled command;
+3. closing the session.
+
+### Inspect logs with journalctl
+
+I ran:
+
+```bash
+journalctl -u cron.service \
+    -n 15 \
+    --no-pager \
+    -o short-iso
+```
+
+Options:
+
+```text
+-u cron.service → select one unit
+-n 15           → show the newest 15 entries
+--no-pager      → print directly to the terminal
+-o short-iso    → use ISO-style timestamps
+```
+
+I also filtered by time:
+
+```bash
+journalctl -u cron.service \
+    --since "30 minutes ago" \
+    --no-pager \
+    -o short-iso
+```
+
+### Journal entry format
+
+A typical entry looked like:
+
+```text
+2026-07-24T11:45:01+02:00 artem-A320M-H CRON[11315]: (root) CMD (...)
+```
+
+Its fields are:
+
+```text
+timestamp
+hostname
+program or identifier
+process ID
+message text
+```
+
+### Cron journal warning
+
+The journal contained:
+
+```text
+cron.service: Referenced but unset environment variable evaluates to an empty string: EXTRA_OPTS
+```
+
+The unit file used:
+
+```ini
+ExecStart=/usr/sbin/cron -f -P $EXTRA_OPTS
+```
+
+I inspected:
+
+```bash
+sed -n '1,120p' /etc/default/cron
+```
+
+The file contained only comments and did not define:
+
+```text
+EXTRA_OPTS
+```
+
+Therefore, systemd evaluated it as an empty string.
+
+The effective command was approximately:
+
+```text
+/usr/sbin/cron -f -P
+```
+
+The warning did not prevent the service from starting.
+
+The service remained:
+
+```text
+ActiveState=active
+SubState=running
+```
+
+No configuration change was made because the service was healthy.
+
+### Deprecated configuration mechanism
+
+`/etc/default/cron` stated that it was deprecated.
+
+It recommended using:
+
+```bash
+systemctl edit cron.service
+```
+
+or:
+
+```bash
+systemctl edit --full cron.service
+```
+
+A deprecated mechanism is old and no longer recommended for new configuration.
+
+### Filter logs by priority
+
+I ran:
+
+```bash
+journalctl -u cron.service \
+    -p warning \
+    --since today \
+    --no-pager \
+    -o short-iso
+```
+
+`-p warning` includes warning-level and more serious messages.
+
+Priority order:
+
+```text
+emerg
+alert
+crit
+err
+warning
+notice
+info
+debug
+```
+
+### Search journal messages
+
+I searched by message text:
+
+```bash
+journalctl -u cron.service \
+    --since today \
+    --grep='EXTRA_OPTS' \
+    --no-pager \
+    -o short-iso
+```
+
+The same warning appeared in both command outputs because two different filters selected the same journal entry.
+
+### List recorded boots
+
+I ran:
+
+```bash
+journalctl --list-boots --no-pager | tail -n 5
+```
+
+Boot indexes included:
+
+```text
+0  → current boot
+-1 → previous boot
+-2 → two boots ago
+```
+
+Each boot also had a unique boot ID.
+
+### Filter logs by boot
+
+I inspected current-boot cron entries with:
+
+```bash
+journalctl -u cron.service \
+    -b 0 \
+    -n 10 \
+    --no-pager \
+    -o short-iso
+```
+
+`-b 0` means:
+
+```text
+current boot
+```
+
+### Current kernel boot ID
+
+I ran:
+
+```bash
+cat /proc/sys/kernel/random/boot_id
+```
+
+The result was:
+
+```text
+427a7ac8-366f-4e1d-96f8-99cc115ae12e
+```
+
+This matched the current boot ID displayed by `journalctl --list-boots`.
+
+### Monotonic timestamps
+
+I inspected:
+
+```bash
+journalctl -u cron.service \
+    -b 0 \
+    -n 12 \
+    --no-pager \
+    -o short-monotonic
+```
+
+The timestamps looked like:
+
+```text
+[ 7158.257134]
+[ 7758.276197]
+[ 8358.292027]
+[ 8958.307741]
+```
+
+A monotonic timestamp counts elapsed time since boot.
+
+It always moves forward and is not affected when the calendar clock changes.
+
+The cron entries were approximately:
+
+```text
+600 seconds = 10 minutes
+```
+
+apart.
+
+This confirmed normal chronological order.
+
+### Wall clock and monotonic clock
+
+```text
+wall clock      → calendar time displayed to users
+monotonic clock → elapsed time since boot
+```
+
+The wall clock can be corrected forward or backward.
+
+The monotonic clock always moves forward during the boot.
+
+### Inspect time synchronization
+
+I ran:
+
+```bash
+timedatectl status
+timedatectl timesync-status
+```
+
+Important output included:
+
+```text
+Time zone: Europe/Warsaw (CEST, +0200)
+System clock synchronized: yes
+NTP service: active
+RTC in local TZ: no
+```
+
+The hardware clock used UTC, which is normal for Linux.
+
+### Inspect systemd-timesyncd logs
+
+I ran:
+
+```bash
+journalctl -u systemd-timesyncd.service \
+    -b 0 \
+    -n 20 \
+    --no-pager \
+    -o short-monotonic
+```
+
+The service contacted an Ubuntu NTP server.
+
+The initial clock synchronization happened approximately 36 seconds after boot.
+
+The wall clock was corrected backward by almost two hours.
+
+### Journal rotation after the clock correction
+
+`systemd-journald` recorded:
+
+```text
+Time jumped backwards, rotating.
+```
+
+This confirmed the clock correction.
+
+Journal rotation means journald closes the current journal file and begins using another one.
+
+The status command also showed:
+
+```text
+journal has been rotated since unit was started
+```
+
+This did not mean the journal service failed.
+
+### Default target
+
+I ran:
+
+```bash
+systemctl get-default
+```
+
+The result was:
+
+```text
+graphical.target
+```
+
+A target groups units to represent a system state.
+
+A simplified relationship is:
+
+```text
+graphical.target
+└─ multi-user.target
+   └─ cron.service
+```
+
+### Inspect dependencies
+
+I ran:
+
+```bash
+systemctl list-dependencies cron.service --no-pager
+```
+
+The output included units such as:
+
+```text
+system.slice
+sysinit.target
+systemd-journald.service
+systemd-udevd.service
+local-fs.target
+```
+
+The command is recursive by default.
+
+It shows dependencies of dependencies.
+
+### Reverse dependencies
+
+I ran:
+
+```bash
+systemctl list-dependencies \
+    --reverse \
+    cron.service \
+    --no-pager
+```
+
+The reverse tree showed:
+
+```text
+cron.service
+└─ multi-user.target
+   └─ graphical.target
+```
+
+A reverse dependency answers:
+
+> Which units depend on or include this unit?
+
+### Requires, Wants, After, and Before
+
+I inspected:
+
+```bash
+systemctl show cron.service \
+    -p Requires \
+    -p Wants \
+    -p After \
+    -p Before
+```
+
+The output included:
+
+```text
+Requires=sysinit.target system.slice
+Wants=
+Before=shutdown.target multi-user.target
+After=basic.target systemd-journald.socket sysinit.target remote-fs.target system.slice nss-user-lookup.target
+```
+
+Their meanings are:
+
+```text
+Requires= → strong requirement relationship
+Wants=    → weaker requirement relationship
+After=    → ordering: start after
+Before=   → ordering: start before
+```
+
+Requirement dependencies and ordering dependencies are different.
+
+`After=` does not automatically start another unit.
+
+### WantedBy and RequiredBy
+
+I inspected:
+
+```bash
+systemctl show cron.service \
+    -p WantedBy \
+    -p RequiredBy
+```
+
+The result included:
+
+```text
+WantedBy=multi-user.target
+RequiredBy=
+```
+
+This means:
+
+```text
+multi-user.target wants cron.service
+```
+
+It does not mean that cron wants `multi-user.target`.
+
+### Enablement symlink
+
+I inspected:
+
+```bash
+ls -l \
+    /etc/systemd/system/multi-user.target.wants/cron.service
+```
+
+The symlink pointed to:
+
+```text
+/usr/lib/systemd/system/cron.service
+```
+
+I confirmed the final path with:
+
+```bash
+readlink -f \
+    /etc/systemd/system/multi-user.target.wants/cron.service
+```
+
+This symlink is the filesystem representation of the enablement relationship.
+
+### Compare unit-file states
+
+I ran:
+
+```bash
+systemctl list-unit-files \
+    cron.service \
+    systemd-journald.service \
+    systemd-timesyncd.service \
+    --no-pager
+```
+
+The states included:
+
+```text
+cron.service              enabled
+systemd-journald.service  static
+systemd-timesyncd.service enabled
+```
+
+### Static units
+
+A static unit normally has no regular enablement instructions in an `[Install]` section.
+
+It is activated through:
+
+- dependencies;
+- socket activation;
+- timer activation;
+- path activation;
+- another unit.
+
+Static does not mean:
+
+```text
+stopped
+broken
+failed
+unusable
+```
+
+### Inspect systemd-journald
+
+I ran:
+
+```bash
+systemctl status systemd-journald.service \
+    --no-pager \
+    -l
+```
+
+The service was:
+
+```text
+Loaded: loaded (...; static)
+Active: active (running)
+Main PID: 359
+```
+
+This demonstrated:
+
+```text
+static + active (running)
+```
+
+A static service can run normally.
+
+### Journald triggers
+
+I inspected:
+
+```bash
+systemctl show systemd-journald.service \
+    -p TriggeredBy \
+    -p WantedBy \
+    -p RequiredBy
+```
+
+The triggers included:
+
+```text
+systemd-journald.socket
+systemd-journald-audit.socket
+systemd-journald-dev-log.socket
+```
+
+A trigger is a mechanism or event that can activate another unit.
+
+### Socket activation
+
+With socket activation, systemd can:
+
+```text
+1. Create and listen on a socket.
+2. Wait for data or a connection.
+3. Start the associated service when necessary.
+4. Pass communication to the service.
+```
+
+The socket can exist before the service process starts.
+
+### Journald socket states
+
+The output showed:
+
+```text
+systemd-journald.socket         active
+systemd-journald-dev-log.socket active
+systemd-journald-audit.socket   inactive
+```
+
+The inactive audit socket was not a failure.
+
+The journal stated:
+
+```text
+Collecting audit messages is disabled.
+```
+
+### Drop-in configuration
+
+The journald status showed a package-provided drop-in:
+
+```text
+/usr/lib/systemd/system/systemd-journald.service.d/nice.conf
+```
+
+A drop-in is an additional configuration fragment.
+
+Package-provided configuration commonly lives under:
+
+```text
+/usr/lib/systemd/system/
+```
+
+Local administrator overrides normally live under:
+
+```text
+/etc/systemd/system/
+```
+
+### Runtime and persistent journals
+
+Journald reported:
+
+```text
+Runtime Journal (/run/log/journal/...)
+System Journal  (/var/log/journal/...)
+```
+
+Their general roles are:
+
+```text
+/run/log/journal → runtime journal storage
+/var/log/journal → persistent journal storage
+```
+
+Persistent logs can survive reboots.
+
+### List journald sockets
+
+I ran:
+
+```bash
+systemctl list-sockets --all --no-pager |
+grep 'systemd-journald'
+```
+
+The output connected:
+
+```text
+listening endpoint
+socket unit
+activated service
+```
+
+Important paths included:
+
+```text
+/run/systemd/journal/dev-log
+/run/systemd/journal/socket
+/run/systemd/journal/stdout
+```
+
+### Inspect socket properties
+
+I ran:
+
+```bash
+systemctl show \
+    systemd-journald.socket \
+    systemd-journald-dev-log.socket \
+    systemd-journald-audit.socket \
+    -p Id \
+    -p LoadState \
+    -p ActiveState \
+    -p SubState \
+    -p Triggers
+```
+
+The main sockets were:
+
+```text
+LoadState=loaded
+ActiveState=active
+SubState=running
+Triggers=systemd-journald.service
+```
+
+The audit socket was:
+
+```text
+LoadState=loaded
+ActiveState=inactive
+SubState=dead
+Triggers=systemd-journald.service
+```
+
+### Inspect socket unit files
+
+I ran:
+
+```bash
+systemctl cat systemd-journald.socket
+systemctl cat systemd-journald-dev-log.socket
+```
+
+Important directives included:
+
+```ini
+DefaultDependencies=no
+Before=sockets.target
+IgnoreOnIsolate=yes
+```
+
+These socket units must be available very early during startup.
+
+### ListenDatagram and ListenStream
+
+The main socket unit included:
+
+```ini
+ListenDatagram=/run/systemd/journal/socket
+ListenStream=/run/systemd/journal/stdout
+```
+
+A datagram socket transfers separate messages.
+
+A stream socket transfers a continuous byte stream.
+
+### Process credentials and security information
+
+The socket unit included:
+
+```ini
+PassCredentials=yes
+PassSecurity=yes
+```
+
+This allows journald to receive sender information such as:
+
+```text
+PID
+UID
+GID
+security context
+```
+
+### Socket buffers
+
+The configuration included:
+
+```ini
+ReceiveBuffer=8M
+SendBuffer=8M
+```
+
+A buffer is temporary kernel memory used while data waits to be processed.
+
+### Associated service
+
+The socket unit included:
+
+```ini
+Service=systemd-journald.service
+```
+
+This connects socket activity to the journald service.
+
+### Socket permissions
+
+The configuration included:
+
+```ini
+SocketMode=0666
+```
+
+The permission form is:
+
+```text
+rw-rw-rw-
+```
+
+For a socket, these permissions control access to the communication endpoint.
+
+### Timestamp precision
+
+The socket unit included:
+
+```ini
+Timestamping=us
+```
+
+`us` means microseconds.
+
+```text
+1 microsecond = 0.000001 second
+```
+
+### /dev/log compatibility
+
+The dev-log unit contained:
+
+```ini
+ListenDatagram=/run/systemd/journal/dev-log
+Symlinks=/dev/log
+```
+
+This provides compatibility with programs that send traditional syslog messages to:
+
+```text
+/dev/log
+```
+
+### Inspect actual socket files
+
+I ran:
+
+```bash
+ls -l \
+    /dev/log \
+    /run/systemd/journal/dev-log \
+    /run/systemd/journal/socket \
+    /run/systemd/journal/stdout
+```
+
+The result showed:
+
+```text
+/dev/log -> /run/systemd/journal/dev-log
+```
+
+`/dev/log` was a symbolic link.
+
+The actual socket entries began with:
+
+```text
+s
+```
+
+in the `ls -l` output.
+
+### Resolve /dev/log
+
+I ran:
+
+```bash
+readlink -f /dev/log
+```
+
+The result was:
+
+```text
+/run/systemd/journal/dev-log
+```
+
+### Inspect Unix-domain sockets
+
+I ran:
+
+```bash
+ss -lx | grep '/run/systemd/journal'
+```
+
+The output included:
+
+```text
+u_dgr UNCONN
+u_str LISTEN
+```
+
+Their meanings are:
+
+```text
+u_dgr  → Unix datagram socket
+u_str  → Unix stream socket
+UNCONN → connectionless datagram state
+LISTEN → ready to accept stream connections
+```
+
+### Send a safe test journal message
+
+I created a unique identifier:
+
+```bash
+lesson_tag="lesson17-artem-$(date +%s)"
+```
+
+Then I sent one harmless message:
+
+```bash
+logger --tag "$lesson_tag" \
+    "Safe Lesson 17 test message through /dev/log"
+```
+
+I retrieved it with:
+
+```bash
+journalctl -t "$lesson_tag" \
+    --no-pager \
+    -o short-iso
+```
+
+The result contained:
+
+```text
+Safe Lesson 17 test message through /dev/log
+```
+
+No configuration or service was modified.
+
+### Command substitution
+
+The tag used:
+
+```bash
+$(date +%s)
+```
+
+This is command substitution.
+
+It inserts the output of a command into another command or assignment.
+
+`date +%s` returns seconds since the Unix epoch.
+
+### Inspect verbose journal metadata
+
+I ran:
+
+```bash
+journalctl -t "$lesson_tag" \
+    -n 1 \
+    --no-pager \
+    -o verbose
+```
+
+Important fields included:
+
+```text
+_UID=1000
+_GID=1000
+_PID=12914
+_COMM=logger
+_TRANSPORT=syslog
+SYSLOG_IDENTIFIER=lesson17-artem-...
+PRIORITY=5
+SYSLOG_FACILITY=1
+MESSAGE=Safe Lesson 17 test message through /dev/log
+_BOOT_ID=...
+_MACHINE_ID=...
+_HOSTNAME=artem-A320M-H
+```
+
+### Structured journal fields
+
+Journald stores structured metadata in addition to message text.
+
+This allows filtering by:
+
+```text
+unit
+boot
+process
+user
+priority
+transport
+identifier
+message
+```
+
+### Confirm the syslog transport
+
+The field:
+
+```text
+_TRANSPORT=syslog
+```
+
+confirmed that journald received the test message through the syslog-compatible path.
+
+The path was:
+
+```text
+logger
+→ /dev/log
+→ systemd-journald-dev-log.socket
+→ systemd-journald.service
+→ journal entry
+```
+
+### Journal priorities
+
+The test message had:
+
+```text
+PRIORITY=5
+```
+
+Priority 5 means:
+
+```text
+notice
+```
+
+Priority numbers:
+
+```text
+0 emerg
+1 alert
+2 crit
+3 err
+4 warning
+5 notice
+6 info
+7 debug
+```
+
+### Exact structured-field filtering
+
+I ran:
+
+```bash
+journalctl \
+    SYSLOG_IDENTIFIER="$lesson_tag" \
+    _TRANSPORT=syslog \
+    -n 1 \
+    --no-pager \
+    -o short-iso
+```
+
+Different field conditions are combined with logical AND.
+
+The journal entry had to match both conditions.
+
+### Show only the message body
+
+I ran:
+
+```bash
+journalctl \
+    SYSLOG_IDENTIFIER="$lesson_tag" \
+    -n 1 \
+    --no-pager \
+    -o cat
+```
+
+The output was only:
+
+```text
+Safe Lesson 17 test message through /dev/log
+```
+
+`-o cat` removes timestamps and displayed metadata.
+
+### List transport values
+
+I ran:
+
+```bash
+journalctl -b 0 \
+    -F _TRANSPORT \
+    --no-pager |
+sort
+```
+
+The result included:
+
+```text
+driver
+journal
+kernel
+stdout
+syslog
+```
+
+Their meanings are:
+
+```text
+driver  → internal journald messages
+journal → native journal protocol
+kernel  → Linux kernel messages
+stdout  → captured standard output or error
+syslog  → traditional syslog-compatible messages
+```
+
+### Compare journal transports
+
+I ran:
+
+```bash
+journalctl -b 0 _TRANSPORT=kernel -n 3 \
+    --no-pager \
+    -o short-iso
+
+journalctl -b 0 _TRANSPORT=stdout -n 3 \
+    --no-pager \
+    -o short-iso
+
+journalctl -b 0 _TRANSPORT=syslog -n 3 \
+    --no-pager \
+    -o short-iso
+```
+
+The transport field describes how a message reached journald.
+
+It is separate from the message priority.
+
+### Kernel transport example
+
+Kernel messages included AppArmor audit denials for the Firefox Snap profile.
+
+A security denial does not automatically mean the entire application or a systemd unit failed.
+
+### Standard-output examples
+
+Captured output included messages from:
+
+```text
+gnome-shell
+gdm-session-worker
+tracker-miner-fs-3
+```
+
+One known local warning referenced:
+
+```text
+/etc/modprobe.d/blacklist-aic8800.conf
+```
+
+I intentionally skipped further inspection because I already knew that the file was related to an old Wi-Fi adapter.
+
+### Syslog transport examples
+
+Syslog entries included messages from:
+
+```text
+CRON
+PackageKit
+```
+
+Words such as `ERROR`, `warning`, or `daemon quit` inside message text do not automatically prove that a unit failed.
+
+The actual unit state should be checked with:
+
+```bash
+systemctl status UNIT
+systemctl is-active UNIT
+systemctl is-failed UNIT
+systemctl --failed
+```
+
+### System and user service managers
+
+There are two important service-manager contexts:
+
+```text
+systemctl        → system-wide manager, PID 1
+systemctl --user → current user’s service manager
+```
+
+System units commonly live under:
+
+```text
+/usr/lib/systemd/system/
+/etc/systemd/system/
+```
+
+User units commonly live under:
+
+```text
+~/.config/systemd/user/
+```
+
+### Create a transient user service
+
+I created a safe transient user service:
+
+```bash
+demo_unit="lesson17-demo"
+
+systemd-run --user \
+    --unit="$demo_unit" \
+    --description="Lesson 17 temporary demo service" \
+    --collect \
+    /bin/bash -c \
+    'echo "Lesson 17 demo service started"; sleep 120'
+```
+
+The unit name was:
+
+```text
+lesson17-demo.service
+```
+
+### Transient unit
+
+The status output showed:
+
+```text
+Transient: yes
+```
+
+The temporary definition was stored under:
+
+```text
+/run/user/1000/systemd/transient/
+```
+
+A transient unit is created at runtime instead of being stored as a permanent configuration file.
+
+### Transient service state
+
+The service became:
+
+```text
+active (running)
+```
+
+Its main process was:
+
+```text
+sleep 120
+```
+
+The `echo` output was captured in the user journal.
+
+### User-service cgroup
+
+The service appeared under:
+
+```text
+/user.slice/user-1000.slice/user@1000.service/app.slice/
+```
+
+This confirmed that it belonged to my user systemd manager.
+
+### Transient-unit cleanup
+
+After the process completed, `--collect` allowed systemd to remove the temporary unit definition.
+
+Later checks showed:
+
+```text
+inactive
+Unit lesson17-demo.service could not be found.
+```
+
+The historical journal entries were still available.
+
+### Create a file-based user service
+
+I created:
+
+```text
+~/.config/systemd/user/lesson17-practice.service
+```
+
+The unit contained:
+
+```ini
+[Unit]
+Description=Lesson 17 safe practice service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sleep 600
+```
+
+### Type=simple
+
+For a `simple` service, systemd considers startup successful when it starts the process from:
+
+```ini
+ExecStart=
+```
+
+It does not wait for an additional readiness notification.
+
+### Verify the unit file
+
+I ran:
+
+```bash
+systemd-analyze --user verify "$practice_file"
+```
+
+The result was:
+
+```text
+verify exit status: 0
+```
+
+The unit definition was valid.
+
+### Reload unit definitions
+
+I ran:
+
+```bash
+systemctl --user daemon-reload
+```
+
+`daemon-reload` makes the service manager reread unit files.
+
+It does not restart running services.
+
+### Loaded but inactive
+
+Before starting, the service was:
+
+```text
+Loaded: loaded
+Active: inactive (dead)
+```
+
+Its unit-file state was:
+
+```text
+static
+```
+
+because it had no `[Install]` section.
+
+It could still be started manually.
+
+### Start the practice service
+
+I ran:
+
+```bash
+systemctl --user start lesson17-practice.service
+```
+
+The result was:
+
+```text
+start exit status: 0
+active
+is-active exit status: 0
+```
+
+The service became:
+
+```text
+active (running)
+```
+
+Its main process was:
+
+```text
+/usr/bin/sleep 600
+```
+
+### Restart the service
+
+I saved the original PID, restarted the service, and checked the new PID.
+
+The results were:
+
+```text
+Old PID: 13971
+New PID: 14005
+```
+
+This proved that restart performed a real stop-and-start operation.
+
+### Stop the service
+
+I ran:
+
+```bash
+systemctl --user stop lesson17-practice.service
+```
+
+The result was:
+
+```text
+stop exit status: 0
+inactive
+is-active exit status: 3
+```
+
+A `ps` lookup of the old PID found no process.
+
+The final properties included:
+
+```text
+Result=success
+ExecMainCode=0
+ExecMainStatus=0
+ActiveState=inactive
+SubState=dead
+```
+
+### Service lifecycle in the journal
+
+The user journal showed:
+
+```text
+Started lesson17-practice.service
+Stopping lesson17-practice.service
+Stopped lesson17-practice.service
+Started lesson17-practice.service
+Stopping lesson17-practice.service
+Stopped lesson17-practice.service
+```
+
+The restart appeared as:
+
+```text
+stop → stopped → start
+```
+
+### Create an intentional failure
+
+I created:
+
+```text
+~/.config/systemd/user/lesson17-failure.service
+```
+
+The unit contained:
+
+```ini
+[Unit]
+Description=Lesson 17 intentional failure demo
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/false
+```
+
+`/usr/bin/false` does nothing harmful and returns exit status `1`.
+
+### Valid configuration with a failing command
+
+The verification result was:
+
+```text
+verify exit status: 0
+```
+
+This demonstrated:
+
+```text
+valid unit syntax ≠ successful runtime execution
+```
+
+The unit file was valid, but its command was intentionally unsuccessful.
+
+### Failed service state
+
+Starting the unit returned:
+
+```text
+start exit status: 1
+```
+
+The status showed:
+
+```text
+Active: failed
+Result: exit-code
+status=1/FAILURE
+```
+
+The journal sequence included:
+
+```text
+Starting ...
+Main process exited, code=exited, status=1/FAILURE
+Failed with result 'exit-code'.
+Failed to start ...
+```
+
+### Inspect failed user units
+
+I ran:
+
+```bash
+systemctl --user --failed --no-pager
+```
+
+The output listed:
+
+```text
+lesson17-failure.service
+```
+
+I checked:
+
+```bash
+systemctl --user is-failed lesson17-failure.service
+```
+
+The result was:
+
+```text
+failed
+is-failed exit status: 0
+```
+
+For `is-failed`, exit status `0` means the unit is currently recorded as failed.
+
+### Failure properties
+
+I inspected:
+
+```bash
+systemctl --user show lesson17-failure.service \
+    -p ActiveState \
+    -p SubState \
+    -p Result \
+    -p ExecMainCode \
+    -p ExecMainStatus
+```
+
+The result included:
+
+```text
+Result=exit-code
+ExecMainCode=1
+ExecMainStatus=1
+ActiveState=failed
+SubState=failed
+```
+
+`ExecMainStatus=1` was the exit status returned by `/usr/bin/false`.
+
+### Clear the failed state
+
+I ran:
+
+```bash
+systemctl --user reset-failed lesson17-failure.service
+```
+
+The result was:
+
+```text
+reset-failed exit status: 0
+```
+
+The unit returned to:
+
+```text
+inactive (dead)
+```
+
+Historical failure messages remained in the journal.
+
+### Repair the oneshot service
+
+I changed:
+
+```ini
+ExecStart=/usr/bin/false
+```
+
+to:
+
+```ini
+ExecStart=/usr/bin/true
+```
+
+The repaired unit started successfully:
+
+```text
+start exit status: 0
+```
+
+The journal showed:
+
+```text
+Starting lesson17-failure.service
+Finished lesson17-failure.service
+```
+
+### Successful oneshot without RemainAfterExit
+
+The repaired service used:
+
+```ini
+Type=oneshot
+ExecStart=/usr/bin/true
+```
+
+It did not contain:
+
+```ini
+RemainAfterExit=yes
+```
+
+Therefore, after completing successfully, it returned to:
+
+```text
+inactive (dead)
+```
+
+Its final properties included:
+
+```text
+Result=success
+ExecMainCode=0
+ExecMainStatus=0
+ActiveState=inactive
+SubState=dead
+```
+
+An inactive oneshot service can still have a successful result.
+
+### Clean up the practice units
+
+I removed:
+
+```text
+~/.config/systemd/user/lesson17-practice.service
+~/.config/systemd/user/lesson17-failure.service
+```
+
+Then I ran:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user reset-failed
+```
+
+Verification showed:
+
+```text
+0 matching unit files
+0 loaded lesson units
+0 failed user units
+```
+
+### Create an enablement practice service
+
+I created:
+
+```text
+~/.config/systemd/user/lesson17-enable-demo.service
+```
+
+The definition was:
+
+```ini
+[Unit]
+Description=Lesson 17 enablement practice service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
+```
+
+### RemainAfterExit=yes
+
+`RemainAfterExit=yes` means:
+
+> Keep the unit logically active after `ExecStart` finishes successfully.
+
+The expected state is:
+
+```text
+active (exited)
+```
+
+No main process remains running, but systemd remembers the unit as active.
+
+### User default.target
+
+The unit contained:
+
+```ini
+WantedBy=default.target
+```
+
+For the user systemd manager, `default.target` represents its normal startup target.
+
+### Initial state
+
+Before enabling or starting, the unit was:
+
+```text
+disabled + inactive
+```
+
+The status also showed:
+
+```text
+preset: enabled
+```
+
+A preset is a recommendation.
+
+It is not the same as the current state.
+
+### Enable without starting
+
+I ran:
+
+```bash
+systemctl --user enable lesson17-enable-demo.service
+```
+
+Systemd created:
+
+```text
+~/.config/systemd/user/default.target.wants/lesson17-enable-demo.service
+```
+
+The symlink pointed to the original unit file.
+
+The resulting state was:
+
+```text
+enabled + inactive
+```
+
+This proved that enabling did not start the service.
+
+### Start the enabled service
+
+I ran:
+
+```bash
+systemctl --user start lesson17-enable-demo.service
+```
+
+The resulting state was:
+
+```text
+enabled + active (exited)
+```
+
+The command finished successfully, and `RemainAfterExit=yes` kept the unit logically active.
+
+### Stop without disabling
+
+I ran:
+
+```bash
+systemctl --user stop lesson17-enable-demo.service
+```
+
+The resulting state was:
+
+```text
+enabled + inactive
+```
+
+The automatic-activation symlink still existed.
+
+This proved that stopping does not disable a service.
+
+### Disable the service
+
+I ran:
+
+```bash
+systemctl --user disable lesson17-enable-demo.service
+```
+
+Systemd removed the symlink under:
+
+```text
+default.target.wants/
+```
+
+The resulting state was:
+
+```text
+disabled + inactive
+```
+
+The original unit file still existed.
+
+### Start without enabling
+
+I started the disabled service manually:
+
+```bash
+systemctl --user start lesson17-enable-demo.service
+```
+
+The result was:
+
+```text
+disabled + active (exited)
+```
+
+This proved that a disabled service can be started manually.
+
+### Important enablement combinations
+
+I observed:
+
+```text
+disabled + inactive
+enabled  + inactive
+enabled  + active
+disabled + active
+```
+
+Their meanings are:
+
+```text
+disabled + inactive → not automatic and not active now
+enabled + inactive  → automatic later, but stopped now
+enabled + active    → automatic later and active now
+disabled + active   → manually active now, not automatic later
+```
+
+### enable --now
+
+Systemd can enable and start a unit in one command:
+
+```bash
+systemctl --user enable --now UNIT
+```
+
+I intentionally performed `enable` and `start` separately so I could observe the difference.
+
+### Final cleanup
+
+I stopped the enablement demo service, removed its unit file, reloaded the user manager, and reset failure state.
+
+Final verification showed:
+
+```text
+0 lesson17 unit files
+0 loaded lesson17 units
+0 failed user units
+```
+
+### Final system health
+
+I ran:
+
+```bash
+systemctl is-system-running
+printf 'system state exit status: %s\n' "$?"
+
+systemctl --failed --no-pager
+systemctl --user --failed --no-pager
+```
+
+The results were:
+
+```text
+running
+system state exit status: 0
+0 failed system units
+0 failed user units
+```
+
+The system remained healthy after all exercises.
+
+### Final Git verification
+
+I ran:
+
+```bash
+git status --short
+```
+
+The command produced no output.
+
+This confirmed:
+
+- all temporary lesson resources were removed;
+- no unintended repository files were created;
+- the working tree was clean before adding Lesson 17 notes.
+
+### Important command summary
+
+```bash
+ps -p 1 -o pid,ppid,user,comm,args
+```
+
+Inspect PID 1.
+
+```bash
+systemctl --version
+```
+
+Show the systemd version and compiled features.
+
+```bash
+systemctl is-system-running
+```
+
+Show the overall systemd state.
+
+```bash
+systemctl list-units --type=service --state=running
+```
+
+List running services.
+
+```bash
+systemctl --failed
+```
+
+List failed system-wide units.
+
+```bash
+systemctl --user --failed
+```
+
+List failed user units.
+
+```bash
+systemctl status UNIT
+```
+
+Show a human-readable unit status.
+
+```bash
+systemctl show UNIT -p PROPERTY
+```
+
+Show selected machine-readable properties.
+
+```bash
+systemctl cat UNIT
+```
+
+Display a unit definition and its drop-ins.
+
+```bash
+systemctl is-active UNIT
+```
+
+Check the current activation state.
+
+```bash
+systemctl is-enabled UNIT
+```
+
+Check the automatic-activation configuration.
+
+```bash
+systemctl is-failed UNIT
+```
+
+Check whether a unit is recorded as failed.
+
+```bash
+systemctl start UNIT
+```
+
+Start a unit now.
+
+```bash
+systemctl stop UNIT
+```
+
+Stop a unit now.
+
+```bash
+systemctl restart UNIT
+```
+
+Stop and start a unit.
+
+```bash
+systemctl enable UNIT
+```
+
+Configure automatic activation.
+
+```bash
+systemctl disable UNIT
+```
+
+Remove automatic-activation links.
+
+```bash
+systemctl enable --now UNIT
+```
+
+Enable and start a unit in one command.
+
+```bash
+systemctl daemon-reload
+```
+
+Make the system manager reread unit definitions.
+
+```bash
+systemctl --user daemon-reload
+```
+
+Make the user manager reread user unit definitions.
+
+```bash
+systemctl reset-failed UNIT
+```
+
+Clear a recorded failed state.
+
+```bash
+systemctl list-unit-files
+```
+
+List unit files and enablement states.
+
+```bash
+systemctl list-dependencies UNIT
+```
+
+Show dependency relationships below a unit.
+
+```bash
+systemctl list-dependencies --reverse UNIT
+```
+
+Show units that depend on the selected unit.
+
+```bash
+systemctl get-default
+```
+
+Show the default system target.
+
+```bash
+journalctl -u UNIT
+```
+
+Show journal entries for one unit.
+
+```bash
+journalctl -u UNIT -n NUMBER
+```
+
+Show the newest matching entries.
+
+```bash
+journalctl -u UNIT --since "TIME"
+```
+
+Filter a unit’s journal by time.
+
+```bash
+journalctl -b 0
+```
+
+Show entries from the current boot.
+
+```bash
+journalctl --list-boots
+```
+
+List recorded boots.
+
+```bash
+journalctl -p warning
+```
+
+Show warning-level and more serious entries.
+
+```bash
+journalctl --grep='PATTERN'
+```
+
+Search journal message text.
+
+```bash
+journalctl -o short-iso
+```
+
+Display ISO-style timestamps.
+
+```bash
+journalctl -o short-monotonic
+```
+
+Display elapsed time since boot.
+
+```bash
+journalctl -o verbose
+```
+
+Display structured journal metadata.
+
+```bash
+journalctl -o cat
+```
+
+Display only message bodies.
+
+```bash
+journalctl FIELD=value
+```
+
+Filter by an exact journal-field value.
+
+```bash
+journalctl -F FIELD
+```
+
+List values present in a journal field.
+
+```bash
+journalctl --user-unit=UNIT
+```
+
+Show journal entries for a user unit.
+
+```bash
+timedatectl status
+```
+
+Show time, timezone, and synchronization state.
+
+```bash
+timedatectl timesync-status
+```
+
+Show detailed NTP synchronization information.
+
+```bash
+systemctl list-sockets --all
+```
+
+List socket units and listening endpoints.
+
+```bash
+ss -lx
+```
+
+List listening Unix-domain sockets.
+
+```bash
+logger --tag TAG "MESSAGE"
+```
+
+Send a syslog-compatible message to the local journal.
+
+```bash
+systemd-run --user --unit=NAME --collect COMMAND
+```
+
+Create and run a transient user service.
+
+```bash
+systemd-analyze --user verify FILE
+```
+
+Verify a user unit file.
+
+```bash
+readlink -f PATH
+```
+
+Resolve a symbolic link to its final path.
+
+### Important vocabulary
+
+- systemd — менеджер системи та служб
+- init system — система ініціалізації
+- PID 1 — перший userspace-процес
+- unit — юніт, об’єкт systemd
+- service — служба
+- daemon — фоновий системний процес
+- unit file — файл визначення юніта
+- unit-file state — стан файла юніта
+- loaded — завантажений
+- active — активний
+- inactive — неактивний
+- running — виконується
+- exited — процес завершився
+- dead — процес юніта не виконується
+- failed — стан помилки
+- enabled — увімкнений для автоматичної активації
+- disabled — вимкнений для автоматичної активації
+- static unit — статичний юніт
+- preset — типовий рекомендований стан
+- vendor preset — рекомендований стан від дистрибутива
+- target — цільовий юніт
+- default target — типова ціль
+- graphical target — ціль графічного режиму
+- multi-user target — ціль багатокористувацького режиму
+- dependency — залежність
+- reverse dependency — зворотна залежність
+- requirement dependency — залежність необхідності
+- ordering dependency — залежність порядку
+- Requires — сильна залежність
+- Wants — слабша залежність
+- After — запускати після
+- Before — запускати перед
+- WantedBy — залучається цільовим юнітом
+- RequiredBy — сильно вимагається іншим юнітом
+- pull in a unit — залучити юніт
+- implicit dependency — неявна залежність
+- recursive dependency tree — рекурсивне дерево залежностей
+- symbolic link — символічне посилання
+- enablement symlink — посилання автоматичної активації
+- canonical path — канонічний шлях
+- runtime state — поточний стан виконання
+- automatic activation — автоматична активація
+- activation — активація
+- deactivation — деактивація
+- service lifecycle — життєвий цикл служби
+- main process — основний процес
+- main PID — PID основного процесу
+- control process — керувальний процес
+- control group — контрольна група
+- cgroup — контрольна група
+- slice — група керування ресурсами
+- scope unit — юніт області процесів
+- transient unit — тимчасовий юніт
+- persistent unit — постійний юніт
+- user service manager — користувацький менеджер служб
+- system service manager — системний менеджер служб
+- daemon-reload — повторне читання визначень юнітів
+- restart policy — політика перезапуску
+- restart on failure — перезапуск після помилки
+- oneshot service — одноразова служба
+- simple service — проста служба
+- RemainAfterExit — залишатися активним після завершення
+- active (running) — активний із процесом, що виконується
+- active (exited) — логічно активний після завершення процесу
+- socket — сокет
+- socket unit — socket-юніт
+- socket activation — активація через сокет
+- listening socket — сокет, що очікує дані або з’єднання
+- Unix-domain socket — локальний Unix-сокет
+- datagram socket — дейтаграмний сокет
+- stream socket — потоковий сокет
+- communication endpoint — кінцева точка обміну даними
+- receive buffer — буфер приймання
+- send buffer — буфер надсилання
+- connection backlog — черга очікування з’єднань
+- sender credentials — дані процесу-відправника
+- security context — контекст безпеки
+- journal — системний журнал
+- journal entry — запис журналу
+- journal metadata — метадані журналу
+- structured fields — структуровані поля
+- message body — текст повідомлення
+- transport — канал надходження повідомлення
+- syslog transport — syslog-сумісний канал
+- kernel transport — повідомлення ядра
+- stdout transport — перехоплене стандартне виведення
+- priority — рівень серйозності
+- facility — категорія повідомлення
+- log identifier — ідентифікатор журналу
+- boot ID — ідентифікатор завантаження
+- machine ID — ідентифікатор системи
+- wall clock — календарний системний час
+- monotonic clock — монотонний час від завантаження
+- time synchronization — синхронізація часу
+- NTP — протокол мережевого часу
+- clock correction — коригування часу
+- journal rotation — ротація журналу
+- runtime journal — журнал поточного запуску
+- persistent journal — постійний журнал
+- drop-in — додатковий фрагмент конфігурації
+- metadata — метадані
+- exact field match — точна відповідність полю
+- logical AND — логічне «І»
+- exit status — код завершення
+- non-zero exit status — ненульовий код завершення
+- successful completion — успішне завершення
+- intentional failure — навмисна помилка
+- runtime failure — помилка під час виконання
+- configuration error — помилка конфігурації
+- reset failure state — скинути стан помилки
+- historical journal entry — історичний запис журналу
+- garbage collection — автоматичне видалення непотрібного об’єкта
+- cleanup — очищення
+- health check — перевірка справності
+
+### My sentence
+
+I learned how systemd manages system and user services, how unit dependencies and enablement work, and how to inspect service states, failures, sockets, time synchronization, and structured logs safely with `systemctl` and `journalctl`.
