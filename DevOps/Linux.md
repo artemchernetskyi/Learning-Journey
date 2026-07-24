@@ -7976,7 +7976,6 @@ Clear Bash’s command-path cache.
 ### My sentence
 
 I learned how APT and dpkg manage Ubuntu packages, how to inspect repositories and dependencies, and how to simulate, verify, install, remove, and troubleshoot packages safely.
-
 ## Lesson 17 — Linux services with systemd and journalctl
 
 Today I learned how Linux starts, stops, supervises, and records the activity of services with systemd and `journalctl`.
