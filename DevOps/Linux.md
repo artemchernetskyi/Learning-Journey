@@ -10779,3 +10779,1660 @@ Resolve a symbolic link to its final path.
 ### My sentence
 
 I learned how systemd manages system and user services, how unit dependencies and enablement work, and how to inspect service states, failures, sockets, time synchronization, and structured logs safely with `systemctl` and `journalctl`.
+
+## Lesson 18 — Linux storage, filesystems, mounts, and disk investigation
+
+### Why this topic matters in DevOps
+
+Storage problems can stop applications even when CPU, memory, and networking are healthy.
+
+Common incidents include:
+
+- a filesystem becomes full;
+- all available inodes are consumed;
+- logs, caches, databases, or container data grow unexpectedly;
+- an expected filesystem is not mounted;
+- a service keeps a deleted file open;
+- a directory is writable when it should be read-only;
+- an incorrect `/etc/fstab` entry causes mounting or boot problems.
+
+A useful investigation workflow is:
+
+```text
+check filesystem capacity
+→ identify the largest directory
+→ identify the application that owns the data
+→ inspect mounts and configuration
+→ use the application's supported cleanup method
+```
+
+A large directory is not automatically safe to delete.
+
+### Linux storage model
+
+A simplified Linux storage stack is:
+
+```text
+physical disk
+→ partition
+→ filesystem
+→ mount point
+→ files and directories
+```
+
+Example from this system:
+
+```text
+/dev/nvme0n1
+├─ /dev/nvme0n1p2
+│  └─ vfat mounted at /boot/efi
+└─ /dev/nvme0n1p3
+   └─ ext4 mounted at /
+```
+
+Important distinction:
+
+```text
+block device → a disk, partition, or virtual storage device
+filesystem   → a structure that organizes files and directories
+mount point  → a directory where a filesystem becomes accessible
+```
+
+### Inspect block devices with `lsblk`
+
+```bash
+lsblk
+```
+
+Show disks, partitions, loop devices, filesystem types, and mount points as a tree.
+
+```bash
+lsblk -e 7
+```
+
+Exclude loop devices.
+
+Loop devices are often used for mounted Snap package images and can make the output very long.
+
+```bash
+lsblk -d -e 7 \
+  -o NAME,PATH,SIZE,MODEL,TRAN,ROTA,RO,TYPE
+```
+
+Show only physical disks.
+
+Important columns:
+
+```text
+NAME  → device name
+PATH  → full device path
+SIZE  → device capacity
+MODEL → device model
+TRAN  → transport type, such as sata or nvme
+ROTA  → 1 for rotating disk, 0 for SSD
+RO    → read-only state
+TYPE  → disk, partition, loop, and other device types
+```
+
+```bash
+lsblk -e 7 \
+  -o NAME,PATH,PKNAME,SIZE,TYPE,FSTYPE,FSVER,LABEL,UUID,MOUNTPOINTS
+```
+
+Show disks, partitions, filesystem information, identifiers, and active mount points.
+
+Important columns:
+
+```text
+PKNAME      → parent block-device name
+FSTYPE      → filesystem type
+FSVER       → filesystem version
+LABEL       → optional human-readable filesystem label
+UUID        → unique filesystem identifier
+MOUNTPOINTS → directories where the filesystem is mounted
+```
+
+Inspect partition-table information:
+
+```bash
+lsblk -e 7 \
+  -o NAME,PATH,PKNAME,PTTYPE,PARTTYPE,PARTUUID,FSTYPE,UUID,MOUNTPOINTS
+```
+
+Common partition-table types:
+
+```text
+gpt → GUID Partition Table
+dos → legacy MBR partition table
+```
+
+### Inspect active mounts with `findmnt`
+
+```bash
+findmnt
+```
+
+Show the current mount hierarchy.
+
+Example structure:
+
+```text
+/
+├─ /proc
+├─ /sys
+├─ /dev
+├─ /run
+└─ /boot/efi
+```
+
+```bash
+findmnt -T PATH
+```
+
+Find the filesystem that contains a selected path.
+
+Example:
+
+```bash
+findmnt -T "$HOME/Projects/Learning-Journey"
+```
+
+Show selected fields without headings:
+
+```bash
+findmnt -T PATH \
+  -no TARGET,SOURCE,FSTYPE,OPTIONS
+```
+
+Important fields:
+
+```text
+TARGET  → mount point
+SOURCE  → mounted device or source
+FSTYPE  → filesystem type
+OPTIONS → effective mount options
+```
+
+Example from this system:
+
+```text
+/ /dev/nvme0n1p3 ext4 rw,relatime
+```
+
+Check one exact mount point:
+
+```bash
+findmnt --mountpoint /boot/efi
+```
+
+`findmnt` generally returns exit status `1` when it cannot find a matching mount.
+
+### Check whether a path is a mount point
+
+```bash
+mountpoint PATH
+```
+
+On this system:
+
+```text
+exit 0  → the path is a mount point
+exit 32 → the path exists but is not a mount point
+```
+
+Example:
+
+```bash
+mountpoint /
+printf 'exit status: %s\n' "$?"
+```
+
+### Disk-backed and virtual filesystems
+
+Linux mounts both physical storage and special virtual filesystems.
+
+Disk-backed filesystems from this lesson:
+
+```text
+/          → ext4 on /dev/nvme0n1p3
+/boot/efi  → vfat on /dev/nvme0n1p2
+```
+
+Important virtual filesystems:
+
+```text
+/proc → process and kernel information
+/sys  → devices, drivers, and kernel subsystems
+/dev  → device nodes
+/run  → current-boot runtime data
+```
+
+Inspect them:
+
+```bash
+for target in / /boot/efi /proc /sys /dev /run; do
+  printf '\nTarget: %s\n' "$target"
+  findmnt -no TARGET,SOURCE,FSTYPE,OPTIONS "$target"
+done
+```
+
+`/proc` provides information such as:
+
+```text
+/proc/cpuinfo
+/proc/meminfo
+/proc/<PID>/
+```
+
+`/sys` exposes information about:
+
+```text
+block devices
+network interfaces
+drivers
+power management
+hardware classes
+```
+
+`/dev` contains device nodes such as:
+
+```text
+/dev/null
+/dev/zero
+/dev/random
+/dev/nvme0n1
+/dev/tty
+```
+
+`/run` stores temporary runtime information for the current boot:
+
+```text
+PID files
+service sockets
+runtime locks
+systemd state
+user-session data
+```
+
+### `tmpfs`
+
+`tmpfs` is a memory-backed filesystem.
+
+It can use RAM and swap, but its configured size is a maximum limit, not memory reserved immediately.
+
+Inspect runtime filesystems:
+
+```bash
+df -h \
+  --output=source,fstype,size,used,avail,pcent,target \
+  /run /dev/shm /run/user/1000
+```
+
+Example concept:
+
+```text
+/dev/shm size: 7.8G
+/dev/shm used: 16M
+```
+
+This does not mean that 7.8 GiB of RAM is permanently occupied.
+
+Important tmpfs locations:
+
+```text
+/run            → system runtime state
+/dev/shm        → shared memory
+/run/user/1000  → runtime data for UID 1000
+```
+
+### Common mount options
+
+```text
+rw       → read and write
+ro       → read-only
+relatime → reduce access-time updates
+nosuid   → ignore setuid and setgid privilege elevation
+nodev    → do not interpret files as device nodes
+noexec   → block direct execution from the mount
+```
+
+Ukrainian:
+
+```text
+read-only mount       → монтування лише для читання
+read-write mount      → монтування для читання та запису
+mount restriction     → обмеження монтування
+effective mount option → фактичний параметр монтування
+```
+
+`noexec` blocks direct execution:
+
+```bash
+/path/on/noexec/script.sh
+```
+
+but an interpreter can still read the script as data:
+
+```bash
+bash /path/on/noexec/script.sh
+```
+
+Therefore, `noexec` reduces risk but is not a complete security boundary.
+
+### Persistent mount configuration: `/etc/fstab`
+
+`/etc/fstab` describes filesystems and swap areas that should be prepared during startup.
+
+Show active non-comment entries:
+
+```bash
+grep -vE '^[[:space:]]*(#|$)' /etc/fstab
+```
+
+An `fstab` entry contains six fields:
+
+```text
+source  target  filesystem-type  options  dump  pass
+```
+
+Example:
+
+```text
+UUID=...  /  ext4  defaults  0  1
+```
+
+Show evaluated entries:
+
+```bash
+findmnt --fstab --evaluate \
+  -o TARGET,SOURCE,FSTYPE,OPTIONS
+```
+
+`--evaluate` resolves identifiers such as UUIDs.
+
+Validate the current configuration:
+
+```bash
+sudo findmnt --verify --verbose
+```
+
+A successful validation should report:
+
+```text
+0 parse errors
+0 errors
+exit status 0
+```
+
+A swap file can produce a warning because it is a regular file rather than a block-device partition. This is not necessarily an error when its filesystem type is correctly detected as `swap`.
+
+Important distinction:
+
+```text
+configured state → what /etc/fstab requests
+active state     → what is actually mounted or enabled now
+```
+
+Compare configured and active state:
+
+```bash
+findmnt --fstab --evaluate \
+  -o TARGET,SOURCE,FSTYPE,OPTIONS
+
+findmnt -no TARGET,SOURCE,FSTYPE,OPTIONS /
+findmnt -no TARGET,SOURCE,FSTYPE,OPTIONS /boot/efi
+
+swapon --show=NAME,TYPE,SIZE,USED,PRIO
+```
+
+Using UUIDs is usually safer than relying only on names such as `/dev/sdb1`, because device names can change.
+
+Never edit `/etc/fstab` without verifying:
+
+```text
+source device
+mount target
+filesystem type
+mount options
+```
+
+### Mounts as systemd units
+
+Systemd represents mounts as `.mount` units.
+
+Examples:
+
+```text
+/         → -.mount
+/boot/efi → boot-efi.mount
+```
+
+Convert a path into a mount-unit name:
+
+```bash
+systemd-escape --path --suffix=mount /
+systemd-escape --path --suffix=mount /boot/efi
+systemd-escape --path --suffix=mount /var/lib/docker
+```
+
+Inspect mount-unit status:
+
+```bash
+systemctl status --no-pager -l -- -.mount
+systemctl status --no-pager -l boot-efi.mount
+```
+
+For mount units:
+
+```text
+active (mounted) → the filesystem is mounted
+What             → mount source
+Where            → mount target
+Type             → filesystem type
+```
+
+Inspect machine-readable properties:
+
+```bash
+systemctl show \
+  -p Id \
+  -p LoadState \
+  -p ActiveState \
+  -p SubState \
+  -p What \
+  -p Where \
+  -p Type \
+  -p Options \
+  -- \
+  -.mount \
+  boot-efi.mount
+```
+
+`/etc/fstab` entries are converted into systemd units by:
+
+```text
+systemd-fstab-generator
+```
+
+Generated units can appear under:
+
+```text
+/run/systemd/generator/
+```
+
+Inspect their origin:
+
+```bash
+systemctl show \
+  -p Id \
+  -p FragmentPath \
+  -p SourcePath \
+  -- \
+  -.mount \
+  boot-efi.mount
+```
+
+Example relationship:
+
+```text
+/etc/fstab
+→ systemd-fstab-generator
+→ /run/systemd/generator/*.mount
+→ systemd mounts the filesystem
+```
+
+Do not edit generated files under `/run/systemd/generator`. Modify the original configuration source instead.
+
+### Filesystem capacity with `df`
+
+```bash
+df -hT
+```
+
+Show mounted filesystem usage.
+
+Options:
+
+```text
+-h → human-readable values
+-T → show filesystem type
+```
+
+Inspect the filesystem containing one path:
+
+```bash
+df -hT PATH
+```
+
+Example:
+
+```bash
+df -hT "$HOME/Projects/Learning-Journey"
+```
+
+Important columns:
+
+```text
+Size  → total filesystem capacity
+Used  → currently allocated storage
+Avail → storage available to ordinary users
+Use%  → percentage used
+```
+
+Check inode usage:
+
+```bash
+df -i PATH
+```
+
+Important columns:
+
+```text
+Inodes → total inode count
+IUsed  → used inodes
+IFree  → free inodes
+IUse%  → inode usage percentage
+```
+
+A filesystem can run out of:
+
+```text
+data blocks
+or
+inodes
+```
+
+Many small files can exhaust inodes even while `df -h` still reports free disk space.
+
+### Directory usage with `du`
+
+```bash
+du -sh PATH
+```
+
+Show the allocated size of a directory.
+
+```bash
+du -h --max-depth=1 PATH |
+sort -h
+```
+
+Show first-level usage and sort human-readable sizes.
+
+Stay inside one filesystem:
+
+```bash
+sudo du \
+  --one-file-system \
+  --human-readable \
+  --max-depth=1 \
+  / |
+sort -h
+```
+
+Equivalent shorter options:
+
+```bash
+sudo du -xhd1 / |
+sort -h
+```
+
+Important options:
+
+```text
+-x, --one-file-system → do not cross filesystem boundaries
+-h, --human-readable  → use K, M, and G units
+-d1, --max-depth=1    → show only the first level
+```
+
+Important distinction:
+
+```text
+df → filesystem-wide allocation
+du → allocated files reachable through directory paths
+```
+
+A standard DevOps investigation:
+
+```bash
+df -h /
+sudo du -xhd1 / | sort -h
+sudo du -xhd1 /var | sort -h
+sudo du -xhd1 /var/lib | sort -h
+```
+
+Continue deeper only into the largest directory.
+
+Example result from this lesson:
+
+```text
+/usr → installed programs and libraries
+/home → user and application data
+/var → logs, caches, and persistent service data
+```
+
+### Important Linux directories
+
+```text
+/usr       → installed programs, libraries, and shared resources
+/home      → user data and user application state
+/var       → changing application and service data
+/var/lib   → persistent service and application state
+/var/log   → logs and persistent journal data
+/var/cache → recreatable cached data
+/etc       → system-wide configuration
+/boot      → kernel and boot files
+/tmp       → temporary files
+```
+
+A large directory is not automatically unnecessary.
+
+Examples:
+
+```text
+/var/lib/dpkg  → critical dpkg package database
+/var/lib/apt   → persistent APT state
+/var/cache/apt → recreatable APT cache
+/var/log       → system and application logs
+```
+
+### Investigate logs and journal storage
+
+Inspect `/var/log`:
+
+```bash
+sudo du -xhd1 /var/log |
+sort -h
+```
+
+Show total journal usage:
+
+```bash
+sudo journalctl --disk-usage
+```
+
+Find the largest individual log files:
+
+```bash
+sudo find /var/log \
+  -xdev \
+  -type f \
+  -printf '%s %p\n' |
+sort -k1,1n |
+tail -n 15 |
+numfmt --field=1 --to=iec
+```
+
+Persistent systemd journal files are commonly stored under:
+
+```text
+/var/log/journal/
+```
+
+Journal rotation divides logs into multiple segment files instead of allowing one file to grow forever.
+
+Important terms:
+
+```text
+persistent journal → постійний журнал
+journal segment    → сегмент журналу
+log rotation       → ротація журналів
+archived log       → архівований журнал
+```
+
+Do not manually delete active journal files. Use supported `journalctl` maintenance commands only when cleanup is justified.
+
+### Investigate APT cache
+
+Inspect APT cache directories:
+
+```bash
+sudo du -xhd2 /var/cache/apt |
+sort -h
+```
+
+Find large cache files:
+
+```bash
+sudo find /var/cache/apt \
+  -xdev \
+  -type f \
+  -printf '%s %p\n' |
+sort -k1,1n |
+tail -n 15 |
+numfmt --field=1 --to=iec
+```
+
+Count cached `.deb` packages:
+
+```bash
+sudo find /var/cache/apt/archives \
+  -maxdepth 1 \
+  -type f \
+  -name '*.deb' |
+wc -l
+```
+
+Important distinction:
+
+```text
+/var/lib/apt   → package-manager state
+/var/cache/apt → cached and recreatable data
+```
+
+Use APT commands for cleanup rather than deleting package-manager files manually.
+
+### Allocated size and apparent size
+
+```bash
+du -sh PATH
+```
+
+Show allocated storage.
+
+```bash
+du -sh --apparent-size PATH
+```
+
+Show the logical length of file contents.
+
+Example from the repository:
+
+```text
+allocated size → 1.9M
+apparent size  → 709K
+```
+
+Allocated size may be larger because filesystems allocate complete blocks.
+
+Example:
+
+```text
+100-byte file
+→ apparent size: about 100 bytes
+→ allocated size: commonly at least 4 KiB
+```
+
+Inspect filesystem block information:
+
+```bash
+stat -f --printf='Filesystem type: %T\nBlock size: %S bytes\n' PATH
+```
+
+Inspect file allocation:
+
+```bash
+stat --printf='Apparent size: %s bytes\nAllocated blocks: %b\nBlock unit: %B bytes\n' FILE
+```
+
+For GNU `stat`:
+
+```text
+%s → apparent size in bytes
+%b → allocated block count
+%B → bytes in each reported block unit
+```
+
+The block unit reported by `%B` is commonly `512` bytes.
+
+This is not necessarily the same as the ext4 allocation block size, which was `4096` bytes on this system.
+
+Example calculation:
+
+```text
+8 stat blocks × 512 bytes = 4096 bytes
+```
+
+### Sparse files
+
+A sparse file can have a large logical size without using the same amount of physical storage.
+
+Create a sparse file:
+
+```bash
+truncate -s 1G sparse-demo.img
+```
+
+Inspect it:
+
+```bash
+ls -lh sparse-demo.img
+du -h sparse-demo.img
+du -h --apparent-size sparse-demo.img
+stat sparse-demo.img
+```
+
+Expected concept:
+
+```text
+logical size:   1 GiB
+allocated size: almost 0
+```
+
+A sparse region is called a file hole.
+
+Reading an unwritten hole returns zero bytes even though physical data blocks were not allocated.
+
+Write one 4 KiB block without reducing the file length:
+
+```bash
+dd if=/dev/zero \
+  of=sparse-demo.img \
+  bs=4096 \
+  count=1 \
+  conv=notrunc \
+  status=none
+```
+
+`conv=notrunc` means:
+
+```text
+do not shorten the existing file
+```
+
+After the write:
+
+```text
+logical size:   1 GiB
+allocated size: approximately 4 KiB
+```
+
+Copy while preserving sparse regions:
+
+```bash
+cp --sparse=always \
+  sparse-demo.img \
+  sparse-copy.img
+```
+
+Compare content:
+
+```bash
+cmp --silent sparse-demo.img sparse-copy.img
+printf 'cmp exit status: %s\n' "$?"
+```
+
+`cmp` exit statuses:
+
+```text
+0 → files are identical
+1 → files differ
+2 → comparison error
+```
+
+Sparse files are used for:
+
+```text
+virtual-machine disk images
+database files
+container storage
+backup images
+preallocated application files
+```
+
+Important terms:
+
+```text
+sparse file       → розріджений файл
+file hole         → розріджена область файла
+logical size      → логічний розмір
+allocated size    → фактично виділене місце
+preserve sparseness → зберігати розріджену структуру
+```
+
+### Hard links and disk accounting
+
+A hard link is another directory entry for the same inode.
+
+```text
+two pathnames
+→ same filesystem
+→ same inode
+→ same physical data
+```
+
+Inspect inode numbers:
+
+```bash
+ls -li FILE1 FILE2
+```
+
+Inspect metadata:
+
+```bash
+stat FILE
+```
+
+Find all paths referring to the same file:
+
+```bash
+find PATHS \
+  -xdev \
+  -samefile FILE \
+  -printf 'inode=%i links=%n size=%s path=%p\n'
+```
+
+Important fields:
+
+```text
+%i → inode number
+%n → hard-link count
+%s → file size
+%p → pathname
+```
+
+Hard links cannot normally cross filesystem boundaries.
+
+Normal `du` avoids counting the same hard-linked inode more than once during one scan.
+
+Count every hard-link entry:
+
+```bash
+du -sh --count-links PATHS
+```
+
+The result from `--count-links` should not be added as unique physical usage because the same disk blocks may be counted multiple times.
+
+Important distinction:
+
+```text
+hard link     → another name for the same inode
+symbolic link → a separate file that contains a pathname
+bind mount    → another mounted view of a directory tree
+```
+
+Important terms:
+
+```text
+hard link        → жорстке посилання
+directory entry  → запис каталогу
+same inode       → той самий inode
+double-counting  → подвійний підрахунок
+unique disk data → унікальні фізичні дані
+```
+
+### Deleted-but-open files
+
+A process can keep a file open after its pathname has been deleted.
+
+In this situation:
+
+```text
+du cannot find the deleted pathname
+df still counts the allocated blocks
+```
+
+A simplified lifecycle:
+
+```text
+create file
+→ process opens file
+→ pathname is deleted
+→ file remains allocated
+→ process closes descriptor
+→ storage is released
+```
+
+Inspect a process file descriptor:
+
+```bash
+ls -l /proc/PID/fd/FD
+```
+
+A deleted open file can appear as:
+
+```text
+/path/to/file.log (deleted)
+```
+
+Search system-wide for deleted-but-open files:
+
+```bash
+sudo lsof +L1
+```
+
+`+L1` searches for open files whose hard-link count is below one.
+
+This problem often happens during log rotation when a service does not reopen its log file.
+
+The normal repair is to make the owning process close or reopen the file, often through a service reload or restart.
+
+Deleting additional files does not release storage held by an open descriptor.
+
+Important terms:
+
+```text
+file descriptor       → файловий дескриптор
+deleted pathname      → видалене ім’я файла
+deleted-but-open file → видалений, але відкритий файл
+release storage       → звільнити місце
+```
+
+### Temporary tmpfs mount
+
+Create a temporary mount point:
+
+```bash
+mount_dir=$(mktemp -d /tmp/example-mount-XXXXXX)
+```
+
+Mount a small tmpfs:
+
+```bash
+sudo mount \
+  -t tmpfs \
+  -o size=32M,mode=700,nosuid,nodev,noexec \
+  tmpfs \
+  "$mount_dir"
+```
+
+Verify it:
+
+```bash
+mountpoint "$mount_dir"
+
+findmnt \
+  --mountpoint "$mount_dir" \
+  -o TARGET,SOURCE,FSTYPE,SIZE,USED,AVAIL,USE%,OPTIONS
+```
+
+Unmount it:
+
+```bash
+sudo umount "$mount_dir"
+```
+
+Verify it is gone:
+
+```bash
+mountpoint "$mount_dir"
+findmnt --mountpoint "$mount_dir"
+```
+
+After unmounting, the original underlying directory becomes visible again.
+
+Remove the empty directory:
+
+```bash
+rmdir "$mount_dir"
+```
+
+Never delete a mount-point directory before confirming that it has been unmounted.
+
+### Bind mounts
+
+A bind mount makes an existing directory tree available at another path.
+
+```text
+source directory
+→ bind mount
+→ target path
+```
+
+Create a bind mount:
+
+```bash
+sudo mount \
+  --bind \
+  SOURCE_DIRECTORY \
+  TARGET_DIRECTORY
+```
+
+Verify it:
+
+```bash
+findmnt \
+  --mountpoint TARGET_DIRECTORY \
+  -o TARGET,SOURCE,FSTYPE,OPTIONS
+```
+
+Files accessed through source and target have:
+
+```text
+same device
+same inode
+same underlying data
+```
+
+A bind mount does not copy data and does not increase each file’s hard-link count.
+
+Changes made through either path affect the same files.
+
+Unmount the target:
+
+```bash
+sudo umount TARGET_DIRECTORY
+```
+
+Unmounting removes the alternate view but does not delete source data.
+
+Bind mounts are used in:
+
+```text
+Docker bind mounts
+container configuration
+chroot environments
+service isolation
+Kubernetes hostPath volumes
+```
+
+### Read-only bind mounts
+
+Create a normal bind mount:
+
+```bash
+sudo mount \
+  --bind \
+  SOURCE_DIRECTORY \
+  TARGET_DIRECTORY
+```
+
+Remount only the target view as read-only:
+
+```bash
+sudo mount \
+  -o remount,bind,ro \
+  TARGET_DIRECTORY
+```
+
+Verify the target options:
+
+```bash
+findmnt \
+  --mountpoint TARGET_DIRECTORY \
+  -o TARGET,SOURCE,FSTYPE,OPTIONS
+```
+
+Expected:
+
+```text
+source path → rw
+target path → ro
+```
+
+Writing through the target produces:
+
+```text
+Read-only file system
+```
+
+Writing through the original source can still succeed.
+
+The target immediately shows source changes because both paths expose the same underlying data.
+
+Important distinction:
+
+```text
+Permission denied
+→ access blocked by ownership or Unix permission bits
+
+Read-only file system
+→ access blocked by the mount itself
+```
+
+### Swap
+
+Show active swap:
+
+```bash
+swapon --show
+```
+
+Select columns:
+
+```bash
+swapon --show=NAME,TYPE,SIZE,USED,PRIO
+```
+
+Show memory and swap totals:
+
+```bash
+free -h
+```
+
+Read kernel memory values:
+
+```bash
+grep -E \
+  '^(MemTotal|MemAvailable|SwapTotal|SwapFree):' \
+  /proc/meminfo
+```
+
+Example from this system:
+
+```text
+/swap.img
+type: file
+size: 4G
+used: 0B
+```
+
+A swap file is not mounted at a directory. Its target field in `/etc/fstab` is commonly `none`.
+
+Important terms:
+
+```text
+swap file      → файл підкачки
+swap area      → область підкачки
+memory pressure → нестача або високий тиск на оперативну пам’ять
+```
+
+### ext4 filesystem metadata
+
+Identify the root device:
+
+```bash
+root_dev=$(findmnt -no SOURCE /)
+```
+
+Read ext4 metadata:
+
+```bash
+sudo tune2fs -l "$root_dev"
+```
+
+Use only `-l` for a read-only listing. Other `tune2fs` options can modify filesystem settings.
+
+Useful fields:
+
+```text
+Filesystem UUID
+Filesystem features
+Filesystem state
+Errors behavior
+Block count
+Reserved block count
+Free blocks
+Block size
+Mount count
+Maximum mount count
+Last checked
+Check interval
+```
+
+Example values from this system:
+
+```text
+filesystem state:      clean
+block size:            4096 bytes
+reserved percentage:   5%
+errors behavior:       Continue
+```
+
+`Filesystem state: clean` means the filesystem is not currently marked as unclean.
+
+It does not mean that a full filesystem scan was performed.
+
+Important ext4 features:
+
+```text
+has_journal   → filesystem journal is enabled
+extent        → files use efficient block-range descriptions
+64bit         → supports large filesystem structures
+dir_index     → indexed directory lookup
+metadata_csum → metadata checksums
+```
+
+`needs_recovery` can appear for an actively mounted read-write filesystem because journal recovery information is available if required after an improper shutdown.
+
+Never run `e2fsck` against an actively mounted root filesystem.
+
+### Reserved ext4 blocks
+
+Ext4 can reserve part of the filesystem for privileged use.
+
+Calculate reserved capacity:
+
+```bash
+sudo tune2fs -l "$root_dev" |
+awk -F: '
+  /^Block count:/ {
+    gsub(/[[:space:]]/, "", $2)
+    total = $2
+  }
+  /^Reserved block count:/ {
+    gsub(/[[:space:]]/, "", $2)
+    reserved = $2
+  }
+  /^Block size:/ {
+    gsub(/[[:space:]]/, "", $2)
+    block_size = $2
+  }
+  END {
+    printf "Reserved blocks: %d\n", reserved
+    printf "Reserved capacity: %.2f GiB\n",
+           reserved * block_size / 1024 / 1024 / 1024
+    printf "Reserved percentage: %.2f%%\n",
+           reserved * 100 / total
+  }
+'
+```
+
+Example from this system:
+
+```text
+reserved capacity:   approximately 23.69 GiB
+reserved percentage: 5%
+```
+
+Reserved blocks are free but normally unavailable to ordinary users.
+
+They can help:
+
+```text
+root services continue writing essential information
+administrators perform emergency cleanup
+reduce filesystem fragmentation near full capacity
+```
+
+Important distinction:
+
+```text
+free blocks
+→ all currently unallocated blocks
+
+available blocks
+→ blocks available to ordinary users
+
+reserved blocks
+→ free blocks withheld from ordinary-user allocation
+```
+
+The reserve is an allocation policy, not a hidden file.
+
+Do not change the reserved-block percentage without a clear operational reason.
+
+### Safe cleanup pattern
+
+Before removing a temporary lesson directory, verify that the path matches the expected prefix.
+
+Example:
+
+```bash
+case "$temporary_directory" in
+  /tmp/expected-prefix-*)
+    rm -rf -- "$temporary_directory"
+    cleanup_status=$?
+    ;;
+  *)
+    printf 'Refusing unexpected cleanup path: %s\n' \
+      "$temporary_directory" >&2
+    cleanup_status=1
+    ;;
+esac
+```
+
+Important safety practices:
+
+```text
+quote path variables
+use -- before path arguments
+verify mount state before deletion
+unmount before removing a mount point
+use application-supported cleanup tools
+avoid manual deletion from /var/lib
+```
+
+### Common DevOps storage investigation
+
+Check the filesystem:
+
+```bash
+df -hT /
+df -i /
+```
+
+Identify large top-level directories:
+
+```bash
+sudo du -xhd1 / |
+sort -h
+```
+
+Continue into the largest directory:
+
+```bash
+sudo du -xhd1 /var |
+sort -h
+
+sudo du -xhd1 /var/lib |
+sort -h
+```
+
+Inspect logs:
+
+```bash
+sudo journalctl --disk-usage
+sudo du -xhd1 /var/log |
+sort -h
+```
+
+Check deleted-but-open files:
+
+```bash
+sudo lsof +L1
+```
+
+Inspect mounts:
+
+```bash
+findmnt
+findmnt -T PATH
+```
+
+Validate persistent mount configuration:
+
+```bash
+sudo findmnt --verify --verbose
+```
+
+Check systemd mount units:
+
+```bash
+systemctl status --no-pager -l -- UNIT.mount
+```
+
+### Important command reference
+
+```bash
+lsblk
+```
+
+List block devices, partitions, filesystems, and mount points.
+
+```bash
+findmnt
+```
+
+Show active mounts and their hierarchy.
+
+```bash
+findmnt -T PATH
+```
+
+Find the filesystem containing a path.
+
+```bash
+mountpoint PATH
+```
+
+Check whether a path is an active mount point.
+
+```bash
+df -hT PATH
+```
+
+Show filesystem capacity, usage, and type.
+
+```bash
+df -i PATH
+```
+
+Show inode usage.
+
+```bash
+du -sh PATH
+```
+
+Show allocated directory size.
+
+```bash
+du -sh --apparent-size PATH
+```
+
+Show logical directory size.
+
+```bash
+sudo du -xhd1 PATH | sort -h
+```
+
+Find large first-level directories without crossing filesystem boundaries.
+
+```bash
+stat FILE
+```
+
+Inspect file metadata, inode, size, and allocation.
+
+```bash
+stat -f PATH
+```
+
+Inspect filesystem-level information.
+
+```bash
+swapon --show
+```
+
+Show active swap areas.
+
+```bash
+sudo journalctl --disk-usage
+```
+
+Show systemd journal storage usage.
+
+```bash
+sudo lsof +L1
+```
+
+Find deleted-but-open files.
+
+```bash
+sudo mount --bind SOURCE TARGET
+```
+
+Create a bind mount.
+
+```bash
+sudo mount -o remount,bind,ro TARGET
+```
+
+Make a bind-mounted target read-only.
+
+```bash
+sudo umount TARGET
+```
+
+Unmount a filesystem or bind mount.
+
+```bash
+sudo findmnt --verify --verbose
+```
+
+Validate `/etc/fstab`.
+
+```bash
+sudo tune2fs -l DEVICE
+```
+
+Read ext4 filesystem metadata.
+
+### Important vocabulary
+
+- storage — сховище
+- storage capacity — місткість сховища
+- storage usage — використання сховища
+- block device — блоковий пристрій
+- physical disk — фізичний диск
+- partition — розділ диска
+- partition table — таблиця розділів
+- filesystem — файлова система
+- filesystem type — тип файлової системи
+- mount — монтування
+- mount point — точка монтування
+- mount source — джерело монтування
+- mount target — ціль монтування
+- mount hierarchy — ієрархія монтувань
+- mount option — параметр монтування
+- filesystem boundary — межа файлової системи
+- disk-backed filesystem — файлова система на накопичувачі
+- virtual filesystem — віртуальна файлова система
+- pseudo-filesystem — псевдофайлова система
+- memory-backed filesystem — файлова система в оперативній пам’яті
+- runtime data — дані поточного запуску
+- persistent data — постійні дані
+- volatile data — тимчасові дані
+- shared memory — спільна пам’ять
+- device node — файл-представник пристрою
+- UUID — унікальний ідентифікатор
+- filesystem label — мітка файлової системи
+- configured state — налаштований стан
+- active state — активний стан
+- generated unit — автоматично створений юніт
+- mount unit — юніт монтування
+- allocation — виділення місця
+- allocated size — фактично виділене місце
+- apparent size — логічний розмір
+- filesystem block — блок файлової системи
+- block size — розмір блока
+- free blocks — вільні блоки
+- available blocks — доступні блоки
+- reserved blocks — зарезервовані блоки
+- reserved capacity — зарезервована місткість
+- inode — структура метаданих файла
+- inode usage — використання inode
+- inode exhaustion — вичерпання inode
+- sparse file — розріджений файл
+- file hole — розріджена область файла
+- preserve sparseness — зберігати розріджену структуру
+- hard link — жорстке посилання
+- symbolic link — символічне посилання
+- directory entry — запис каталогу
+- hard-link count — кількість жорстких посилань
+- same inode — той самий inode
+- double-counting — подвійний підрахунок
+- file descriptor — файловий дескриптор
+- deleted pathname — видалене ім’я файла
+- deleted-but-open file — видалений, але відкритий файл
+- release storage — звільнити місце
+- bind mount — прив’язане монтування
+- alternate view — альтернативне представлення
+- read-only mount — монтування лише для читання
+- read-write mount — монтування для читання та запису
+- write protection — захист від запису
+- mount restriction — обмеження монтування
+- underlying directory — початковий каталог під точкою монтування
+- underlying file — базовий файловий об’єкт
+- unmount — розмонтувати
+- persistent journal — постійний журнал
+- journal segment — сегмент журналу
+- log rotation — ротація журналів
+- cache — кеш
+- recreatable data — дані, які можна створити повторно
+- package archive — архів пакета
+- filesystem metadata — метадані файлової системи
+- filesystem state — стан файлової системи
+- filesystem feature — можливість файлової системи
+- filesystem check — перевірка файлової системи
+- metadata checksum — контрольна сума метаданих
+- extent — діапазон послідовних блоків
+- allocation policy — політика виділення місця
+- storage investigation — дослідження використання сховища
+- disk-space incident — інцидент із заповненням диска
+- storage owner — застосунок або служба, якій належать дані
+- guarded cleanup — очищення із захисною перевіркою
+
+### My sentence
+
+I learned how Linux organizes disks, partitions, filesystems, mount points, and swap; how to investigate storage with `lsblk`, `findmnt`, `df`, `du`, and `stat`; and how to work safely with sparse files, hard links, systemd mount units, temporary filesystems, bind mounts, read-only views, ext4 metadata, and storage-related incidents.
