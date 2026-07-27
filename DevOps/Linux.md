@@ -12436,3 +12436,1355 @@ Read ext4 filesystem metadata.
 ### My sentence
 
 I learned how Linux organizes disks, partitions, filesystems, mount points, and swap; how to investigate storage with `lsblk`, `findmnt`, `df`, `du`, and `stat`; and how to work safely with sparse files, hard links, systemd mount units, temporary filesystems, bind mounts, read-only views, ext4 metadata, and storage-related incidents.
+## Lesson 19 — Linux archives, compression, and backup verification
+
+### Why this topic matters in DevOps
+
+DevOps engineers regularly archive, compress, transfer, verify, and restore files.
+
+Common uses include:
+
+- creating release packages;
+- saving configuration before a deployment;
+- transferring application files between servers;
+- storing CI/CD artifacts;
+- collecting logs during incidents;
+- verifying downloaded software;
+- restoring deleted or damaged files;
+- creating backups before risky changes.
+
+Important principle:
+
+```text
+A backup is not proven until it has been restored successfully.
+```
+
+Ukrainian:
+
+```text
+Резервна копія не є перевіреною, доки з неї не було успішно відновлено дані.
+```
+
+### Archive versus compression
+
+An archive combines multiple files and directories into one file.
+
+Compression reduces the storage required by data.
+
+```text
+archive     → combines files into one container
+compression → reduces the amount of storage used
+```
+
+Common formats:
+
+```text
+.tar     → uncompressed tar archive
+.tar.gz  → tar archive compressed with gzip
+.tgz     → shorter extension for .tar.gz
+.tar.xz  → tar archive compressed with xz
+.txz     → shorter extension for .tar.xz
+.zip     → archive and compression in one cross-platform format
+```
+
+Important terms:
+
+```text
+archive             → архів
+compression         → стиснення
+archive member      → об’єкт усередині архіву
+compressed archive  → стиснений архів
+archive container   → файл-контейнер архіву
+```
+
+### Prepare clean archive paths
+
+Archive relative paths rather than complete absolute paths.
+
+Recommended pattern:
+
+```bash
+tar \
+  --create \
+  --file=backup.tar \
+  --directory=PARENT_DIRECTORY \
+  DIRECTORY
+```
+
+Example:
+
+```bash
+tar \
+  --create \
+  --file=source-backup.tar \
+  --directory=/tmp/example \
+  source
+```
+
+The archive stores:
+
+```text
+source/
+source/config/
+source/config/app.conf
+```
+
+It does not store:
+
+```text
+/tmp/example/source/config/app.conf
+```
+
+This makes the archive cleaner, safer, and easier to extract elsewhere.
+
+Important option:
+
+```text
+--directory, -C → change directory before processing files
+```
+
+### Create an uncompressed tar archive
+
+```bash
+tar \
+  --create \
+  --verbose \
+  --file=source-backup.tar \
+  --directory=/tmp/example \
+  source
+```
+
+Short form:
+
+```bash
+tar -cvf source-backup.tar \
+  -C /tmp/example \
+  source
+```
+
+Options:
+
+```text
+--create, -c  → create a new archive
+--verbose, -v → display processed members
+--file, -f    → specify the archive filename
+```
+
+Important rule:
+
+```text
+-f must be followed by the archive filename
+```
+
+List archive contents without extracting:
+
+```bash
+tar \
+  --list \
+  --verbose \
+  --file=source-backup.tar
+```
+
+Short form:
+
+```bash
+tar -tvf source-backup.tar
+```
+
+Options:
+
+```text
+--list, -t → list archive members
+```
+
+Verbose listing can show:
+
+```text
+file type and permissions
+owner and group
+file size
+modification time
+stored path
+symbolic-link target
+```
+
+### Create a gzip-compressed tar archive
+
+```bash
+tar \
+  --create \
+  --gzip \
+  --verbose \
+  --file=source-backup.tar.gz \
+  --directory=/tmp/example \
+  source
+```
+
+Short form:
+
+```bash
+tar -czvf source-backup.tar.gz \
+  -C /tmp/example \
+  source
+```
+
+New option:
+
+```text
+--gzip, -z → use gzip compression
+```
+
+Conceptual process:
+
+```text
+files and directories
+→ tar creates one archive stream
+→ gzip compresses the stream
+→ .tar.gz file
+```
+
+Test the gzip stream:
+
+```bash
+gzip --test source-backup.tar.gz
+printf 'exit status: %s\n' "$?"
+```
+
+Exit status:
+
+```text
+0        → gzip stream is structurally valid
+non-zero → gzip detected an error
+```
+
+List without extracting:
+
+```bash
+tar -tzvf source-backup.tar.gz
+```
+
+### Create an xz-compressed tar archive
+
+```bash
+tar \
+  --create \
+  --xz \
+  --verbose \
+  --file=source-backup.tar.xz \
+  --directory=/tmp/example \
+  source
+```
+
+Short form:
+
+```bash
+tar -cJvf source-backup.tar.xz \
+  -C /tmp/example \
+  source
+```
+
+New option:
+
+```text
+--xz, -J → use xz compression
+```
+
+Test the xz stream:
+
+```bash
+xz --test source-backup.tar.xz
+printf 'exit status: %s\n' "$?"
+```
+
+General comparison:
+
+```text
+gzip → usually faster and widely supported
+xz   → often stronger compression but slower and more CPU-intensive
+```
+
+A stronger algorithm does not guarantee a smaller result for every archive.
+
+For very small files, format metadata and compression overhead may be larger than the saved space.
+
+Important terms:
+
+```text
+compression algorithm → алгоритм стиснення
+compression overhead  → службові витрати формату стиснення
+compression ratio     → коефіцієнт стиснення
+trade-off             → компроміс між перевагами та витратами
+CPU-intensive         → ресурсомісткий для процесора
+```
+
+### Create a ZIP archive
+
+ZIP combines archiving and compression in one format.
+
+```bash
+(
+  cd /tmp/example || exit 1
+
+  zip \
+    --recurse-paths \
+    source-backup.zip \
+    source
+)
+```
+
+Short form:
+
+```bash
+zip -r source-backup.zip source
+```
+
+Option:
+
+```text
+--recurse-paths, -r → recursively include directories
+```
+
+The parentheses create a subshell.
+
+```text
+subshell → дочірнє середовище оболонки
+```
+
+Changing directory inside the subshell does not change the main shell’s directory.
+
+Test a ZIP archive:
+
+```bash
+unzip -t source-backup.zip
+```
+
+List ZIP contents:
+
+```bash
+unzip -l source-backup.zip
+```
+
+ZIP output may show:
+
+```text
+deflated → file was compressed
+stored   → file was stored without compression
+```
+
+Very small files may be stored without compression because compression would not save useful space.
+
+Practical format choice:
+
+```text
+.tar.gz → common for Linux backups, releases, and source packages
+.tar.xz → useful when smaller size is more important than speed
+.zip    → convenient across Linux, Windows, and macOS
+```
+
+### Logical size versus allocated size
+
+```bash
+ls -lh ARCHIVE
+```
+
+Shows the archive’s logical file size.
+
+```bash
+du -h ARCHIVE
+```
+
+Shows allocated filesystem space.
+
+Example:
+
+```text
+logical size:   336 bytes
+allocated size: 4 KiB
+```
+
+The filesystem allocates complete blocks, so a small archive commonly occupies at least one block.
+
+### Inspect before extracting
+
+Always inspect an unfamiliar archive before extraction.
+
+For tar:
+
+```bash
+tar -tf backup.tar
+tar -tzf backup.tar.gz
+tar -tJf backup.tar.xz
+```
+
+For ZIP:
+
+```bash
+unzip -l backup.zip
+```
+
+Look for suspicious member names such as:
+
+```text
+/etc/example.conf
+../../important-file
+```
+
+Dangerous patterns:
+
+```text
+absolute path → begins with /
+path traversal → uses .. to leave the intended directory
+```
+
+Important vocabulary:
+
+```text
+unsafe path        → небезпечний шлях
+absolute path      → абсолютний шлях
+relative path      → відносний шлях
+parent directory   → батьківський каталог
+path traversal     → вихід за межі дозволеного каталогу
+malicious archive  → шкідливий архів
+```
+
+### Basic tar path-safety check
+
+Count suspicious archive members:
+
+```bash
+unsafe_member_count=$(
+  tar \
+    --list \
+    --gzip \
+    --file=backup.tar.gz |
+  awk '
+    /^\// {
+      unsafe++
+    }
+
+    /(^|\/)\.\.(\/|$)/ {
+      unsafe++
+    }
+
+    END {
+      print unsafe + 0
+    }
+  '
+)
+```
+
+Extract only when the result is zero:
+
+```bash
+if [ "$unsafe_member_count" -eq 0 ]; then
+  tar \
+    --extract \
+    --gzip \
+    --file=backup.tar.gz \
+    --directory=RESTORE_DIRECTORY
+else
+  printf '%s\n' \
+    'Refusing extraction because unsafe paths were detected.' >&2
+fi
+```
+
+Translation:
+
+```text
+Refusing extraction because unsafe paths were detected.
+→ Відмова від розпакування, тому що були виявлені небезпечні шляхи.
+```
+
+This simple check is useful for learning, but unfamiliar archives should still be handled in an isolated location.
+
+### Extract tar archives
+
+Create a separate restore directory:
+
+```bash
+mkdir restore-directory
+```
+
+Extract an uncompressed archive:
+
+```bash
+tar \
+  --extract \
+  --verbose \
+  --file=backup.tar \
+  --directory=restore-directory
+```
+
+Extract gzip:
+
+```bash
+tar \
+  --extract \
+  --gzip \
+  --verbose \
+  --file=backup.tar.gz \
+  --directory=restore-directory
+```
+
+Short form:
+
+```bash
+tar -xzvf backup.tar.gz \
+  -C restore-directory
+```
+
+Extract xz:
+
+```bash
+tar -xJvf backup.tar.xz \
+  -C restore-directory
+```
+
+Options:
+
+```text
+--extract, -x   → extract archive members
+--directory, -C → extract relative to a selected directory
+```
+
+Recommended restoration workflow:
+
+```text
+inspect archive
+→ create a new empty restore directory
+→ extract the archive
+→ inspect restored files
+→ compare them with the original
+→ only then use them
+```
+
+Important terms:
+
+```text
+extract               → розпакувати, витягнути з архіву
+extraction            → розпакування
+restore               → відновити
+restored data         → відновлені дані
+dedicated directory   → окремий спеціально призначений каталог
+restoration workflow  → процес відновлення
+```
+
+### Compare original and restored data
+
+Compare complete directory trees:
+
+```bash
+diff \
+  --recursive \
+  --no-dereference \
+  ORIGINAL_DIRECTORY \
+  RESTORED_DIRECTORY
+```
+
+Options:
+
+```text
+--recursive, -r      → include nested directories
+--no-dereference     → compare symbolic links themselves
+```
+
+`diff` exit statuses:
+
+```text
+0 → no differences
+1 → differences found
+2 → comparison error
+```
+
+A successful archive creation is not enough.
+
+A useful backup must also pass a restoration test.
+
+### Timestamps and permissions
+
+Inspect metadata:
+
+```bash
+stat \
+  --printf='%A %a %s bytes %y %n\n' \
+  ORIGINAL_FILE \
+  RESTORED_FILE
+```
+
+Useful output:
+
+```text
+%A → symbolic permissions
+%a → numeric permission mode
+%s → size in bytes
+%y → modification timestamp
+%n → filename
+```
+
+A tar archive normally preserves:
+
+```text
+directory structure
+file permissions
+modification timestamps
+symbolic links
+```
+
+Timestamp precision may differ.
+
+For example, the same whole second may be preserved while fractional nanoseconds are not.
+
+Terms:
+
+```text
+timestamp precision  → точність часової мітки
+fractional seconds   → дробова частина секунди
+nanosecond precision → точність до наносекунд
+```
+
+### SHA-256 checksums
+
+A checksum is a value calculated from file contents.
+
+```text
+same bytes    → same SHA-256 hash
+changed bytes → different SHA-256 hash
+```
+
+Calculate one checksum:
+
+```bash
+sha256sum backup.tar.gz
+```
+
+Create a checksum manifest:
+
+```bash
+sha256sum \
+  backup.tar \
+  backup.tar.gz \
+  backup.tar.xz \
+  backup.zip \
+  > archive-checksums.sha256
+```
+
+Verify it:
+
+```bash
+sha256sum --check archive-checksums.sha256
+```
+
+Expected output:
+
+```text
+backup.tar: OK
+backup.tar.gz: OK
+backup.tar.xz: OK
+backup.zip: OK
+```
+
+Exit status:
+
+```text
+0        → all listed files matched
+non-zero → one or more checks failed
+```
+
+Important vocabulary:
+
+```text
+checksum               → контрольна сума
+cryptographic hash     → криптографічний хеш
+checksum manifest      → файл-перелік контрольних сум
+verify integrity       → перевірити цілісність
+exact byte match       → точна відповідність байтів
+hash mismatch          → невідповідність хешу
+data corruption        → пошкодження даних
+unexpected modification → неочікувана зміна
+```
+
+### Create a manifest for directory files
+
+Create stable checksums for every regular file:
+
+```bash
+(
+  cd SOURCE_DIRECTORY || exit 1
+
+  find . \
+    -type f \
+    -print0 |
+  sort -z |
+  xargs -0 sha256sum \
+    > /tmp/source-files.sha256
+)
+```
+
+Important options:
+
+```text
+-print0 → separate filenames with null bytes
+sort -z → sort null-separated names
+xargs -0 → read null-separated names
+```
+
+This safely handles filenames containing spaces or unusual characters.
+
+Verify files in a restored directory:
+
+```bash
+(
+  cd RESTORED_DIRECTORY || exit 1
+  sha256sum --check /tmp/source-files.sha256
+)
+```
+
+This confirms the restored contents match the original files exactly.
+
+### Archive tests versus checksums
+
+```text
+gzip --test
+xz --test
+unzip -t
+```
+
+Check whether the compressed structure is readable.
+
+```text
+sha256sum --check
+```
+
+Checks whether the current bytes match an earlier recorded value.
+
+Important distinction:
+
+```text
+archive integrity test
+→ checks internal archive or compression structure
+
+checksum verification
+→ confirms exact byte-for-byte identity
+```
+
+A checksum does not prove who created a file.
+
+For publisher identity and authenticity, a digital signature is needed.
+
+```text
+authenticity      → автентичність
+digital signature → цифровий підпис
+publisher         → видавець або автор релізу
+```
+
+### Detect a modified restored file
+
+Modify a restored copy:
+
+```bash
+printf 'Unexpected modification\n' \
+  >> restored/documents/notes.txt
+```
+
+Verify against the original manifest:
+
+```bash
+(
+  cd restored || exit 1
+  sha256sum --check /tmp/source-files.sha256
+)
+```
+
+Expected:
+
+```text
+./documents/notes.txt: FAILED
+```
+
+Exit status:
+
+```text
+1 → at least one checksum did not match
+```
+
+This detects accidental or unexpected changes.
+
+### Restore only one selected file
+
+List the exact member name first:
+
+```bash
+tar -tzf backup.tar.gz
+```
+
+Extract only one member:
+
+```bash
+tar \
+  --extract \
+  --gzip \
+  --verbose \
+  --overwrite \
+  --file=backup.tar.gz \
+  --directory=restore-directory \
+  source/documents/notes.txt
+```
+
+Short form:
+
+```bash
+tar -xzvf backup.tar.gz \
+  -C restore-directory \
+  source/documents/notes.txt
+```
+
+Option:
+
+```text
+--overwrite → replace an existing file
+```
+
+This is called:
+
+```text
+selective restoration → вибіркове відновлення
+```
+
+It is useful when only one configuration file, script, certificate, or document must be recovered.
+
+Recommended process:
+
+```text
+detect checksum failure
+→ identify the affected file
+→ restore only that member
+→ verify checksums again
+```
+
+Vocabulary:
+
+```text
+affected file         → змінений або пошкоджений файл
+selective extraction  → вибіркове розпакування
+selective restoration → вибіркове відновлення
+recover               → відновити
+overwrite             → перезаписати
+```
+
+### Detect archive corruption
+
+Never intentionally damage the original backup.
+
+Create a disposable copy:
+
+```bash
+cp -- \
+  backup.tar.gz \
+  backup-corrupt.tar.gz
+```
+
+Remove its final byte:
+
+```bash
+truncate \
+  --size=-1 \
+  backup-corrupt.tar.gz
+```
+
+`--size=-1` means:
+
+```text
+reduce the current file size by one byte
+```
+
+Compare hashes:
+
+```bash
+sha256sum \
+  backup.tar.gz \
+  backup-corrupt.tar.gz
+```
+
+Compare bytes directly:
+
+```bash
+cmp \
+  --silent \
+  backup.tar.gz \
+  backup-corrupt.tar.gz
+
+printf 'cmp exit status: %s\n' "$?"
+```
+
+`cmp` exit statuses:
+
+```text
+0 → files are identical
+1 → files differ
+2 → comparison error
+```
+
+Test the damaged copy:
+
+```bash
+gzip --test backup-corrupt.tar.gz
+```
+
+Possible message:
+
+```text
+unexpected end of file
+```
+
+Translation:
+
+```text
+unexpected end of file → неочікуваний кінець файла
+```
+
+Trying to list it with tar can produce:
+
+```text
+Child returned status 1
+Error is not recoverable: exiting now
+```
+
+Translations:
+
+```text
+child process       → дочірній процес
+not recoverable     → неможливо надійно продовжити
+truncated file      → обрізаний або неповний файл
+incomplete stream   → неповний потік даних
+disposable copy     → тимчасова копія, яку можна безпечно пошкодити
+```
+
+### Preserve executable files
+
+Create a script:
+
+```bash
+mkdir -p source/bin
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'printf "Script executed successfully\n"' \
+  > source/bin/run.sh
+
+chmod 755 source/bin/run.sh
+```
+
+Permission mode `755`:
+
+```text
+owner → read, write, execute
+group → read, execute
+other → read, execute
+```
+
+After archiving and restoring, verify:
+
+```bash
+test -x restored/source/bin/run.sh
+printf 'executable status: %s\n' "$?"
+```
+
+Execute it:
+
+```bash
+restored/source/bin/run.sh
+```
+
+Successful status:
+
+```text
+0 → restored script is executable and completed successfully
+```
+
+### Preserve symbolic links
+
+Create a symbolic link:
+
+```bash
+ln -s \
+  config/app.conf \
+  source/current.conf
+```
+
+Inspect it:
+
+```bash
+ls -l source/current.conf
+readlink source/current.conf
+```
+
+Expected:
+
+```text
+current.conf -> config/app.conf
+```
+
+By default, tar normally stores the symbolic link itself instead of copying the target file as another regular file.
+
+After restoration:
+
+```bash
+test -L restored/source/current.conf
+printf 'symbolic-link status: %s\n' "$?"
+
+readlink restored/source/current.conf
+```
+
+Read through the link:
+
+```bash
+cat restored/source/current.conf
+```
+
+Important terms:
+
+```text
+symbolic link          → символічне посилання
+link target            → ціль посилання
+executable permission  → право на виконання
+preserve metadata      → зберігати метадані
+object type            → тип файлового об’єкта
+regular file           → звичайний файл
+follow a link          → перейти за посиланням
+```
+
+### Pipeline exit statuses
+
+Bash stores pipeline command statuses in:
+
+```bash
+"${PIPESTATUS[@]}"
+```
+
+Example:
+
+```bash
+tar -tzvf backup.tar.gz |
+grep 'run\.sh'
+
+printf 'tar status: %s\n' "${PIPESTATUS[0]}"
+printf 'grep status: %s\n' "${PIPESTATUS[1]}"
+```
+
+Meaning:
+
+```text
+PIPESTATUS[0] → first command in the pipeline
+PIPESTATUS[1] → second command in the pipeline
+```
+
+This is useful because `$?` after a normal pipeline usually reports only the final command’s status.
+
+### Practical DevOps workflows
+
+#### Backup configuration before a change
+
+```bash
+backup_file="service-config-$(date +%F-%H%M%S).tar.gz"
+
+sudo tar \
+  -czf "$backup_file" \
+  /etc/example-service
+
+sha256sum "$backup_file" \
+  > "$backup_file.sha256"
+
+sha256sum \
+  --check "$backup_file.sha256"
+```
+
+Then:
+
+```text
+modify configuration
+→ validate it
+→ reload or restart the service
+→ check service health
+→ restore the backup if necessary
+```
+
+#### Create a CI/CD artifact
+
+```bash
+tar -czf release.tar.gz build/
+sha256sum release.tar.gz > release.tar.gz.sha256
+```
+
+A later pipeline stage can run:
+
+```bash
+sha256sum --check release.tar.gz.sha256
+tar -xzf release.tar.gz
+```
+
+#### Collect incident data
+
+```bash
+sudo tar \
+  -czf incident-report.tar.gz \
+  /var/log/example-service \
+  /etc/example-service
+```
+
+Be careful because configuration archives may contain:
+
+```text
+passwords
+API tokens
+private keys
+certificates
+secret environment variables
+```
+
+#### Transfer an application
+
+```bash
+tar \
+  -czf website-backup.tar.gz \
+  /var/www/example
+```
+
+Before using the transferred copy:
+
+```text
+verify checksum
+→ inspect archive members
+→ restore into a separate directory
+→ test the application
+```
+
+### Reliable backup workflow
+
+A file existing with a `.tar.gz` extension does not automatically mean the backup is usable.
+
+Recommended workflow:
+
+```text
+create archive
+→ test archive structure
+→ calculate checksum
+→ copy archive to another storage location
+→ verify checksum of the copied file
+→ perform a test restoration
+→ compare restored files
+```
+
+Keeping a backup on the same disk as the original data does not protect against complete disk failure.
+
+Important terms:
+
+```text
+backup verification   → перевірка резервної копії
+test restoration      → тестове відновлення
+off-site backup       → резервна копія в іншому фізичному місці
+separate storage      → окреме сховище
+disaster recovery     → аварійне відновлення
+rollback              → повернення до попередньої робочої версії
+```
+
+### Safety rules
+
+- Inspect unfamiliar archives before extraction.
+- Extract into a new, empty directory first.
+- Prefer relative archive paths.
+- Watch for absolute paths and `..` components.
+- Do not damage or modify the only backup copy.
+- Store checksum manifests with backups.
+- Verify checksums after transferring files.
+- Test restoration periodically.
+- Protect archives containing secrets.
+- Do not assume successful archive creation means successful recovery.
+- Quote all path variables.
+- Use `--` before path arguments when supported.
+
+### Important command reference
+
+```bash
+tar -cvf archive.tar -C PARENT DIRECTORY
+```
+
+Create an uncompressed tar archive.
+
+```bash
+tar -czvf archive.tar.gz -C PARENT DIRECTORY
+```
+
+Create a gzip-compressed tar archive.
+
+```bash
+tar -cJvf archive.tar.xz -C PARENT DIRECTORY
+```
+
+Create an xz-compressed tar archive.
+
+```bash
+tar -tvf archive.tar
+```
+
+List an uncompressed tar archive.
+
+```bash
+tar -tzvf archive.tar.gz
+```
+
+List a gzip tar archive.
+
+```bash
+tar -tJvf archive.tar.xz
+```
+
+List an xz tar archive.
+
+```bash
+tar -xzvf archive.tar.gz -C RESTORE_DIRECTORY
+```
+
+Extract a gzip tar archive.
+
+```bash
+tar -xzvf archive.tar.gz -C RESTORE_DIRECTORY MEMBER
+```
+
+Extract one selected member.
+
+```bash
+gzip --test archive.tar.gz
+```
+
+Test a gzip stream.
+
+```bash
+xz --test archive.tar.xz
+```
+
+Test an xz stream.
+
+```bash
+zip -r archive.zip DIRECTORY
+```
+
+Create a ZIP archive recursively.
+
+```bash
+unzip -l archive.zip
+```
+
+List ZIP contents.
+
+```bash
+unzip -t archive.zip
+```
+
+Test ZIP integrity.
+
+```bash
+sha256sum FILE
+```
+
+Calculate a SHA-256 checksum.
+
+```bash
+sha256sum FILES > checksums.sha256
+```
+
+Create a checksum manifest.
+
+```bash
+sha256sum --check checksums.sha256
+```
+
+Verify files against a checksum manifest.
+
+```bash
+diff -r --no-dereference ORIGINAL RESTORED
+```
+
+Compare original and restored directory trees.
+
+```bash
+cmp --silent FILE1 FILE2
+```
+
+Compare two files byte by byte.
+
+```bash
+stat FILE
+```
+
+Inspect permissions, size, timestamps, and metadata.
+
+```bash
+readlink SYMBOLIC_LINK
+```
+
+Show a symbolic link’s target.
+
+### Important vocabulary
+
+- archive — архів
+- archive member — об’єкт усередині архіву
+- archive container — файл-контейнер архіву
+- archive listing — перегляд вмісту архіву
+- compression — стиснення
+- compressed archive — стиснений архів
+- compression algorithm — алгоритм стиснення
+- compression ratio — коефіцієнт стиснення
+- compression overhead — службові витрати формату стиснення
+- data stream — потік даних
+- integrity test — перевірка цілісності
+- checksum — контрольна сума
+- checksum manifest — файл-перелік контрольних сум
+- cryptographic hash — криптографічний хеш
+- hash mismatch — невідповідність хешу
+- exact byte match — точна відповідність байтів
+- data corruption — пошкодження даних
+- corrupted archive — пошкоджений архів
+- unexpected modification — неочікувана зміна
+- truncated file — обрізаний або неповний файл
+- disposable copy — тимчасова копія для безпечного тесту
+- extract — розпакувати
+- extraction — розпакування
+- restore — відновити
+- restored data — відновлені дані
+- test restoration — тестове відновлення
+- selective extraction — вибіркове розпакування
+- selective restoration — вибіркове відновлення
+- overwrite — перезаписати
+- affected file — змінений або пошкоджений файл
+- dedicated directory — окремий спеціально призначений каталог
+- absolute path — абсолютний шлях
+- relative path — відносний шлях
+- parent directory — батьківський каталог
+- path traversal — вихід за межі дозволеного каталогу
+- unsafe path — небезпечний шлях
+- recursive — рекурсивний
+- symbolic link — символічне посилання
+- link target — ціль посилання
+- executable permission — право на виконання
+- metadata preservation — збереження метаданих
+- timestamp precision — точність часової мітки
+- fractional seconds — дробова частина секунди
+- subshell — дочірнє середовище оболонки
+- cross-platform — сумісний із різними операційними системами
+- deployment package — пакет для розгортання
+- build artifact — артефакт збірки
+- release archive — архів релізу
+- pipeline stage — етап CI/CD-конвеєра
+- configuration backup — резервна копія конфігурації
+- rollback — повернення до попередньої робочої версії
+- incident investigation — розслідування інциденту
+- support bundle — пакет діагностичних даних
+- server migration — перенесення на інший сервер
+- authenticity — автентичність
+- digital signature — цифровий підпис
+- disaster recovery — аварійне відновлення
+- reliable backup — надійна резервна копія
+
+### My sentence
+
+I learned how to create and inspect `tar`, `gzip`, `xz`, and ZIP archives; how to extract files safely; how to preserve permissions and symbolic links; and how to verify, test, corrupt, detect, and restore backups using `diff`, `cmp`, and SHA-256 checksums.
