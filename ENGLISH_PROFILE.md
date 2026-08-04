@@ -515,3 +515,120 @@ My current English priorities are:
 ## My current sentence
 
 I am learning English together with Linux and DevOps, and I am becoming more confident when I explain technical topics in my own words.
+---
+
+## Technical English progress — 2026-08-04
+
+I completed a full Linux checkpoint mostly using English instructions and English technical terminology.
+
+### What I can explain in English
+
+I can explain basic differences such as:
+
+- DNS NXDOMAIN vs HTTP 404
+- HTTP status code vs curl exit status
+- active vs enabled systemd service
+- installed vs candidate package version
+- `chmod` vs `chown`
+- `df` vs `du`
+- disk vs partition vs filesystem vs mount point
+- archive vs compression
+- `return` vs `exit`
+- `jobs` vs `ps`
+
+I can also read and understand Linux command output and explain the main result in English.
+
+### Technical vocabulary I practiced
+
+- resolve a hostname
+- HTTP response
+- response headers
+- redirect
+- exit status
+- background process
+- process state
+- permission
+- ownership
+- package
+- candidate version
+- service
+- failed unit
+- filesystem
+- mount point
+- block device
+- archive
+- compression
+- checksum
+- integrity
+- restoration
+- troubleshooting
+
+### Current strengths
+
+- I can understand technical instructions in English.
+- I can answer practical Linux questions in English.
+- I can describe what commands do using simple English.
+- I can explain troubleshooting logic.
+- I can communicate even when my grammar is not perfect.
+
+### Current weaknesses
+
+I still make frequent mistakes with:
+
+- articles
+- verb forms
+- word order
+- prepositions
+- singular/plural forms
+- technical sentence structure
+
+Examples:
+
+Instead of:
+
+> `NXDOMAIN mean non exist domain`
+
+A more natural sentence is:
+
+> `NXDOMAIN means that the domain does not exist.`
+
+Instead of:
+
+> `curl exit code 6 means could not connect to host`
+
+Correct:
+
+> `curl exit code 6 means that curl could not resolve the hostname.`
+
+Instead of:
+
+> `I don't remember how to do next step`
+
+More natural:
+
+> `I don't remember how to do the next step.`
+
+### Current working level
+
+My current English is approximately A2+/B1- overall.
+
+My technical reading and Linux vocabulary are becoming stronger than my grammar.
+
+The goal is to continue moving toward B1 and later B2 while using English during real DevOps and project work.
+
+### Next English focus
+
+Continue practising:
+
+- technical explanations
+- troubleshooting descriptions
+- Bash and Linux vocabulary
+- interview answers
+- Past Simple
+- Present Simple / Present Continuous
+- articles
+- prepositions
+
+Main principle:
+
+> I do not need perfect grammar before using English. I need to keep communicating, notice repeated mistakes, and correct them through practice.

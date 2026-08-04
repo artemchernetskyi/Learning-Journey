@@ -298,3 +298,115 @@ The next lesson is:
 **Lesson 11 — DNS and HTTP connectivity tools**
 
 Before new lessons, I will also answer a few short review questions from previous topics.
+
+---
+
+# 2. `PROGRESS.md`
+
+Я б **не переписував стару історію**, а додав новий актуальний блок ближче до кінця:
+
+```markdown
+---
+
+## 2026-08-04 — Linux Phase 1 completed
+
+I completed Lessons 11–19 and passed Checkpoint 02.
+
+Together with the previously completed Lessons 01–10 and Checkpoint 01, this completes my first major Linux foundation phase.
+
+### Lessons 11–19 completed
+
+11. DNS and HTTP connectivity tools
+12. Bash scripting fundamentals
+13. Bash loops and functions
+14. Linux processes and job control
+15. Linux users, groups, and permissions
+16. APT package management
+17. systemd and journal troubleshooting
+18. Linux storage, filesystems, and mounts
+19. Linux archives, compression, and backup verification
+
+---
+
+# 2. `PROGRESS.md`
+
+---
+
+## 2026-08-04 — Linux Phase 1 completed
+
+I completed Lessons 11–19 and passed Checkpoint 02.
+
+Together with the previously completed Lessons 01–10 and Checkpoint 01, this completes my first major Linux foundation phase.
+
+### Lessons 11–19 completed
+
+11. DNS and HTTP connectivity tools
+12. Bash scripting fundamentals
+13. Bash loops and functions
+14. Linux processes and job control
+15. Linux users, groups, and permissions
+16. APT package management
+17. systemd and journal troubleshooting
+18. Linux storage, filesystems, and mounts
+19. Linux archives, compression, and backup verification
+
+### Checkpoint 02
+
+I completed practical tasks covering:
+
+- DNS resolution and NXDOMAIN troubleshooting
+- HTTP status codes and redirects
+- curl exit codes and `--fail`
+- Bash health-check scripts
+- arrays and loops
+- functions and return statuses
+- counters and multi-URL health checking
+- background processes and signals
+- Linux permissions
+- APT package investigation
+- systemd service investigation
+- journalctl logs
+- disks, partitions, filesystems, and mount points
+- `df`, `du`, `lsblk`, and `findmnt`
+- tar.gz archives
+- gzip integrity checks
+- SHA-256 verification
+- backup restoration
+- recursive `diff` verification
+- safe temporary-resource cleanup
+
+### Current Linux assessment
+
+My Linux foundation is strong enough to move to practical projects and later DevOps topics.
+
+My main area for continued practice is Bash scripting.
+
+I understand:
+
+- variables
+- quoting
+- positional arguments
+- conditions
+- arrays
+- loops
+- functions
+- return and exit codes
+- counters
+
+I still need more repetition when combining these concepts into complete scripts without examples.
+
+### Current direction
+
+The immediate practical priority is the FUZJA Cafe website/demo and sales presentation.
+
+Bash practice will continue alongside project work.
+
+Docker is planned for a later learning phase and will begin only when I explicitly decide to start it.
+
+When Docker learning begins, I want to apply it to real projects where possible.
+
+### Repository status
+
+Checkpoint temporary resources were cleaned up safely.
+
+The repository working tree was clean after the practical checkpoint.

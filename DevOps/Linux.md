@@ -8011,7 +8011,7 @@ git log -1 --oneline
 My first attempt contained a typo:
 
 ```text
-git statis --short
+git status --short
 ```
 
 Git suggested the correct command:
@@ -13788,3 +13788,1786 @@ Show a symbolic link’s target.
 ### My sentence
 
 I learned how to create and inspect `tar`, `gzip`, `xz`, and ZIP archives; how to extract files safely; how to preserve permissions and symbolic links; and how to verify, test, corrupt, detect, and restore backups using `diff`, `cmp`, and SHA-256 checksums.
+---
+
+## Checkpoint 02 — Lessons 11–19 and Linux Phase 1 completion
+
+Date: 2026-08-04
+
+Checkpoint 02 completed the second major part of my Linux foundation.
+
+The checkpoint covered Lessons 11–19 and tested practical troubleshooting, Bash scripting, process control, permissions, package management, systemd, storage, archives, checksums, and backup restoration.
+
+---
+
+### Lesson 11 — DNS and HTTP connectivity
+
+I practiced:
+
+```bash
+nslookup example.com
+dig example.com
+dig +short example.com
+curl https://example.com
+curl -I https://example.com
+curl -v https://example.com
+curl -L URL
+wget --spider URL
+```
+
+Important concepts:
+
+```text
+DNS
+→ converts a domain name into an IP address
+
+HTTP
+→ communication between a client and web server
+
+HTTP headers
+→ metadata about the response
+
+HTTP body
+→ actual response content, for example HTML
+```
+
+#### NXDOMAIN vs HTTP 404
+
+```text
+NXDOMAIN
+→ DNS cannot find the domain
+→ the domain does not exist
+
+HTTP 404
+→ DNS worked
+→ connection worked
+→ server responded
+→ requested resource was not found
+```
+
+This is an important troubleshooting difference.
+
+#### curl headers
+
+```bash
+curl -I https://example.com
+```
+
+`-I` shows HTTP response headers without downloading the normal response body.
+
+Example:
+
+```text
+HTTP/2 200
+content-type: text/html
+server: ...
+```
+
+#### Redirects
+
+```bash
+curl -I http://github.com
+```
+
+can return:
+
+```text
+301 Moved Permanently
+Location: https://github.com/
+```
+
+Follow the redirect:
+
+```bash
+curl -IL http://github.com
+```
+
+Important option:
+
+```text
+-L → follow HTTP redirects
+```
+
+#### HTTP status vs curl exit status
+
+These are different.
+
+```text
+HTTP status
+→ response from the web server
+
+curl exit status
+→ result of the curl command itself
+```
+
+Example:
+
+```bash
+curl \
+  --silent \
+  --show-error \
+  --output /dev/null \
+  --write-out '%{http_code}\n' \
+  https://example.com/not-existing-page
+```
+
+The server may return:
+
+```text
+404
+```
+
+while curl still returns:
+
+```text
+exit status 0
+```
+
+because DNS, TCP/TLS, and HTTP communication succeeded.
+
+Using:
+
+```bash
+curl --fail ...
+```
+
+makes HTTP 4xx/5xx responses count as curl failures.
+
+Example:
+
+```text
+HTTP 404
+curl exit status 22
+```
+
+Important curl exit codes:
+
+```text
+0  → success
+6  → could not resolve hostname
+7  → could not connect to host
+22 → HTTP error when --fail is used
+28 → timeout
+```
+
+---
+
+### Lesson 12 — Bash scripting fundamentals
+
+Important shebang:
+
+```bash
+#!/usr/bin/env bash
+```
+
+The shebang tells the operating system which interpreter should run the script.
+
+Run explicitly with Bash:
+
+```bash
+bash script.sh
+```
+
+Run directly:
+
+```bash
+chmod +x script.sh
+./script.sh
+```
+
+Direct execution requires executable permission.
+
+#### Variables
+
+```bash
+name="Artem"
+echo "$name"
+```
+
+No spaces around `=`:
+
+```bash
+name="Artem"
+```
+
+not:
+
+```bash
+name = "Artem"
+```
+
+#### Quoting
+
+Normally quote variable expansions:
+
+```bash
+echo "$variable"
+```
+
+This protects values containing spaces or special characters.
+
+#### Positional arguments
+
+```text
+$0 → script name
+$1 → first argument
+$2 → second argument
+$# → number of arguments
+$@ → all arguments
+```
+
+Example with default value:
+
+```bash
+url="${1:-https://example.com}"
+```
+
+Meaning:
+
+```text
+use $1 if provided
+otherwise use https://example.com
+```
+
+#### Command substitution
+
+```bash
+directory="$(pwd)"
+```
+
+`$(...)` executes a command and stores its output.
+
+Example:
+
+```bash
+current_date="$(date +%F)"
+```
+
+#### Conditions
+
+String empty:
+
+```bash
+if [[ -z "$name" ]]; then
+  echo "Empty"
+fi
+```
+
+String not empty:
+
+```bash
+if [[ -n "$name" ]]; then
+  echo "Not empty"
+fi
+```
+
+Numeric comparisons:
+
+```text
+-eq → equal
+-ne → not equal
+-gt → greater than
+-ge → greater than or equal
+-lt → less than
+-le → less than or equal
+```
+
+Example:
+
+```bash
+if [[ "$status" -ge 200 && "$status" -lt 300 ]]; then
+  echo "Healthy"
+fi
+```
+
+#### File tests
+
+```text
+-f → regular file
+-d → directory
+-e → filesystem object exists
+-x → executable
+-r → readable
+-w → writable
+-L → symbolic link
+```
+
+#### Exit codes
+
+```text
+0        → success
+non-zero → failure or special condition
+```
+
+Check the previous command:
+
+```bash
+echo "$?"
+```
+
+Save it immediately when needed:
+
+```bash
+command
+command_status=$?
+```
+
+The next command changes `$?`.
+
+---
+
+### Lesson 13 — Bash loops, arrays, and functions
+
+#### Arrays
+
+```bash
+urls=(
+  "https://example.com"
+  "https://example.com/not-existing-page"
+  "https://does-not-exist.invalid"
+)
+```
+
+Important difference:
+
+```text
+"${urls[0]}" → first element only
+"${urls[@]}" → all elements
+```
+
+#### for loop
+
+```bash
+for url in "${urls[@]}"; do
+  echo "Checking: $url"
+done
+```
+
+A `for` loop is useful when iterating through a known list.
+
+#### while loop
+
+```bash
+counter=1
+
+while [[ "$counter" -le 3 ]]; do
+  echo "$counter"
+  counter=$((counter + 1))
+done
+```
+
+A `while` loop continues while its condition remains true.
+
+#### Functions
+
+```bash
+check_url() {
+  local url="$1"
+
+  echo "Checking: $url"
+}
+```
+
+`local` keeps the variable inside the function.
+
+#### return vs exit
+
+```text
+return → leaves the current function
+exit   → terminates the entire script
+```
+
+Example:
+
+```bash
+check_url() {
+  local url="$1"
+
+  if [[ "$url" == "https://example.com" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+```
+
+Save function status:
+
+```bash
+check_url "$url"
+function_status=$?
+```
+
+#### Counters
+
+```bash
+healthy_count=0
+unhealthy_count=0
+failed_count=0
+```
+
+Increment:
+
+```bash
+((healthy_count++))
+```
+
+or:
+
+```bash
+healthy_count=$((healthy_count + 1))
+```
+
+#### Multi-URL health-check logic
+
+The final checkpoint script classified results as:
+
+```text
+function status 0
+→ Healthy
+
+function status 1
+→ Unhealthy HTTP response
+
+other non-zero status
+→ DNS/network failure
+```
+
+Final result:
+
+```text
+Healthy: 1
+Unhealthy: 1
+Failed: 1
+Script exit status: 2
+```
+
+The script combined:
+
+```text
+arrays
+for loops
+functions
+local variables
+curl
+command substitution
+return values
+exit codes
+numeric conditions
+counters
+overall script status
+```
+
+#### Bash checkpoint assessment
+
+Bash scripting is currently the main area that needs continued practice.
+
+I understand the logic of:
+
+```text
+variables
+conditions
+arrays
+loops
+functions
+return / exit
+exit codes
+counters
+```
+
+but combining everything into a complete script without examples still requires repetition.
+
+Recommended workflow:
+
+```text
+read an example
+→ write it manually
+→ bash -n script.sh
+→ shellcheck script.sh
+→ run it
+→ read the error
+→ fix it
+→ repeat without notes
+```
+
+Useful syntax check:
+
+```bash
+bash -n script.sh
+```
+
+Static analysis:
+
+```bash
+shellcheck script.sh
+```
+
+---
+
+### Bash file creation methods
+
+#### Using Nano
+
+```bash
+nano script.sh
+```
+
+Useful for manually writing and editing scripts.
+
+#### Using vi / vim
+
+```bash
+vi script.sh
+```
+
+Basic workflow:
+
+```text
+i
+→ enter insert mode
+
+Esc
+→ leave insert mode
+
+:wq
+→ save and quit
+
+:q!
+→ quit without saving
+```
+
+#### Using cat and a here-document
+
+```bash
+cat > script.sh <<'EOF'
+#!/usr/bin/env bash
+
+echo "Hello"
+EOF
+```
+
+Important:
+
+```text
+>  → create/overwrite file
+>> → append to file
+```
+
+`<<'EOF'` starts a here-document.
+
+The final:
+
+```text
+EOF
+```
+
+must be on its own line.
+
+Using quoted:
+
+```bash
+<<'EOF'
+```
+
+prevents variables and command substitutions from being expanded while the file is being created.
+
+#### Simple rule
+
+```text
+Nano / VS Code
+→ good for manually writing and editing scripts
+
+cat <<'EOF'
+→ good for quickly creating a file from a ready block of text
+```
+
+---
+
+### Lesson 14 — Processes and job control
+
+Start a background process:
+
+```bash
+sleep 300 &
+```
+
+The shell returns a job number and PID.
+
+Get the PID of the most recently started background process:
+
+```bash
+checkpoint_sleep_pid=$!
+```
+
+Important:
+
+```text
+$! → PID of the latest background process
+```
+
+Show shell jobs:
+
+```bash
+jobs
+jobs -l
+```
+
+Inspect a process:
+
+```bash
+ps -p "$checkpoint_sleep_pid" \
+  -o pid,ppid,state,cmd
+```
+
+Difference:
+
+```text
+jobs
+→ jobs managed by the current shell
+
+ps
+→ operating-system processes
+```
+
+#### Process signals
+
+Stop/pause:
+
+```bash
+kill -STOP "$checkpoint_sleep_pid"
+```
+
+Observed state:
+
+```text
+T → stopped
+```
+
+Continue:
+
+```bash
+kill -CONT "$checkpoint_sleep_pid"
+```
+
+Observed state:
+
+```text
+S → sleeping
+```
+
+Terminate:
+
+```bash
+kill "$checkpoint_sleep_pid"
+```
+
+Wait for process completion:
+
+```bash
+wait "$checkpoint_sleep_pid"
+```
+
+Observed exit status:
+
+```text
+143
+```
+
+Because:
+
+```text
+143 = 128 + 15
+15 = SIGTERM
+```
+
+Important signals:
+
+```text
+SIGSTOP → pause process
+SIGCONT → continue process
+SIGTERM → request termination
+```
+
+Common process states:
+
+```text
+R → running
+S → sleeping
+T → stopped
+Z → zombie
+```
+
+Other useful tools:
+
+```bash
+pgrep PROCESS
+pgrep -a PROCESS
+top
+htop
+```
+
+---
+
+### Lesson 15 — Users, groups, and permissions
+
+Check identity:
+
+```bash
+id
+groups
+id -gn
+```
+
+`id` shows:
+
+```text
+UID
+primary GID
+supplementary groups
+```
+
+#### Permission structure
+
+Example:
+
+```text
+-rwxr-x---
+```
+
+Split:
+
+```text
+-    → regular file
+rwx  → owner
+r-x  → group
+---  → others
+```
+
+Permission values:
+
+```text
+r → 4
+w → 2
+x → 1
+```
+
+Examples:
+
+```text
+700 → rwx------
+640 → rw-r-----
+644 → rw-r--r--
+750 → rwxr-x---
+755 → rwxr-xr-x
+```
+
+Checkpoint targets:
+
+```text
+config.txt → 640 → -rw-r-----
+run.sh     → 750 → -rwxr-x---
+```
+
+Meaning of `640`:
+
+```text
+owner  → rw-
+group  → r--
+others → ---
+```
+
+Meaning of `750`:
+
+```text
+owner  → rwx
+group  → r-x
+others → ---
+```
+
+#### chmod
+
+Change permissions:
+
+```bash
+chmod 640 config.txt
+chmod 750 run.sh
+```
+
+Symbolic example:
+
+```bash
+chmod g-w config.txt
+```
+
+Meaning:
+
+```text
+remove write permission from group
+```
+
+#### chown and chgrp
+
+```text
+chmod → change permissions
+chown → change owner and/or group
+chgrp → change group ownership
+```
+
+Examples:
+
+```bash
+chown user file
+chown user:group file
+chgrp group file
+```
+
+#### umask
+
+Check:
+
+```bash
+umask
+```
+
+Typical base modes:
+
+```text
+files       → 666
+directories → 777
+```
+
+Example:
+
+```text
+umask 027
+
+file      → approximately 640
+directory → approximately 750
+```
+
+Technically, umask masks permission bits.
+
+#### setgid directory
+
+```bash
+chmod 2770 shared-dir
+```
+
+New files/directories inside normally inherit the directory's group.
+
+#### Sticky bit
+
+```bash
+chmod 1777 shared-dir
+```
+
+Used for shared writable directories such as `/tmp`.
+
+It prevents users from normally deleting or renaming files owned by other users.
+
+---
+
+### Lesson 16 — APT package management
+
+Important package-management layers:
+
+```text
+APT
+→ high-level Debian/Ubuntu package management
+
+dpkg
+→ lower-level Debian package database and package tool
+```
+
+Refresh package metadata:
+
+```bash
+sudo apt update
+```
+
+Important:
+
+```text
+apt update
+→ refresh package information
+→ does NOT install upgrades
+```
+
+Upgrade packages:
+
+```bash
+sudo apt upgrade
+```
+
+Full upgrade:
+
+```bash
+sudo apt full-upgrade
+```
+
+`full-upgrade` may install or remove packages to resolve dependency changes.
+
+#### Package information
+
+```bash
+apt-cache policy curl
+```
+
+Checkpoint result:
+
+```text
+Installed: 8.5.0-2ubuntu10.11
+Candidate: 8.5.0-2ubuntu10.11
+```
+
+Meaning:
+
+```text
+Installed
+→ version currently installed
+
+Candidate
+→ version APT would currently choose for installation or upgrade
+```
+
+Check installed package:
+
+```bash
+dpkg -l curl
+```
+
+or:
+
+```bash
+dpkg-query -W curl
+```
+
+Other useful commands:
+
+```bash
+apt search PACKAGE
+apt show PACKAGE
+apt list --installed
+dpkg -l
+```
+
+#### Remove vs purge
+
+```bash
+sudo apt remove PACKAGE
+```
+
+normally removes the package while keeping configuration files.
+
+```bash
+sudo apt purge PACKAGE
+```
+
+removes the package and its configuration files.
+
+#### autoremove
+
+Preview first:
+
+```bash
+sudo apt autoremove --dry-run
+```
+
+Then, only after reviewing:
+
+```bash
+sudo apt autoremove
+```
+
+Important safe workflow:
+
+```text
+apt update
+→ inspect packages
+→ simulate risky operations when possible
+→ perform change
+→ verify system/services afterward
+```
+
+---
+
+### Lesson 17 — systemd and journalctl
+
+systemd manages services and other units.
+
+#### Service status
+
+```bash
+systemctl status NetworkManager
+```
+
+Checkpoint result:
+
+```text
+Loaded: loaded ... enabled
+Active: active (running)
+```
+
+Important difference:
+
+```text
+active
+→ service is running now
+
+enabled
+→ service is configured to start automatically at boot
+```
+
+Possible combinations:
+
+```text
+active + enabled
+→ running now and starts automatically at boot
+
+active + disabled
+→ running now but not configured to start automatically
+
+inactive + enabled
+→ not running now but configured to start automatically
+
+inactive + disabled
+→ not running now and not configured to start automatically
+```
+
+#### Failed units
+
+```bash
+systemctl --failed
+```
+
+Checkpoint result:
+
+```text
+0 loaded units listed
+```
+
+Meaning:
+
+```text
+systemd currently reports no failed units
+```
+
+#### Other service commands
+
+```bash
+sudo systemctl start SERVICE
+sudo systemctl stop SERVICE
+sudo systemctl restart SERVICE
+sudo systemctl reload SERVICE
+sudo systemctl enable SERVICE
+sudo systemctl disable SERVICE
+```
+
+Difference:
+
+```text
+restart
+→ stop and start again
+
+reload
+→ reload configuration without a complete restart, when supported
+```
+
+#### journalctl
+
+Current boot:
+
+```bash
+journalctl -b
+```
+
+One service:
+
+```bash
+journalctl -u SERVICE
+```
+
+One service from current boot:
+
+```bash
+journalctl -b -u SERVICE
+```
+
+Without pager:
+
+```bash
+journalctl -b -u SERVICE --no-pager
+```
+
+Recent messages:
+
+```bash
+journalctl -u SERVICE -n 50
+```
+
+Follow new logs:
+
+```bash
+journalctl -u SERVICE -f
+```
+
+Warnings:
+
+```bash
+journalctl -p warning
+```
+
+Checkpoint command:
+
+```bash
+journalctl -b -u NetworkManager --no-pager
+```
+
+During the checkpoint I found a Netplan warning saying that:
+
+```text
+/etc/netplan/01-network-manager-all.yaml
+```
+
+had permissions that were too open.
+
+The checkpoint remained read-only and did not modify networking configuration.
+
+#### Troubleshooting workflow
+
+```text
+systemctl status SERVICE
+→ inspect service state
+→ inspect journalctl logs
+→ identify useful error
+→ inspect configuration
+→ make controlled change
+→ restart/reload if necessary
+→ verify again
+```
+
+---
+
+### Lesson 18 — Storage, filesystems, and mounts
+
+Important storage structure:
+
+```text
+disk
+→ partition
+→ filesystem
+→ mount point
+→ files/directories
+```
+
+Example from my Ubuntu system:
+
+```text
+disk       → /dev/nvme0n1
+partition  → /dev/nvme0n1p3
+filesystem → ext4
+mount point → /
+```
+
+#### lsblk
+
+```bash
+lsblk
+```
+
+Show filesystem information:
+
+```bash
+lsblk -f
+```
+
+Useful columns:
+
+```text
+NAME
+FSTYPE
+UUID
+FSAVAIL
+FSUSE%
+MOUNTPOINTS
+```
+
+#### df
+
+```bash
+df -h
+df -hT
+```
+
+Shows filesystem-level disk usage.
+
+Checkpoint root filesystem:
+
+```text
+/dev/nvme0n1p3
+ext4
+mounted at /
+```
+
+#### du
+
+```bash
+du -sh DIRECTORY
+```
+
+Shows space used by a specific directory.
+
+Checkpoint temporary laboratory:
+
+```text
+12K
+```
+
+Important difference:
+
+```text
+df
+→ mounted filesystem usage
+
+du
+→ size used by specific files/directories
+```
+
+#### findmnt
+
+```bash
+findmnt
+findmnt /
+findmnt -T /dev/shm
+```
+
+Shows mounted filesystems and their mount points/options.
+
+#### /dev/shm
+
+Checkpoint result:
+
+```text
+/dev/shm
+→ tmpfs
+```
+
+`tmpfs` is a temporary memory-backed filesystem.
+
+It is commonly used for shared memory and temporary data.
+
+#### Important terms
+
+```text
+disk
+→ storage device
+
+partition
+→ section of a disk
+
+filesystem
+→ structure used to organize files/directories and metadata
+
+mount point
+→ directory where a filesystem becomes accessible
+```
+
+#### Storage safety
+
+Before disk operations:
+
+```text
+identify device
+→ inspect size
+→ inspect filesystem
+→ inspect mount points
+→ verify target again
+```
+
+Dangerous commands include:
+
+```text
+mkfs
+fdisk write operations
+parted changes
+wipefs
+dd
+```
+
+Never use destructive commands against an unidentified disk.
+
+---
+
+### Lesson 19 — Archives, compression, and backups
+
+#### Archive vs compression
+
+```text
+archive
+→ combines files/directories into one container
+
+compression
+→ reduces the number of bytes required to store data
+```
+
+Formats:
+
+```text
+.tar     → tar archive without gzip compression
+.tar.gz  → tar archive compressed with gzip
+.tar.xz  → tar archive compressed with xz
+.zip     → archive format with built-in compression support
+```
+
+#### Create gzip-compressed tar archive
+
+Checkpoint command:
+
+```bash
+tar -czvf "$archive_file" \
+  -C "$archive_dir" \
+  source
+```
+
+Important options:
+
+```text
+-c → create
+-z → gzip compression
+-v → verbose
+-f → archive filename
+-C → change directory before processing files
+```
+
+Other tar options:
+
+```text
+-x → extract
+-t → list archive contents
+-J → xz compression
+```
+
+#### Relative archive paths
+
+The checkpoint archive contained:
+
+```text
+source/
+source/config/
+source/config/app.conf
+source/documents/
+source/documents/notes.txt
+```
+
+It did not contain a full absolute path like:
+
+```text
+/tmp/linux-phase1-checkpoint-.../archive-lab/source/...
+```
+
+Relative paths are better because they are:
+
+```text
+safer
+more portable
+easier to restore to a chosen location
+```
+
+#### List contents without extraction
+
+```bash
+tar -tzvf "$archive_file"
+```
+
+#### gzip integrity test
+
+```bash
+gzip --test "$archive_file"
+```
+
+Checkpoint result:
+
+```text
+gzip test status: 0
+```
+
+Meaning:
+
+```text
+gzip stream is structurally valid
+```
+
+#### SHA-256
+
+Calculate checksum:
+
+```bash
+sha256sum "$archive_file"
+```
+
+Create checksum file:
+
+```bash
+sha256sum "$archive_file" \
+  > source-backup.sha256
+```
+
+Verify:
+
+```bash
+sha256sum --check source-backup.sha256
+```
+
+Checkpoint result:
+
+```text
+source-backup.tar.gz: OK
+```
+
+A SHA-256 checksum helps verify:
+
+```text
+integrity
+→ whether the file bytes still match the previously recorded hash
+```
+
+It can help detect:
+
+```text
+corruption
+unexpected modification
+incomplete transfer
+wrong file
+```
+
+Important:
+
+```text
+checksum verifies integrity
+≠
+checksum proves authenticity
+```
+
+#### Restore backup
+
+Restore to a separate directory:
+
+```bash
+tar -xzvf "$archive_file" \
+  -C "$restore_dir"
+```
+
+Check restored files:
+
+```bash
+find "$restore_dir" -type f
+```
+
+Compare original and restored directories:
+
+```bash
+diff \
+  --recursive \
+  --no-dereference \
+  "$source_dir" \
+  "$restore_dir/source"
+```
+
+Checkpoint result:
+
+```text
+Diff exit status: 0
+```
+
+Meaning:
+
+```text
+original data
+=
+restored data
+```
+
+Important `diff` statuses:
+
+```text
+0 → no differences
+1 → differences found
+2 → comparison error
+```
+
+#### Backup principle
+
+> A backup is not proven until it has been successfully restored and verified.
+
+Reliable backup workflow:
+
+```text
+create archive
+→ inspect archive
+→ test archive
+→ calculate checksum
+→ copy backup
+→ verify checksum
+→ restore to separate location
+→ compare restored data
+```
+
+---
+
+## Checkpoint 02 practical results
+
+Checkpoint 02 tested Lessons 11–19.
+
+Completed practical tasks:
+
+- DNS resolution with `nslookup`
+- NXDOMAIN investigation with `dig`
+- HTTP headers with `curl -I`
+- HTTP redirects with `curl -L`
+- HTTP `200` and `404`
+- curl exit status `0`
+- curl `--fail` exit status `22`
+- Bash single-URL health-check
+- arrays
+- `for` loops
+- functions
+- `local` variables
+- `return`
+- exit-status handling
+- counters
+- multi-URL health-check
+- background processes
+- `$!`
+- `jobs`
+- `ps`
+- `SIGSTOP`
+- `SIGCONT`
+- `SIGTERM`
+- exit status `143`
+- user/group investigation
+- symbolic and numeric permissions
+- `640`
+- `750`
+- executable script verification
+- APT package inspection
+- installed vs candidate version
+- systemd failed-unit inspection
+- NetworkManager status
+- journalctl current-boot logs
+- `lsblk`
+- `lsblk -f`
+- `df`
+- `du`
+- `findmnt`
+- `/dev/shm`
+- tar.gz archive creation
+- relative archive paths
+- gzip integrity test
+- SHA-256 checksum
+- SHA-256 verification
+- backup restoration
+- recursive `diff`
+- safe cleanup
+
+---
+
+## Checkpoint 02 assessment
+
+### Strong areas
+
+I demonstrated good understanding of:
+
+```text
+DNS vs HTTP problems
+HTTP status codes
+curl troubleshooting
+process and job control
+Linux permissions
+APT package investigation
+systemd service investigation
+journalctl
+storage concepts
+archive and restore workflow
+safe Linux investigation
+```
+
+### Main area to improve
+
+Bash scripting requires continued practice.
+
+I understand individual concepts, but I still need repetition when combining:
+
+```text
+variables
+conditions
+arrays
+loops
+functions
+return values
+exit codes
+counters
+curl output
+```
+
+into one complete script.
+
+This is a practice requirement, not a failed checkpoint.
+
+---
+
+## Important Phase 1 troubleshooting workflow
+
+When something does not work:
+
+```text
+1. Read the complete error.
+2. Identify which layer may be failing.
+3. Inspect the current state before changing anything.
+4. Gather evidence.
+5. Test one hypothesis.
+6. Make one controlled change.
+7. Verify the result.
+8. Clean up temporary resources.
+```
+
+For a website/service:
+
+```text
+service/process
+→ logs
+→ listening ports
+→ DNS
+→ connectivity
+→ HTTP
+→ permissions/configuration
+→ disk space/packages
+```
+
+Useful commands:
+
+```bash
+systemctl status SERVICE
+journalctl -b -u SERVICE
+ss -lntp
+dig DOMAIN
+nslookup DOMAIN
+curl -I URL
+id
+ls -l FILE
+df -h
+du -sh DIRECTORY
+apt-cache policy PACKAGE
+```
+
+---
+
+## Important exit codes from Phase 1
+
+```text
+0   → success
+1   → general failure / negative result
+2   → command processing or usage error
+6   → curl could not resolve hostname
+7   → curl could not connect
+22  → curl HTTP error with --fail
+28  → curl timeout
+126 → command found but could not execute
+127 → command not found
+130 → interrupted with Ctrl+C
+143 → terminated by SIGTERM
+```
+
+Exit-code meanings depend on the command, so documentation should be checked when necessary.
+
+---
+
+## Important vocabulary
+
+```text
+resolve hostname       → визначити IP-адресу домену
+request                → запит
+response               → відповідь
+response header        → заголовок відповіді
+response body          → тіло відповіді
+redirect               → перенаправлення
+exit status            → код завершення
+argument               → аргумент
+condition              → умова
+array                   → масив
+loop                    → цикл
+function                → функція
+local variable          → локальна змінна
+counter                 → лічильник
+background process      → фоновий процес
+foreground process      → процес на передньому плані
+permission              → право доступу
+ownership               → власність
+dependency              → залежність
+candidate version       → версія, яку APT вибере для встановлення
+service                 → сервіс
+failed unit             → systemd unit у стані failure
+filesystem              → файлова система
+mount point             → точка монтування
+block device            → блочний пристрій
+archive                 → архів
+compression             → стиснення
+checksum                → контрольна сума
+integrity               → цілісність
+authenticity            → автентичність / підтвердження походження
+restore                 → відновлення
+corruption              → пошкодження даних
+relative path           → відносний шлях
+absolute path           → абсолютний шлях
+troubleshooting         → пошук і усунення проблем
+```
+
+---
+
+## Linux Phase 1 completion
+
+Linux Phase 1 is completed.
+
+Completed:
+
+```text
+Lessons 01–19
+Checkpoint 01
+Checkpoint 02
+```
+
+I now have a practical Linux foundation covering:
+
+```text
+navigation and files
+Git fundamentals
+system information
+processes
+services
+logs
+networking
+DNS and HTTP
+Bash scripting
+loops and functions
+job control
+users and permissions
+APT package management
+systemd troubleshooting
+storage and filesystems
+archives and backups
+```
+
+The Linux foundation is strong enough to continue with real projects and later DevOps topics.
+
+Bash scripting will continue to be practised alongside future work, especially:
+
+```text
+writing scripts without copying examples
+combining multiple Bash concepts
+reading errors
+using bash -n
+using ShellCheck
+understanding exit codes
+building small automation scripts
+```
+
+The checkpoint temporary environment was safely removed.
