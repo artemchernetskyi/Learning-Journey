@@ -8011,7 +8011,7 @@ git log -1 --oneline
 My first attempt contained a typo:
 
 ```text
-git status --short
+git statis --short
 ```
 
 Git suggested the correct command:
@@ -13788,6 +13788,7 @@ Show a symbolic link’s target.
 ### My sentence
 
 I learned how to create and inspect `tar`, `gzip`, `xz`, and ZIP archives; how to extract files safely; how to preserve permissions and symbolic links; and how to verify, test, corrupt, detect, and restore backups using `diff`, `cmp`, and SHA-256 checksums.
+
 ---
 
 ## Checkpoint 02 — Lessons 11–19 and Linux Phase 1 completion

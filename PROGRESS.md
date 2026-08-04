@@ -301,37 +301,6 @@ Before new lessons, I will also answer a few short review questions from previou
 
 ---
 
-# 2. `PROGRESS.md`
-
-Я б **не переписував стару історію**, а додав новий актуальний блок ближче до кінця:
-
-```markdown
----
-
-## 2026-08-04 — Linux Phase 1 completed
-
-I completed Lessons 11–19 and passed Checkpoint 02.
-
-Together with the previously completed Lessons 01–10 and Checkpoint 01, this completes my first major Linux foundation phase.
-
-### Lessons 11–19 completed
-
-11. DNS and HTTP connectivity tools
-12. Bash scripting fundamentals
-13. Bash loops and functions
-14. Linux processes and job control
-15. Linux users, groups, and permissions
-16. APT package management
-17. systemd and journal troubleshooting
-18. Linux storage, filesystems, and mounts
-19. Linux archives, compression, and backup verification
-
----
-
-# 2. `PROGRESS.md`
-
----
-
 ## 2026-08-04 — Linux Phase 1 completed
 
 I completed Lessons 11–19 and passed Checkpoint 02.

@@ -515,6 +515,7 @@ My current English priorities are:
 ## My current sentence
 
 I am learning English together with Linux and DevOps, and I am becoming more confident when I explain technical topics in my own words.
+
 ---
 
 ## Technical English progress — 2026-08-04
