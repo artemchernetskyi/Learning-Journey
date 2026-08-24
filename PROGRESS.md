@@ -379,3 +379,24 @@ When Docker learning begins, I want to apply it to real projects where possible.
 Checkpoint temporary resources were cleaned up safely.
 
 The repository working tree was clean after the practical checkpoint.
+
+---
+
+## 2026-08-24 — Docker Lesson 01 completed
+
+I installed Docker Engine from Docker's official APT repository and completed the first Docker lesson.
+
+I practised:
+
+- checking the Docker service
+- running `hello-world`
+- listing images and containers
+- running Nginx in a container
+- mapping host port `8080` to container port `80`
+- verifying Nginx with `curl`, `ss`, and container logs
+- stopping and removing containers
+- using Docker without `sudo`
+
+The next lesson is:
+
+**Docker Lesson 02 — Images and Containers**
