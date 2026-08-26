@@ -8,90 +8,11 @@ The goal is to learn Docker step by step, practise real commands, and explain co
 
 ---
 
-## Lesson 01 — Docker installation and first containers
+## Lesson 01 — Docker concepts and first containers
 
 Date: `2026-08-24`
 
-In this lesson, I installed Docker Engine from Docker's official APT repository and practised the basic container workflow.
-
-### System information
-
-The system used for this lesson was:
-
-- operating system: Ubuntu 24.04.4 LTS
-- Ubuntu codename: `noble`
-- architecture: `amd64`
-
-Docker was not installed at the beginning of the lesson.
-
-### Installation preparation
-
-I checked for packages that could conflict with Docker's official packages by using `apt-cache policy`.
-
-None of the conflicting packages were installed.
-
-I installed or verified these required packages:
-
-- `ca-certificates` — allows the system to verify secure HTTPS connections
-- `curl` — downloads data from URLs
-
-I created the directory for APT repository keys:
-
-```bash
-sudo install -m 0755 -d /etc/apt/keyrings
-```
-
-I downloaded Docker's official GPG key to:
-
-```text
-/etc/apt/keyrings/docker.asc
-```
-
-A GPG key lets APT verify that repository metadata and packages come from Docker and have not been changed by an unknown third party.
-
-Ukrainian explanation:
-
-> GPG-ключ допомагає APT перевірити справжність джерела пакетів і переконатися, що дані не були непомітно змінені.
-
-I added Docker's official APT repository with the deb822 source file:
-
-```text
-/etc/apt/sources.list.d/docker.sources
-```
-
-APT correctly detected:
-
-- distribution: `noble`
-- repository channel: `stable`
-- architecture: `amd64`
-
-### Installed Docker packages
-
-I installed:
-
-- `docker-ce` — Docker Engine and daemon
-- `docker-ce-cli` — Docker command-line client
-- `containerd.io` — container runtime used by Docker
-- `docker-buildx-plugin` — extended image-building functionality
-- `docker-compose-plugin` — Docker Compose support through `docker compose`
-
-The installed Docker version was:
-
-```text
-29.7.2
-```
-
-### Docker service verification
-
-I checked the Docker service with `systemctl`.
-
-`docker.service` was:
-
-- loaded
-- enabled
-- `active (running)`
-
-`enabled` means systemd is configured to start Docker automatically during system startup. `active (running)` means the service is running now.
+In this lesson, I learned the main Docker concepts and practised the basic container workflow.
 
 ### Main Docker concepts
 
@@ -291,41 +212,6 @@ I verified that these images remained available locally:
 - `hello-world:latest`
 - `nginx:alpine`
 
-### Running Docker without `sudo`
-
-I inspected the `docker` Unix group and the Docker socket:
-
-```text
-/var/run/docker.sock
-```
-
-The socket is the local communication endpoint used by the Docker CLI to communicate with the Docker daemon.
-
-I added user `artem` to the `docker` group with:
-
-```bash
-sudo usermod -aG docker "$USER"
-```
-
-Option explanation:
-
-- `-a` appends the user to an additional group instead of replacing existing supplementary groups.
-- `-G docker` selects the supplementary `docker` group.
-
-I activated the new group membership in a new shell with:
-
-```bash
-newgrp docker
-```
-
-I then verified that Docker commands worked without `sudo`.
-
-> **Security warning:** Membership in the `docker` group grants root-level privileges. A user who can control the Docker daemon can effectively gain full control of the host. Only trusted users should belong to this group.
-
-Ukrainian explanation:
-
-> Членство у групі `docker` фактично надає права рівня root. До цієї групи потрібно додавати лише довірених користувачів.
-
 ### English–Ukrainian vocabulary
 
 | English | Ukrainian |
@@ -341,7 +227,6 @@ Ukrainian explanation:
 | detached mode | фоновий режим |
 | isolated | ізольований |
 | host | хост / основна система |
-| socket | сокет / точка локального зв'язку |
 
 ### Key takeaways
 
@@ -352,7 +237,6 @@ Ukrainian explanation:
 - Port mapping makes a container service accessible through a host port.
 - HTTP headers, listening ports, and container logs provide different evidence during verification.
 - Stopping or removing a container does not automatically remove its image.
-- The `docker` group makes Docker easier to use but grants root-level privileges.
 
 ## Next step
 
