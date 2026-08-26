@@ -400,3 +400,21 @@ I practised:
 The next lesson is:
 
 **Docker Lesson 02 — Images and Containers**
+
+---
+
+## 2026-08-26 — Docker Lesson 02 completed
+
+I completed Docker Lesson 02 and practised:
+
+- the difference between images and containers;
+- pulling explicit image tags;
+- creating, starting, restarting, stopping, renaming, and removing containers;
+- using multiple containers from one image;
+- understanding tags, image IDs, and image dependencies;
+- diagnosing command arguments, logs, container state, and exit codes;
+- cleaning up containers and images in dependency order.
+
+The next lesson is:
+
+**Docker Lesson 03 — Ports and Web Containers**
