@@ -666,3 +666,267 @@ The final Docker state was:
 The next lesson is:
 
 **Docker Lesson 03 — Ports and Web Containers**
+
+---
+
+## Docker Lesson 03 — Ports and Web Containers
+
+**Date:** 2026-08-27
+
+In this lesson, I learned how Docker connects host ports to ports inside containers. I practised publishing Nginx on different host addresses and ports, investigated a port conflict, compared exposed and published ports, and verified each configuration with Docker, Linux networking, and HTTP tools.
+
+### Port mapping fundamentals
+
+Containers have isolated network environments. Nginx listens on port `80` inside each Nginx container, but that internal port is not automatically available through a port on the host.
+
+The publishing syntax is:
+
+```text
+-p HOST_PORT:CONTAINER_PORT
+```
+
+For example, `-p 8080:80` forwards traffic from host port `8080` to port `80` inside the container.
+
+Multiple containers can use the same internal port `80` because each container has its own isolated network environment. However, two containers cannot simultaneously publish the same host IP, host port, and protocol. Different host ports can map to the same container port without a conflict.
+
+### First published container
+
+I first checked whether host port `8080` was free:
+
+```bash
+ss -lnt | grep ':8080'
+```
+
+Then I created a detached Nginx container:
+
+```bash
+docker run -d --name web-all -p 8080:80 nginx:alpine
+```
+
+I verified the container, its Docker mapping, the host listener, and the HTTP response with:
+
+```bash
+docker ps --filter name=web-all
+docker port web-all
+ss -lnt | grep ':8080'
+curl -I http://127.0.0.1:8080
+```
+
+The observed mappings were:
+
+```text
+0.0.0.0:8080->80/tcp
+[::]:8080->80/tcp
+```
+
+The HTTP response included:
+
+```text
+HTTP/1.1 200 OK
+Server: nginx/1.31.4
+```
+
+When `-p` does not include a specific host address, Docker binds the published port to all host interfaces by default. Here, `0.0.0.0` represents all IPv4 host interfaces, and `[::]` represents all IPv6 host interfaces.
+
+### Host-port conflict
+
+I attempted to create another container using the same host port:
+
+```bash
+docker run -d --name web-conflict -p 8080:80 nginx:alpine
+```
+
+Docker returned:
+
+```text
+Bind for 0.0.0.0:8080 failed: port is already allocated
+```
+
+The command returned exit code `125`. This meant that Docker could not start the requested container because host port `8080` was already in use by `web-all`.
+
+I inspected the failed container with:
+
+```bash
+docker ps -a --filter name=web-conflict
+```
+
+It appeared in the `Created` state. Docker had created the container object, but it could not finish the networking setup or start Nginx. I then removed the failed container.
+
+### Two containers using internal port 80
+
+I created a second working Nginx container:
+
+```bash
+docker run -d --name web-second -p 8081:80 nginx:alpine
+```
+
+Both containers ran simultaneously:
+
+- `web-all`: host `8080` → container `80`;
+- `web-second`: host `8081` → container `80`.
+
+Both returned `HTTP/1.1 200 OK`.
+
+There was no conflict because the host ports were different. Each container could listen on its own internal port `80`, while Docker published those ports through separate host ports.
+
+### Localhost-only publishing
+
+I created another container and bound its published port only to the IPv4 loopback address:
+
+```bash
+docker run -d --name web-local -p 127.0.0.1:8082:80 nginx:alpine
+```
+
+Verification showed:
+
+- `docker port web-local` returned `80/tcp -> 127.0.0.1:8082`;
+- `ss` showed the local listening address `127.0.0.1:8082`;
+- `curl -I http://127.0.0.1:8082` returned `HTTP/1.1 200 OK`.
+
+The computer's LAN information was:
+
+- interface: `wlp6s0`;
+- LAN address: `192.168.0.193`;
+- gateway: `192.168.0.1`.
+
+I tested the difference between all-interface and localhost-only publishing:
+
+- `http://192.168.0.193:8080` returned `200 OK` because port `8080` was published on all interfaces;
+- `http://192.168.0.193:8082` failed with curl exit code `7` because port `8082` was bound only to `127.0.0.1`.
+
+The binding difference is:
+
+- `0.0.0.0:8080` — accessible through all IPv4 host interfaces, subject to firewall and network rules;
+- `127.0.0.1:8082` — accessible only from the local computer.
+
+In `ss` output, the local-address column determines where the socket is bound. A peer column such as `0.0.0.0:*` does not mean that the service listens on every local interface; it describes the possible remote peer for a listening socket.
+
+### Exposed versus published ports
+
+I inspected the Nginx image metadata:
+
+```bash
+docker image inspect nginx:alpine --format '{{json .Config.ExposedPorts}}'
+```
+
+The result was:
+
+```json
+{"80/tcp":{}}
+```
+
+Then I created a container without `-p`:
+
+```bash
+docker run -d --name web-hidden nginx:alpine
+```
+
+The results were:
+
+- the container was running;
+- `docker ps` displayed `80/tcp`;
+- `docker port web-hidden` returned no mapping.
+
+`EXPOSE 80` is image metadata that describes the expected internal port. It does not publish a host port. A container port becomes accessible through a host port only when it is published with `-p` or `-P`.
+
+### Automatically selected host port
+
+I created a container with uppercase `-P`:
+
+```bash
+docker run -d --name web-random -P nginx:alpine
+```
+
+For this run, Docker automatically selected host port `32768`:
+
+```text
+0.0.0.0:32768->80/tcp
+[::]:32768->80/tcp
+```
+
+The request:
+
+```bash
+curl -I http://127.0.0.1:32768
+```
+
+returned `HTTP/1.1 200 OK`.
+
+Uppercase `-P` publishes all ports declared by the image and lets Docker select available host ports. Port `32768` was the result of this run, but Docker is not guaranteed to select the same host port in future runs.
+
+### Recreating a container to change its port mapping
+
+The original `web-hidden` container had no published port. I correctly stopped and removed it, then recreated it with a localhost-only mapping:
+
+```bash
+docker run -d --name web-hidden -p 127.0.0.1:8083:80 nginx:alpine
+```
+
+Verification showed:
+
+- `127.0.0.1:8083->80/tcp`;
+- `docker port web-hidden` returned `80/tcp -> 127.0.0.1:8083`;
+- `curl -I http://127.0.0.1:8083` returned `HTTP/1.1 200 OK`.
+
+`docker start` only starts an existing stopped container with its original configuration. It cannot add or change a port mapping. To change the mapping, the container must be removed and recreated with a new `docker run` configuration.
+
+### Useful commands
+
+| Command | Purpose |
+|---|---|
+| `docker run -p HOST_PORT:CONTAINER_PORT IMAGE` | Create a container and publish a specific host port. |
+| `docker run -P IMAGE` | Publish all exposed image ports on automatically selected host ports. |
+| `docker port CONTAINER` | Show the published port mappings for a container. |
+| `docker ps` | List running containers and their port information. |
+| `ss -lnt` | Show listening TCP sockets using numeric addresses and ports. |
+| `curl -I URL` | Send an HTTP HEAD request and display response headers. |
+| `ip route get ADDRESS` | Show the route, interface, and source address used to reach a destination. |
+| `docker stop CONTAINER` | Stop a running container. |
+| `docker rm CONTAINER` | Remove a stopped container. |
+
+### Troubleshooting model
+
+When a published web container is unavailable, I can investigate it in this order:
+
+1. Confirm that the container is running with `docker ps`.
+2. Inspect its mapping with `docker port`.
+3. Check the host listener with `ss -lnt`.
+4. Test HTTP locally with `curl -I`.
+5. Compare the requested host port with the actual Docker mapping.
+6. Check whether the port is bound to all interfaces or only `127.0.0.1`.
+7. If the mapping is incorrect or missing, recreate the container.
+
+This order checks the container, Docker configuration, host networking, and application response separately.
+
+### Cleanup
+
+I stopped and removed these containers:
+
+- `web-all`;
+- `web-second`;
+- `web-local`;
+- `web-hidden`;
+- `web-random`.
+
+Final verification showed:
+
+- `docker ps -a` contained no containers;
+- ports `8080`, `8081`, `8082`, `8083`, and the automatically selected port `32768` were no longer listening;
+- images `hello-world:latest` and `nginx:alpine` were intentionally retained.
+
+### Key takeaways
+
+- Container ports belong to isolated container network environments.
+- `-p` publishes a chosen host port, while `-P` selects available host ports automatically for exposed image ports.
+- Different host ports can map to the same internal container port.
+- A host IP, port, and protocol combination can be published by only one container at a time.
+- `EXPOSE` documents an internal port but does not publish it.
+- The local-address column in `ss` shows whether a service is bound to all interfaces or only localhost.
+- Port mappings are part of a container's creation configuration, so changing them requires recreating the container.
+- `docker port`, `ss`, and `curl` provide complementary evidence during troubleshooting.
+
+## Next step
+
+The next lesson is:
+
+**Docker Lesson 04 — Container Investigation**

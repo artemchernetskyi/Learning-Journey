@@ -418,3 +418,21 @@ I completed Docker Lesson 02 and practised:
 The next lesson is:
 
 **Docker Lesson 03 — Ports and Web Containers**
+
+---
+
+## 2026-08-27 — Docker Lesson 03 completed
+
+I completed Docker Lesson 03 and practised:
+
+- host and container ports;
+- publishing ports with `-p` and `-P`;
+- diagnosing host-port conflicts;
+- all-interface and localhost-only bindings;
+- the difference between `EXPOSE` metadata and published ports;
+- verifying mappings and HTTP responses with `docker port`, `ss`, and `curl`;
+- recreating containers to change port mappings.
+
+The next lesson is:
+
+**Docker Lesson 04 — Container Investigation**
