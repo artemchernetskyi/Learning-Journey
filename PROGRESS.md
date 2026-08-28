@@ -436,3 +436,23 @@ I completed Docker Lesson 03 and practised:
 The next lesson is:
 
 **Docker Lesson 04 — Container Investigation**
+
+---
+
+## 2026-08-28 — Docker Lesson 04 completed
+
+I completed Docker Lesson 04 and practised:
+
+- reading and following container logs;
+- using non-interactive and interactive `docker exec`;
+- comparing a container's userspace and processes with the host using `docker top`;
+- understanding PID namespaces and container-side versus host-side PIDs;
+- extracting structured fields with `docker inspect --format`;
+- monitoring resource usage with `docker stats`;
+- diagnosing an intentionally broken Nginx container from its logs, state, and exit code;
+- distinguishing commands that work with stopped containers from commands that require a running container;
+- cleaning up and verifying the final Docker state.
+
+The next lesson is:
+
+**Docker Lesson 05 — Container Lifecycle**

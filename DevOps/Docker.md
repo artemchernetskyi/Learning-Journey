@@ -930,3 +930,313 @@ Final verification showed:
 The next lesson is:
 
 **Docker Lesson 04 — Container Investigation**
+
+---
+
+# Docker Lesson 04 — Container Investigation
+
+**Date:** 2026-08-28
+
+In this lesson, I investigated a running Nginx container through its logs, processes, filesystem, configuration, runtime state, and resource usage. I also diagnosed an intentionally broken container by comparing its logs, exit code, and inspect data.
+
+### Initial state
+
+Before the lesson:
+
+- the previous commit was `c892cb9 Complete Docker Lesson 03`;
+- the Docker service was active;
+- no containers existed;
+- `nginx:alpine` was available locally;
+- `source-backup.tar.gz` remained intentionally untracked.
+
+### Image reference mistake
+
+The first attempt used the incorrect image reference:
+
+```text
+nginx-alpine
+```
+
+Docker interpreted this as a different repository named `nginx-alpine:latest` and returned a pull-access or repository error.
+
+The correct reference was:
+
+```text
+nginx:alpine
+```
+
+Here, `nginx` is the image repository or name, and `alpine` is the tag. A colon (`:`) separates the image name from its tag.
+
+### Investigation container
+
+I created the working container with:
+
+```bash
+docker run -d --name lesson04-nginx -p 127.0.0.1:8080:80 nginx:alpine
+```
+
+Verification showed:
+
+- the container status was `Up`;
+- the mapping was `127.0.0.1:8080->80/tcp`;
+- `ss` showed a listener on `127.0.0.1:8080`;
+- `curl -I http://127.0.0.1:8080` returned `HTTP/1.1 200 OK`;
+- the Nginx version was `1.31.4`.
+
+### Container logs
+
+I practised:
+
+```bash
+docker logs lesson04-nginx
+docker logs --tail 10 lesson04-nginx
+docker logs --timestamps --tail 10 lesson04-nginx
+docker logs --follow --tail 0 lesson04-nginx
+```
+
+I generated HTTP requests with `curl`. The logs showed:
+
+- `GET / HTTP/1.1` returned `200`;
+- `GET /missing HTTP/1.1` returned `404`;
+- `GET /test-page HTTP/1.1` returned `404`;
+- Nginx reported `No such file or directory` for missing files;
+- access-log entries included methods such as `GET` and `HEAD`, the requested path, HTTP version, status code, response size, and user-agent `curl/8.5.0`;
+- the source address appeared as `172.17.0.1` because traffic reached the container through Docker's bridge network.
+
+Container logs normally contain application output written to standard output (`STDOUT`) and standard error (`STDERR`). `--tail` limits the number of displayed lines, `--timestamps` adds Docker timestamps, and `--follow` displays new log entries in real time. With `--tail 0`, Docker ignores old entries and waits only for new ones. Pressing `Ctrl+C` stops only the local log-following command; it does not stop the container.
+
+### Non-interactive `docker exec`
+
+I ran individual commands inside the running container:
+
+```bash
+docker exec lesson04-nginx pwd
+docker exec lesson04-nginx whoami
+docker exec lesson04-nginx cat /etc/os-release
+docker exec lesson04-nginx ls -la /usr/share/nginx/html
+```
+
+The results showed:
+
+- the default working directory was `/`;
+- the command ran as `root`;
+- the container userspace was Alpine Linux `3.24.1`;
+- the host remained Ubuntu;
+- the Nginx document directory contained `index.html` and `50x.html`;
+- these files belonged to `root:root`.
+
+A Linux container shares the host Linux kernel, but it can contain a different userspace, filesystem, libraries, and package manager. This is why an Alpine container can run on an Ubuntu host.
+
+### Interactive `docker exec`
+
+I opened an interactive shell with:
+
+```bash
+docker exec -it lesson04-nginx sh
+```
+
+The `-i` option keeps standard input open, and `-t` allocates a pseudo-terminal. Alpine normally provides `sh`, not Bash. `docker exec` starts an additional process inside an existing running container, and that process can exist only while the container's PID `1` is running.
+
+Inside the container, I practised:
+
+```bash
+pwd
+hostname
+ps | head -n 10
+grep -E 'listen|root|index' /etc/nginx/conf.d/default.conf
+exit
+```
+
+The investigation verified:
+
+- the hostname matched the short container ID `cc07c8d95cbc`;
+- the Nginx master process had container PID `1`;
+- worker processes ran as user `nginx`;
+- the configuration contained `listen 80` and `listen [::]:80`;
+- the document root was `/usr/share/nginx/html`;
+- the configuration declared the index files;
+- `exit` stopped only the exec shell, not the container.
+
+The `grep` command also displayed commented PHP examples. `grep` searches text patterns; it does not understand Nginx configuration syntax. Lines beginning with `#` are comments and are not active configuration directives.
+
+### PID namespace and `docker top`
+
+I compared container and host process information with:
+
+```bash
+docker top lesson04-nginx
+docker inspect --format 'HostPID={{.State.Pid}}' lesson04-nginx
+ps -fp 6513
+```
+
+Inside the container, the Nginx master process was PID `1`, and worker PIDs began at `30`. On the host, the same master process was PID `6513`, its host parent PID was `6488`, and worker host PIDs began at `6607`. The workers had the Nginx master process as their parent.
+
+Docker uses a PID namespace to give the container an isolated view of process numbers. Therefore, the same Nginx master process appeared as PID `1` inside the container and PID `6513` on the host. Host-side usernames can differ because the host resolves numeric UIDs through its own user database; inside the container, the worker UID was named `nginx`.
+
+### Structured `docker inspect`
+
+I used Go templates to extract individual fields from `docker inspect`:
+
+- `.Name`;
+- `.Config.Image`;
+- `.State.Status`;
+- `.State.Running`;
+- `.State.Pid`;
+- `.State.ExitCode`;
+- `.NetworkSettings.Networks`;
+- `.NetworkSettings.Ports`.
+
+Verified values included:
+
+- name `/lesson04-nginx`;
+- image `nginx:alpine`;
+- status `running`;
+- `Running=true`;
+- host PID `6513`;
+- container IP `172.17.0.2`;
+- host mapping `127.0.0.1:8080` to `80/tcp`.
+
+`docker inspect` returns detailed, low-level JSON data about a Docker object. `--format` extracts selected fields using Go templates, while `{{json ...}}` presents nested values as JSON.
+
+Configuration fields such as the image name are relatively static. Runtime fields such as PID, status, and IP address can change. An exit code becomes most meaningful after the container's main process stops.
+
+### Resource monitoring
+
+I practised:
+
+```bash
+docker stats lesson04-nginx
+docker stats --no-stream lesson04-nginx
+```
+
+A Bash loop generated 100 local HTTP requests. The observed snapshot included:
+
+- maximum noticed CPU usage: approximately `0.03%`;
+- final CPU usage: `0.00%`;
+- memory usage: approximately `20.6 MiB`;
+- memory percentage: `0.13%`;
+- network I/O: approximately `65.8kB / 152kB`;
+- block I/O: approximately `8.01MB / 20.5kB`;
+- PIDs: `17`.
+
+The main columns mean:
+
+| Column | Meaning |
+|---|---|
+| `CPU %` | The container's current CPU usage. |
+| `MEM USAGE / LIMIT` | Memory currently used and the available limit. |
+| `MEM %` | The percentage of the memory limit in use. |
+| `NET I/O` | Network data received and sent. |
+| `BLOCK I/O` | Data read from and written to block devices. |
+| `PIDS` | The number of processes and threads counted for the container. |
+
+Normal `docker stats` continuously streams live data. `docker stats --no-stream` returns one snapshot and exits. Pressing `Ctrl+C` stops monitoring without stopping the container.
+
+A typo added `~` to the container name:
+
+```text
+lesson04-nginx~
+```
+
+Docker correctly returned `No such container` because `~` became a literal part of the requested name. The real container was unaffected, and the command succeeded after the correct name was used.
+
+### Broken-container troubleshooting
+
+I intentionally created a broken container:
+
+```bash
+docker run --name lesson04-broken nginx:alpine nginx -g 'invalid_directive;'
+```
+
+Docker created the container, but Nginx reported:
+
+```text
+unknown directive "invalid_directive" in command line
+```
+
+The command returned exit status `1`, and the container status became `Exited (1)`. `docker logs lesson04-broken` contained the application error. Inspection showed:
+
+```text
+Status=exited
+ExitCode=1
+Error=""
+OOMKilled=false
+```
+
+Docker successfully created the container and started its process. The application itself then failed. Application errors appeared in `docker logs`, while `.State.Error` remained empty because there was no Docker runtime-level launch error. `OOMKilled=false` proved that memory exhaustion was not the cause.
+
+My final diagnosis was:
+
+> The container exited because Nginx received an invalid directive. `docker logs` showed the error, and the main process returned exit code 1.
+
+### Commands available for stopped containers
+
+I tried:
+
+```bash
+docker exec lesson04-broken sh
+```
+
+Docker reported that the container was not running, and the command returned exit status `1`.
+
+- `docker logs` can inspect a stopped container.
+- `docker inspect` can inspect a stopped container.
+- `docker exec` requires a running container.
+
+### Troubleshooting workflow
+
+I can investigate a container in this order:
+
+1. Check state with `docker ps -a`.
+2. Read application output with `docker logs`.
+3. Inspect `.State.Status`, `.State.ExitCode`, `.State.Error`, and `.State.OOMKilled`.
+4. If running, inspect processes with `docker top`.
+5. If running, execute diagnostic commands with `docker exec`.
+6. Inspect configuration and networking with `docker inspect`.
+7. Check resource usage with `docker stats`.
+8. Identify whether the problem belongs to Docker, the application, configuration, resources, or networking.
+
+### Command reference
+
+| Command | Purpose |
+|---|---|
+| `docker logs CONTAINER` | Show the container's available application logs. |
+| `docker logs --tail N CONTAINER` | Show only the last `N` log lines. |
+| `docker logs --timestamps CONTAINER` | Add Docker timestamps to log entries. |
+| `docker logs --follow CONTAINER` | Follow new log entries in real time. |
+| `docker exec CONTAINER COMMAND` | Run one additional command in a running container. |
+| `docker exec -it CONTAINER sh` | Open an interactive shell in a running container. |
+| `docker top CONTAINER` | Show the container's processes from the host view. |
+| `docker inspect --format TEMPLATE CONTAINER` | Extract selected low-level fields with a Go template. |
+| `docker stats CONTAINER` | Stream live resource-usage information. |
+| `docker stats --no-stream CONTAINER` | Display one resource-usage snapshot. |
+
+### Cleanup
+
+I stopped the running investigation container and then removed:
+
+- `lesson04-nginx`;
+- `lesson04-broken`.
+
+Final verification showed:
+
+- `docker ps -a` contained no containers;
+- host port `8080` was no longer listening;
+- `nginx:alpine` remained available locally;
+- `source-backup.tar.gz` remained intentionally untracked and unchanged.
+
+### Key takeaways
+
+- Logs show application output from `STDOUT` and `STDERR`.
+- `docker exec` runs an additional command only inside a running container.
+- Containers share the host kernel but can use a different userspace and filesystem.
+- PID namespaces give a process different container-side and host-side PIDs.
+- `docker inspect --format` extracts useful configuration and runtime fields.
+- `docker stats` shows live or snapshot resource usage.
+- Logs, state, exit codes, processes, configuration, and resource data should be compared before choosing a fix.
+
+## Next step
+
+The next lesson is:
+
+**Docker Lesson 05 — Container Lifecycle**
