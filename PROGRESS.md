@@ -456,3 +456,19 @@ I completed Docker Lesson 04 and practised:
 The next lesson is:
 
 **Docker Lesson 05 — Container Lifecycle**
+
+---
+
+## 2026-09-01 — Docker Lesson 05 completed
+
+I completed Docker Lesson 05 and practised:
+
+- creating, running, starting, stopping, restarting, removing, and force-removing containers;
+- automatically removing temporary containers with `--rm`;
+- understanding writable-layer persistence during stop, start, and restart;
+- comparing removal and recreation with reuse of the same container;
+- troubleshooting port syntax, curl exit codes, startup readiness, filters, and lifecycle errors.
+
+The next lesson is:
+
+**Docker Lesson 06 — Bind Mounts**

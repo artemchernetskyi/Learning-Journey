@@ -1240,3 +1240,294 @@ Final verification showed:
 The next lesson is:
 
 **Docker Lesson 05 — Container Lifecycle**
+
+---
+
+# Docker Lesson 05 — Container Lifecycle
+
+**Date:** 2026-09-01
+**Started:** 2026-08-29
+
+In this lesson, I practised the complete container lifecycle and investigated how stopping, starting, removing, and recreating containers affect container identity and filesystem changes.
+
+### Initial state
+
+Before the lesson:
+
+- the previous commit was `10f5a96 Complete Docker Lesson 04`;
+- the Docker service was active;
+- no containers existed;
+- `nginx:alpine` was available locally;
+- `source-backup.tar.gz` remained intentionally untracked.
+
+### Creating the initial container
+
+The intended command was:
+
+```bash
+docker run -d --name lesson05-web -p 127.0.0.1:8080:80 nginx:alpine
+```
+
+The first attempt incorrectly used:
+
+```text
+127.0.0.1:8080.80
+```
+
+Docker returned:
+
+```text
+invalid containerPort: 8080.80
+```
+
+In a port mapping, a colon separates the host port from the container port. A period cannot be used in its place.
+
+The corrected container:
+
+- was named `lesson05-web`;
+- used `nginx:alpine`;
+- had full ID `20af586c4b8e1c5a235b3c61dcb654bebff930eba2cd4fb42bbfebbe8644a014`;
+- published `127.0.0.1:8080` to container port `80`.
+
+The first `curl` request omitted `:8080`, so `curl` tried host port `80` and returned exit code `7`. The corrected request to `127.0.0.1:8080` returned HTTP `200`.
+
+### Container writable layer
+
+I created this marker file inside the container:
+
+```text
+/usr/share/nginx/html/marker.txt
+```
+
+Its content was:
+
+```text
+Created during Docker Lesson 05
+```
+
+The file was accessible over HTTP and belonged to `root:root`.
+
+`docker diff lesson05-web` showed:
+
+```text
+A /usr/share/nginx/html/marker.txt
+```
+
+`A` means that the file was added. It existed in the container's writable layer and was not part of the original `nginx:alpine` image. Other runtime changes reported by `docker diff` came from normal Nginx startup activity.
+
+### Stop and resume
+
+I paused the lesson after running:
+
+```bash
+docker stop lesson05-web
+```
+
+Three days later:
+
+- Docker was active;
+- `lesson05-web` existed with status `Exited (0)`;
+- its full container ID remained unchanged;
+- `docker diff` still showed the marker file.
+
+Stopping a container stops its main process, but it does not delete the container object or its writable layer.
+
+### Start and restart
+
+I started the existing container with:
+
+```bash
+docker start lesson05-web
+```
+
+Verification showed:
+
+- the short ID remained `20af586c4b8e`;
+- the original creation time remained unchanged;
+- `StartedAt` changed;
+- the marker file remained accessible.
+
+I then restarted the same container:
+
+```bash
+docker restart lesson05-web
+```
+
+The full ID remained unchanged, `StartedAt` changed from approximately `22:28` to `22:35`, and `marker.txt` survived. Both `start` and `restart` preserve the existing container and its writable layer.
+
+### Remove and recreate
+
+I stopped and removed the container normally:
+
+```bash
+docker stop lesson05-web
+docker rm lesson05-web
+```
+
+After removal:
+
+- `docker ps -a` no longer showed the container;
+- `curl` to port `8080` returned exit code `7`;
+- the image remained available.
+
+I created a new container with the same name, image, and port mapping. Verification showed:
+
+- new full ID: `1eb1e3f6459eb696d03675df0adc67d446095d0fde4adefa29326af8417f77ca`;
+- the new ID differed from the original ID;
+- the image ID remained `db35bfc6b295`;
+- `/marker.txt` returned HTTP `404`;
+- `docker diff lesson05-web | grep marker` returned exit status `1` because no matching change existed.
+
+Container names may be reused after removal, but a reused name does not mean that it is the same container. `docker rm` deleted the old writable layer. The unchanged image did not contain `marker.txt`, so recreation produced a new container ID and a clean writable layer.
+
+Immediately after recreation, the first `curl` request returned exit code `56`, `Connection reset by peer`, and HTTP status `000`. A retry returned HTTP `404`. This was a startup race: a container can have status `running` before the application inside it is fully ready to accept requests.
+
+### Removing running containers
+
+Running this command while the container was active failed with exit status `1`:
+
+```bash
+docker rm lesson05-web
+```
+
+Docker reported that the container must first be stopped or force-removed, and the container remained running.
+
+I then intentionally force-removed the disposable training container:
+
+```bash
+docker rm -f lesson05-web
+```
+
+Normal `docker rm` removes a stopped container. The safe normal sequence is `docker stop` followed by `docker rm`. `docker rm -f` force-removes a running container using `SIGKILL`, so it should be intentional: the application cannot perform a graceful shutdown.
+
+After force removal, no `lesson05-web` container existed, port `8080` was unavailable, and `nginx:alpine` remained available.
+
+### `docker create` versus `docker run`
+
+I created a container without starting it:
+
+```bash
+docker create --name lesson05-created -p 127.0.0.1:8080:80 nginx:alpine
+```
+
+Verification showed:
+
+- full ID: `44f5bd2e222393a30354839b39bcb84169711e02f536e50a5947764b0a4f1194`;
+- status `Created`;
+- `curl` exit code `7`;
+- no application accepting connections on port `8080`.
+
+I then started the existing container:
+
+```bash
+docker start lesson05-created
+```
+
+The ID was unchanged before and after `docker start`, the status changed from `created` to `running`, the saved port mapping became active, and Nginx returned HTTP `200`.
+
+The lifecycle model is:
+
+```text
+docker run = docker create + docker start
+```
+
+`docker start` starts an existing created or stopped container. `docker run` creates and starts a new container from an image.
+
+### Automatic removal with `--rm`
+
+I ran a temporary container with:
+
+```bash
+docker run --rm --name lesson05-auto nginx:alpine nginx -v
+```
+
+The Nginx image entrypoint ran, Nginx printed version `1.31.4`, and the command returned exit status `0`. After the main process finished, `lesson05-auto` did not appear in `docker ps -a`.
+
+The `--rm` option automatically removes a container after its main process exits. It does not delete the image.
+
+### Independent final challenge
+
+I independently:
+
+1. created `lesson05-challenge` without starting it;
+2. verified status `Created`;
+3. started it with `docker start`;
+4. received HTTP `200` from Nginx;
+5. stopped it normally;
+6. removed it normally;
+7. verified that `docker ps -a` showed no containers;
+8. verified that Docker images remained available.
+
+The challenge container ID began with `92adec...`.
+
+Two harmless command mistakes occurred during the challenge.
+
+First, this filter was incomplete:
+
+```bash
+docker ps -a --filter=lesson05-challenge
+```
+
+Docker filters require `key=value`. The correct form is:
+
+```bash
+docker ps -a --filter name=lesson05-challenge
+```
+
+Second, this command accidentally passed `ss` to `curl` as another address:
+
+```bash
+curl ss --connect-timeout 3 http://127.0.0.1:8080/
+```
+
+`curl` returned exit code `6` for the unresolved host `ss`, then exit code `7` for the unavailable local port. The intended Linux command was:
+
+```bash
+ss -lnt | grep ':8080'
+```
+
+### Lifecycle command model
+
+| Command | Purpose |
+|---|---|
+| `docker create` | Create a container without starting it. |
+| `docker start` | Start an existing stopped or created container. |
+| `docker run` | Create and start a new container from an image. |
+| `docker stop` | Gracefully stop a running container. |
+| `docker restart` | Stop and start the same container. |
+| `docker rm` | Remove a stopped container. |
+| `docker rm -f` | Force-remove a running container. |
+| `docker run --rm` | Automatically remove the container after its process exits. |
+| `docker diff` | Show filesystem changes in the writable layer. |
+
+The important lifecycle rules are:
+
+- stop, start, and restart preserve the same container and writable layer;
+- remove and recreate produce a new ID and a clean writable layer;
+- data stored only in the writable layer is temporary;
+- persistent storage will be introduced with bind mounts and Docker volumes.
+
+### Final state
+
+Final verification showed:
+
+- `docker ps -a` contained no containers;
+- `curl` to `127.0.0.1:8080` returned exit code `7`;
+- `hello-world:latest` and `nginx:alpine` remained available;
+- no images were removed;
+- no training container remained.
+
+### Key takeaways
+
+- A stopped container keeps its identity, configuration, and writable layer.
+- Starting or restarting reuses the same container.
+- Removing a container deletes its writable layer, while its image remains independent.
+- Recreating with the same name creates a different container with a clean writable layer.
+- A `running` state does not guarantee that the application is ready yet.
+- Normal stop-and-remove is safer than force removal because it permits graceful shutdown.
+
+## Next step
+
+The next lesson is:
+
+**Docker Lesson 06 — Bind Mounts**
