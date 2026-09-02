@@ -1,22 +1,87 @@
-# Learning Journey — Artem
+# Linux & DevOps Learning Journey
 
-This repository documents my long-term learning journey from beginner level to a junior IT / DevOps-related candidate.
+Hands-on learning repository documenting my progress toward an entry-level IT Support, Linux/System Administration, and eventually DevOps role.
 
-## Main goals
+## About this repository
 
-- Improve my English to a confident B1 level, then B2.
-- Learn Linux from the basics.
-- Learn Git, Bash, Docker, CI/CD, Cloud, Terraform, Kubernetes, and DevOps tools step by step.
-- Build two portfolio projects.
-- Prepare for a junior IT / DevOps-related job in 12–18 months.
+This repository contains practical exercises, notes, Bash scripts, troubleshooting tasks, and Docker labs completed during my learning journey.
+
+My focus is on understanding how systems work in practice rather than only learning theory.
+
+## Current skills
+
+### Linux
+- Linux command line and filesystem navigation
+- Processes and job management
+- systemd services and `systemctl`
+- System logs with `journalctl`
+- Users, groups, permissions, ownership, and `umask`
+- Package management with APT and dpkg
+- Storage and filesystem basics
+
+### Networking & troubleshooting
+- TCP/IP fundamentals
+- DNS troubleshooting with `dig` and `nslookup`
+- HTTP troubleshooting with `curl` and `wget`
+- Network inspection with `ip`, `ss`, `ping`, and `resolvectl`
+- HTTP status codes and command exit codes
+
+### Bash
+- Variables and arguments
+- Conditions
+- Arrays
+- Loops
+- Functions
+- Exit statuses
+- Basic health-check scripts
+
+### Git
+- Repository workflow
+- Commits and history
+- Diff and status inspection
+- Branch basics
+- GitHub remote repositories
+
+### Docker
+Currently learning Docker through hands-on labs, including:
+
+- Images and containers
+- Container lifecycle
+- Port publishing
+- Inspecting containers
+- Bind mounts
+- Persistent data concepts
 
 ## Current focus
 
-At the beginning, my focus is:
+My current focus is Docker and container fundamentals while continuing to strengthen Linux, Bash, networking, and troubleshooting skills.
 
-- English grammar and writing practice
-- Linux basics
-- Git and Markdown
-- Building a consistent learning habit
+## Learning approach
 
-Consistency is more important than intensity.
+I learn primarily through practical terminal exercises and troubleshooting scenarios.
+
+Instead of only following commands, I try to understand:
+
+- what the command does;
+- why it works;
+- what changes in the system;
+- how to verify the result;
+- how to troubleshoot when something goes wrong.
+
+## Career goal
+
+My current goal is to move into an entry-level role such as:
+
+- IT Support
+- Technical Support
+- Junior Linux / System Administration
+- Infrastructure Support
+
+and continue developing toward DevOps and infrastructure engineering.
+
+## Progress
+
+Detailed learning progress and roadmap are available in:
+
+- [PROGRESS.md](PROGRESS.md)
+- [ROADMAP.md](ROADMAP.md)
