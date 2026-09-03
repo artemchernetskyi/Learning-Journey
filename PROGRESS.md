@@ -472,3 +472,21 @@ I completed Docker Lesson 05 and practised:
 The next lesson is:
 
 **Docker Lesson 06 — Bind Mounts**
+
+---
+
+## 2026-09-04 — Docker Lesson 06 completed
+
+I completed Docker Lesson 06 and practised:
+
+- creating read-write and read-only bind mounts;
+- changing shared files through host and container paths;
+- understanding bind-mount persistence and container recreation;
+- comparing missing-source behaviour with `--mount` and `-v`;
+- troubleshooting startup readiness, hidden image files, ownership, permissions, and exit statuses.
+
+The lesson started on 2026-09-02 and continued after a pause.
+
+The next lesson is:
+
+**Docker Lesson 07 — Docker Volumes**

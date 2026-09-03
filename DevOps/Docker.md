@@ -1531,3 +1531,321 @@ Final verification showed:
 The next lesson is:
 
 **Docker Lesson 06 — Bind Mounts**
+
+---
+
+# Docker Lesson 06 — Bind Mounts
+
+**Date:** 2026-09-04
+**Started:** 2026-09-02
+
+In this lesson, I learned how bind mounts connect existing host files and directories to containers. I practised changes in both directions, read-only access, container recreation, missing-source behaviour, host permissions, and systematic troubleshooting.
+
+### Bind-mount concept
+
+A bind mount exposes an existing host file or directory at a path inside a container.
+
+The host and container paths do not contain separate copies. While the mount is active, both paths provide access to the same underlying host data.
+
+The explicit syntax is:
+
+```text
+--mount type=bind,source=<host-path>,target=<container-path>
+```
+
+Its parts mean:
+
+- `type=bind` selects a bind mount;
+- `source` identifies the real host path;
+- `target` identifies where that path appears inside the container.
+
+Changes can become visible immediately without restarting the container. The data lifecycle belongs to the host and is independent of the container lifecycle.
+
+### Initial host content
+
+The temporary host directory was:
+
+```text
+/tmp/docker-lesson06-site
+```
+
+It contained an `index.html` file created by the Ubuntu user. I created the first container with:
+
+```bash
+docker run -d --name lesson06-nginx -p 127.0.0.1:8080:80 --mount type=bind,source=/tmp/docker-lesson06-site,target=/usr/share/nginx/html nginx:alpine
+```
+
+Inspection verified:
+
+- mount type `bind`;
+- source `/tmp/docker-lesson06-site`;
+- destination `/usr/share/nginx/html`;
+- `RW=true`;
+- port mapping `127.0.0.1:8080->80/tcp`.
+
+Nginx successfully served the host's `index.html`.
+
+### Recovery after the lesson pause
+
+The container was stopped but not removed before the lesson paused. When the lesson resumed:
+
+- the container still existed with status `Exited (0)`;
+- its original short ID was `0693df042608`;
+- its bind-mount configuration still referenced `/tmp/docker-lesson06-site`;
+- the source directory had disappeared because it was stored under `/tmp`.
+
+Docker preserved the container metadata, but it did not manage or back up the host bind source. Temporary directories may be cleaned during a reboot or system maintenance.
+
+I recreated the host directory and file before starting the existing container. The first immediate `curl` after `docker start` returned a connection reset. A repeated request succeeded.
+
+A running container is not necessarily an application that is ready to accept requests. Docker can report the container as running as soon as its main process starts, while Nginx still needs a short time to initialize and begin serving connections.
+
+### Live host-to-container changes
+
+I changed the host's `index.html` to contain:
+
+- heading: `Updated from Ubuntu`;
+- paragraph: `No container restart was needed.`
+
+The new content appeared immediately:
+
+- in the host file;
+- through `curl`;
+- through `docker exec` at `/usr/share/nginx/html/index.html`.
+
+Docker did not copy the updated file. The container read the host file directly through the bind mount.
+
+### Container-to-host changes
+
+Because the mount had `RW=true`, I created a file through the container path:
+
+```bash
+docker exec lesson06-nginx sh -c 'printf "Created from inside the container\n" > /usr/share/nginx/html/from-container.txt'
+```
+
+The file immediately appeared on the host as:
+
+```text
+/tmp/docker-lesson06-site/from-container.txt
+```
+
+Nginx also served it successfully. This was one host file visible through both the host path and the container path.
+
+The file created through `docker exec` belonged to `root:root`, while the original host-created file belonged to `artem:artem`. Bind mounts expose real Linux ownership and permissions, which are based on numeric UID and GID values. User names are how each system maps those numeric identifiers for display.
+
+### Bind mounts and `docker diff`
+
+This check produced no matching paths and `grep` exit status `1`:
+
+```bash
+docker diff lesson06-nginx | grep -E 'index.html|from-container.txt'
+```
+
+Bind-mounted changes are external to the container's writable layer. Therefore, `docker diff` does not report them as writable-layer file changes. Here, `grep` status `1` meant that it found no matching lines; it did not mean that the bind-mounted files were missing.
+
+### Container removal and persistence
+
+I stopped and removed the first container. After removal:
+
+- `docker ps -a` no longer showed the container;
+- both host files still existed;
+- their contents remained unchanged.
+
+I created a new container with the same name and bind source. Its new ID began with `c3465567d6fe`, but it immediately served the existing host files.
+
+Removing and recreating a container produces a new container identity. Bind-mounted host data can remain available because its lifecycle belongs to the host, not to the removed container.
+
+### Docker run ordering mistake
+
+An attempted recreation omitted `--name` and placed Docker options after the first non-option argument. Docker interpreted `lesson06-nginx` as the image name and attempted to pull `lesson06-nginx:latest`.
+
+The command structure is:
+
+```text
+docker run [DOCKER OPTIONS] IMAGE [CONTAINER COMMAND]
+```
+
+Options such as `-d`, `--name`, `-p`, and `--mount` must appear before the image reference. After the image, Docker treats the remaining arguments as the command and arguments for the container.
+
+### Read-only bind mounts
+
+I created a read-only container using:
+
+```text
+--mount type=bind,source=/tmp/docker-lesson06-site,target=/usr/share/nginx/html,readonly
+```
+
+Inspection showed:
+
+```text
+Type=bind RW=false
+```
+
+The container could read and serve the existing files. An attempted write through the mounted container path failed with:
+
+```text
+Read-only file system
+```
+
+The `docker exec` command returned exit status `1`, and host verification confirmed that `blocked.txt` did not exist.
+
+The Ubuntu user could still change the host's `index.html`. The updated content immediately appeared through Nginx and inside the container.
+
+The `readonly` option prevents writes through the container's mounted path. It does not prevent authorized host users from changing the source files directly.
+
+### Missing source with `--mount`
+
+I intentionally tested this missing source:
+
+```text
+/tmp/docker-lesson06-does-not-exist
+```
+
+Docker returned:
+
+```text
+invalid mount config for type "bind": bind source path does not exist
+```
+
+Verification showed:
+
+- `docker run` returned exit status `125`;
+- no container named `lesson06-missing` was created;
+- the application inside the image never started.
+
+Exit status `125` indicates that `docker run` failed before the containerized application could run.
+
+### Difference between `--mount` and `-v`
+
+I tested the short `-v` syntax with a missing host source:
+
+```text
+-v /tmp/docker-lesson06-v-created:/usr/share/nginx/html
+```
+
+Unlike `--mount`, `-v` automatically created the missing directory. Verification showed:
+
+- the directory was created as `root:root`;
+- mount type was `bind`;
+- `RW=true`;
+- Nginx returned HTTP `403`.
+
+The newly created host directory was empty. Mounting it over `/usr/share/nginx/html` obscured the image's existing files at that path, including its normal `index.html`. The original image files were hidden by the mount, not deleted.
+
+Nginx returned `403 Forbidden` because the mounted directory contained no index file and directory listing was disabled.
+
+`--mount` is generally clearer and safer because a source-path typo produces an immediate error instead of silently creating an empty directory.
+
+### Host permissions troubleshooting
+
+The normal `artem` user initially could not create `index.html` in the directory automatically created by `-v`. The write returned:
+
+- `Permission denied`;
+- exit status `1`.
+
+The directory belonged to `root:root` and had mode `755`. A non-root user could read and enter it but could not create files there.
+
+I corrected ownership with:
+
+```bash
+sudo chown "$USER":"$(id -gn)" /tmp/docker-lesson06-v-created
+```
+
+Afterward:
+
+- the directory belonged to `artem:artem`;
+- creating `index.html` returned exit status `0`;
+- the new file belonged to `artem:artem`;
+- Nginx immediately changed from HTTP `403` to HTTP `200`;
+- no container restart was required.
+
+Bind-mount problems can come from ordinary host filesystem ownership and permissions, not only from Docker configuration.
+
+### Final challenge
+
+The independent challenge used:
+
+- container name `lesson06-challenge`;
+- host port `127.0.0.1:8081`;
+- container port `80`;
+- source `/tmp/docker-lesson06-site`;
+- target `/usr/share/nginx/html`;
+- read-only access;
+- image `nginx:alpine`.
+
+Verification showed:
+
+- the container was running;
+- `curl -I` returned `HTTP/1.1 200 OK`;
+- inspect showed `Type=bind RW=false`;
+- attempting to create `challenge-write.txt` failed with `Read-only file system`;
+- `docker exec` returned exit status `1`;
+- the file did not appear on the host;
+- the host `ls` check returned exit status `2`.
+
+I also tried:
+
+```bash
+docker ps lesson06-challenge
+```
+
+Docker rejected it because `docker ps` does not accept a container name as a positional argument. The correct name-specific form is:
+
+```bash
+docker ps --filter name=lesson06-challenge
+```
+
+### Practical troubleshooting model
+
+I can troubleshoot a bind mount in this order:
+
+1. Verify that the host source path exists.
+2. Inspect its owner and permissions.
+3. Check the container status and port mapping.
+4. Inspect `.Mounts` to confirm type, source, destination, and `RW`.
+5. Test the host file directly.
+6. Test the mounted path with `docker exec`.
+7. Test the application with `curl`.
+8. Check whether the mount is intentionally read-only.
+9. Remember that a mounted directory can hide existing image files.
+10. Prefer `--mount` when strict missing-source validation is useful.
+
+### Cleanup and final state
+
+I removed these containers:
+
+- `lesson06-nginx`;
+- `lesson06-readonly`;
+- `lesson06-v-created`;
+- `lesson06-challenge`.
+
+After verifying their exact paths, I removed these disposable host directories:
+
+- `/tmp/docker-lesson06-site`;
+- `/tmp/docker-lesson06-v-created`.
+
+Final verification showed:
+
+- `docker ps -a` contained no containers;
+- ports `8080` and `8081` were not listening;
+- both temporary directories no longer existed;
+- `nginx:alpine` remained available locally;
+- its image ID was `db35bfc6b295`;
+- `git status --short` produced no output.
+
+### Key takeaways
+
+- A bind mount exposes real host data through a container path instead of copying it.
+- Host and container writes can be visible immediately when the mount is read-write.
+- Bind-mounted data survives container removal when it remains on the host.
+- Linux ownership and permissions apply to bind-mounted files.
+- Read-only access blocks writes through the container but not authorized host changes.
+- Bind-mounted changes do not belong to the container writable layer.
+- `--mount` rejects a missing source, while `-v` can create an empty host directory.
+- A mounted directory hides the image content at the same container path while the mount is active.
+
+## Next step
+
+The next lesson is:
+
+**Docker Lesson 07 — Docker Volumes**
