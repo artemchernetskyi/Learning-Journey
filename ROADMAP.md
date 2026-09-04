@@ -46,28 +46,35 @@ It shows all files, including hidden files.
 
 ## Current stage
 
+Updated: 2026-09-04
+
 Current level:
 
 - English: A2+ / B1- communication
 - Grammar: A2 / A2+
-- IT / DevOps: beginner
-- Linux: basic start
-- Git: basic start
-- Docker: not started yet
+- IT / DevOps: beginner with practical Linux and Docker experience
+- Linux: foundation phase completed
+- Git: basic practical workflow
+- Docker: Lessons 01-06 completed
+- Docker Compose: not started yet
+- CI/CD: not started yet
 - Cloud: not started yet
-- Kubernetes: not started yet
 - Terraform: not started yet
+- Kubernetes: not started yet
 
 Current progress:
 
-- Ubuntu is installed.
-- Internet connection is working.
-- Git is installed.
-- VS Code is installed.
-- Learning Journey project folder is created.
-- Git repository is initialized.
-- First commit is created.
-- First Markdown files are created.
+- Ubuntu is the main Linux learning environment.
+- Git and VS Code are used regularly.
+- The Learning Journey repository is maintained on GitHub.
+- Linux Lessons 01-19 are completed.
+- Linux Checkpoint 01 and Checkpoint 02 are completed.
+- Bash fundamentals are completed but need continued practice.
+- Docker Lessons 01-06 are completed.
+- Bind mounts are completed.
+- The next topic is Docker volumes.
+- The current roadmap phase is Docker and Docker Compose.
+
 
 ---
 
