@@ -490,3 +490,21 @@ The lesson started on 2026-09-02 and continued after a pause.
 The next lesson is:
 
 **Docker Lesson 07 — Docker Volumes**
+
+---
+
+## 2026-09-05 — Docker Lesson 07 completed
+
+I completed Docker Lesson 07 — Named Volumes and practised:
+
+- creating and inspecting named volumes and understanding initial image-file copying;
+- preserving data after container removal and reusing it in a replacement container;
+- sharing one volume between containers and observing immediate changes;
+- using read-only attachments and checking failed writes;
+- verifying protection against removing an in-use volume;
+- automatically creating named volumes and reading data with a temporary container;
+- explicitly cleaning up containers and volumes and verifying closed ports.
+
+The next lesson is:
+
+**Docker Lesson 08 — Environment Variables**

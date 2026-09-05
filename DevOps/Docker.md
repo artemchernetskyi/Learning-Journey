@@ -1849,3 +1849,261 @@ Final verification showed:
 The next lesson is:
 
 **Docker Lesson 07 — Docker Volumes**
+
+---
+
+# Docker Lesson 07 — Named Volumes
+
+**Date:** 2026-09-05
+
+In this lesson, I learned how Docker manages named volumes. I practised persistence after container removal, shared data, read-only attachments, automatic volume creation, and cleanup.
+
+### Initial state
+
+The verified starting state was:
+
+- initial HEAD: `a18927f Add project state and refresh roadmap`;
+- previous Docker lesson commit: `648f79e Complete Docker Lesson 06`;
+- the Git working tree was clean;
+- no containers existed;
+- no Docker volumes existed.
+
+The Microsoft Dev Containers and Container Tools extensions were installed in VS Code. I continued with Docker CLI commands to develop command-line understanding.
+
+### Named-volume concept
+
+A named volume is an independent Docker storage object. I supply a volume name instead of an ordinary host path, and Docker manages its physical storage location.
+
+Containers and named volumes have separate lifecycles. Removing a container does not automatically remove its named volume. Named volumes are normally managed through Docker commands instead of manually editing their internal host directories.
+
+### Creating and inspecting a volume
+
+I practised:
+
+```bash
+docker volume create lesson07-data
+docker volume ls
+docker volume inspect lesson07-data
+```
+
+Inspection verified:
+
+```text
+Name: lesson07-data
+Driver: local
+Mountpoint: /var/lib/docker/volumes/lesson07-data/_data
+Scope: local
+Options: null
+Labels: null
+```
+
+Creating the volume did not create a container. The volume existed independently and was initially empty.
+
+### Attaching a named volume
+
+I created the first Nginx container with:
+
+```bash
+docker run -d \
+  --name lesson07-nginx \
+  -p 127.0.0.1:8080:80 \
+  --mount type=volume,source=lesson07-data,target=/usr/share/nginx/html \
+  nginx:alpine
+```
+
+Here, `type=volume` selects a Docker volume, `source` is its name, and `target` is the path where it appears inside the container. The port mapping exposes Nginx on localhost port `8080`.
+
+Inspection verified:
+
+```text
+Type=volume
+Name=lesson07-data
+Destination=/usr/share/nginx/html
+RW=true
+```
+
+The first immediate `curl` attempt returned `Recv failure: Connection reset by peer`. The container was running before Nginx was fully ready. A retry returned `HTTP/1.1 200 OK`.
+
+The image's target directory already contained `index.html` and `50x.html`. During the first attachment, Docker copied those existing files into the empty named volume.
+
+This differed from Lesson 06: an empty bind-mounted host directory obscured the existing Nginx files and produced HTTP `403`. An empty named volume normally receives the target directory's initial contents instead.
+
+### Writing data
+
+Through the container, I replaced `/usr/share/nginx/html/index.html` with:
+
+```html
+<h1>Lesson 07 Named Volume</h1>
+<p>This data lives in lesson07-data.</p>
+```
+
+`curl` immediately returned the custom page. The write command used a path inside the container, but the resulting data was stored in `lesson07-data` because that path was inside the mounted volume.
+
+### Persistence after container removal
+
+The original container ID began with `77505c9d085d`. I removed it with:
+
+```bash
+docker rm -f lesson07-nginx
+```
+
+Verification showed:
+
+- `docker ps -a` no longer showed the container;
+- `docker volume ls` still showed `lesson07-data`;
+- `curl` could not connect to port `8080` and returned exit status `7` because no web container was running.
+
+I created a new container named `lesson07-restored` with the same volume and host port `8080`. Its ID began with `cf8f060da71a`. Although this was a different container, `curl` returned the previously modified custom page.
+
+The data survived because it belonged to the named volume, not to the deleted container. Because the existing volume was no longer empty, Docker did not overwrite its modified `index.html` with the image's default page.
+
+### Sharing a volume
+
+I created a second Nginx container named `lesson07-second` on host port `8081`, attached to the same `lesson07-data` volume with `RW=true`.
+
+Verification showed:
+
+- `lesson07-restored` served the page through port `8080`;
+- `lesson07-second` served the same page through port `8081`;
+- both containers mounted `lesson07-data`.
+
+Through `lesson07-second`, I changed the index page to:
+
+```html
+<h1>Changed by the second container</h1>
+<p>One volume, two containers.</p>
+```
+
+The new content immediately appeared through both ports `8081` and `8080`, and when I read the file with `docker exec` inside `lesson07-restored`.
+
+Both container paths referred to the same underlying volume data. No restart or copy was required.
+
+Sharing a volume does not guarantee that every application can safely perform concurrent writes. Applications such as databases require appropriate coordination and application support.
+
+### Read-only named-volume attachment
+
+I created a third container with:
+
+```bash
+docker run -d \
+  --name lesson07-readonly \
+  -p 127.0.0.1:8082:80 \
+  --mount type=volume,source=lesson07-data,target=/usr/share/nginx/html,readonly \
+  nginx:alpine
+```
+
+Inspection showed:
+
+```text
+Volume=lesson07-data
+RW=false
+```
+
+The container could read and serve the shared page. During the write challenge, an attempt to create `blocked.txt` through the read-only attachment failed with:
+
+```text
+Read-only file system
+```
+
+`docker exec` returned exit status `1`. The file was not created, and checking for it inside the writable container also returned exit status `1`.
+
+`readonly` applies to one particular volume attachment. Other containers mounting the same volume with `RW=true` can still modify its data.
+
+### Protection against removing an in-use volume
+
+I ran:
+
+```bash
+docker volume rm lesson07-data
+```
+
+Docker refused because three containers were using the volume. The command returned exit status `1` and listed their container IDs.
+
+I identified all running containers using the volume with:
+
+```bash
+docker ps --filter volume=lesson07-data
+```
+
+Normal `docker volume rm` protects an attached volume from accidental deletion. A container reference prevents removal even if that container is stopped; stopping a container does not remove its attachment configuration.
+
+### Automatic named-volume creation
+
+I started a one-shot container with a previously nonexistent named volume:
+
+```bash
+docker run \
+  --name lesson07-auto \
+  --mount type=volume,source=lesson07-auto-data,target=/data \
+  nginx:alpine \
+  sh -c 'printf "Created in an automatically created volume\n" > /data/note.txt'
+```
+
+Verification showed:
+
+- Docker automatically created `lesson07-auto-data`;
+- the container wrote `note.txt` and exited with status `0`;
+- both `lesson07-data` and `lesson07-auto-data` appeared in `docker volume ls`.
+
+I read the file with a temporary container using the shorter syntax:
+
+```bash
+docker run --rm \
+  -v lesson07-auto-data:/data:ro \
+  nginx:alpine \
+  cat /data/note.txt
+```
+
+The output was:
+
+```text
+Created in an automatically created volume
+```
+
+In `-v lesson07-auto-data:/data:ro`, the three parts are the volume name, container target path, and read-only mode.
+
+`--rm` removed the temporary container after `cat` finished. It did not remove the named volume.
+
+A missing named volume is automatically created. This differs from `--mount type=bind` with a missing host source, which normally returns an error.
+
+### Cleanup
+
+I explicitly removed these containers:
+
+- `lesson07-restored`;
+- `lesson07-second`;
+- `lesson07-readonly`;
+- `lesson07-auto`.
+
+I then explicitly removed these named volumes:
+
+- `lesson07-data`;
+- `lesson07-auto-data`.
+
+Final practical verification showed:
+
+- no Lesson 07 containers remained;
+- `docker volume ls` contained no volumes;
+- ports `8080`, `8081`, and `8082` were no longer listening;
+- the port `grep` command returned exit status `1`, meaning no matching listening ports were found;
+- `git status --short` remained empty before documenting the lesson.
+
+### Key takeaways
+
+| Storage behaviour | Bind mount | Named volume |
+|---|---|---|
+| Storage location | The user selects a host path. | Docker manages the storage location. |
+| Empty source mounted over a populated target | The image files are obscured. | Docker normally copies the target's initial contents into the volume. |
+
+- Removing a container does not automatically remove its named volume.
+- A named volume can be reused by replacement containers.
+- Multiple containers can mount the same volume.
+- `readonly` controls the access mode of a particular attachment.
+- Docker refuses to remove a volume that is still referenced by a container.
+- `--rm` removes the temporary container but does not remove a named volume.
+
+## Next step
+
+The next lesson follows environment variables after volumes in `ROADMAP.md`:
+
+**Docker Lesson 08 — Environment Variables**
