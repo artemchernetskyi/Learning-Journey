@@ -508,3 +508,20 @@ I completed Docker Lesson 07 — Named Volumes and practised:
 The next lesson is:
 
 **Docker Lesson 08 — Environment Variables**
+
+---
+
+## 2026-09-06 — Docker Lesson 08 completed
+
+I completed Docker Lesson 08 — Environment Variables and practised:
+
+- exporting Bash variables and explicitly passing host or fixed values into containers;
+- using environment files, command-line overrides, defaults, and required values;
+- distinguishing host, container, and exec-process environments;
+- configuring Nginx and recreating the same image with different runtime settings;
+- troubleshooting missing variables, exit codes, and accidental command continuation;
+- understanding environment-variable security and verifying cleanup.
+
+The next topic after environment variables in `ROADMAP.md` is:
+
+**Docker Lesson 09 — Docker Compose**

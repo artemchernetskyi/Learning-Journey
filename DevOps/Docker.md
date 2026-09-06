@@ -2107,3 +2107,301 @@ Final practical verification showed:
 The next lesson follows environment variables after volumes in `ROADMAP.md`:
 
 **Docker Lesson 08 — Environment Variables**
+
+---
+
+# Docker Lesson 08 — Environment Variables
+
+**Date:** 2026-09-06
+
+In this lesson, I learned how to pass runtime configuration into containers. I practised exported variables, environment files, overrides, required values, configurable Nginx startup, and troubleshooting missing configuration.
+
+### Initial state
+
+The verified starting state was:
+
+- previous commit: `32aa57b Complete Docker Lesson 07`;
+- local `main` and `origin/main` were synchronized;
+- `git status --short` was empty;
+- no containers existed;
+- `docker image ls alpine` showed no local image whose repository was exactly `alpine`;
+- `nginx:alpine` remained available locally.
+
+### Bash variables and exported environment variables
+
+I practised:
+
+```bash
+unset LESSON_MESSAGE
+LESSON_MESSAGE="Hello from the host shell"
+printf '%s\n' "$LESSON_MESSAGE"
+bash -c 'printf "%s\n" "$LESSON_MESSAGE"'
+export LESSON_MESSAGE
+bash -c 'printf "%s\n" "$LESSON_MESSAGE"'
+```
+
+The current shell could read the normal Bash variable. Before export, the child Bash process printed an empty value. After export, a newly started child Bash process received `Hello from the host shell`.
+
+A normal shell variable belongs to the current shell. `export` marks it for inheritance by newly started child processes; it does not automatically send it into Docker containers.
+
+The single quotes around the `bash -c` command prevented the host shell from expanding `$LESSON_MESSAGE`. The child shell therefore read the value from its own environment.
+
+### Passing host variables into containers
+
+The `alpine:3.24` image was pulled for this lesson. I compared:
+
+```bash
+docker run --rm alpine:3.24 sh -c 'printf "%s\n" "$LESSON_MESSAGE"'
+docker run --rm -e LESSON_MESSAGE alpine:3.24 sh -c 'printf "%s\n" "$LESSON_MESSAGE"'
+```
+
+Without `-e`, the container printed an empty value. With `-e LESSON_MESSAGE`, Docker copied the exported host value, and the container printed `Hello from the host shell`.
+
+Docker does not automatically copy the complete host environment into a container. Variables must be passed explicitly. `--rm` removed each temporary container after its command finished.
+
+### Explicit container variables
+
+I created a long-running container with:
+
+```bash
+docker run -d --name lesson08-env -e APP_ENV=development -e APP_PORT=8080 -e WELCOME_MESSAGE="Hello from Lesson 08" alpine:3.24 sleep 3600
+```
+
+Verification showed:
+
+- short container ID: `889d93a354ca`;
+- status: `Up`;
+- `APP_ENV=development`;
+- `APP_PORT=8080`;
+- `WELCOME_MESSAGE=Hello from Lesson 08`;
+- `docker inspect` showed the custom variables in `.Config.Env`;
+- `PATH` was also present because it came from the image;
+- the `PORTS` column was empty.
+
+`APP_PORT=8080` is only a string containing configuration data. It does not publish a port. Docker port publishing still requires `-p`, and the application must actually read and use the variable.
+
+### Host and container environment separation
+
+After the container had been created, I changed the host's `APP_ENV` to `production`.
+
+Verification showed:
+
+- the host printed `APP_ENV=production`;
+- a normal `docker exec` still printed `development`;
+- `docker exec -e APP_ENV=testing` printed `testing` for that process;
+- the next normal `docker exec` returned to `development`;
+- `docker inspect` still showed `APP_ENV=development`.
+
+A container's configured environment is fixed when the container is created. Changing a host variable does not update an existing container. `docker exec -e` overrides a value only for that additional exec process. Permanently changing the configuration normally requires recreating the container.
+
+### Environment files
+
+The temporary host file `/tmp/docker-lesson08.env` contained:
+
+```text
+APP_ENV=staging
+APP_PORT=9090
+WELCOME_MESSAGE=Loaded from an environment file
+FEATURE_FLAG=true
+```
+
+I used it with this command structure, followed by the container's checking command:
+
+```text
+docker run --rm --env-file /tmp/docker-lesson08.env alpine:3.24 ...
+```
+
+All four values were available inside the container. The value containing spaces remained intact, but the environment file itself did not exist inside the container.
+
+Docker reads the host file and passes its values. It does not automatically copy or mount the file into the container.
+
+Environment variable values are strings. The application decides whether a string such as `true` represents a Boolean option.
+
+### Precedence and default values
+
+I combined the environment file with these explicit options:
+
+```text
+-e APP_ENV=production -e APP_PORT=7070
+```
+
+Verification showed:
+
+- `APP_ENV=production` replaced `staging` from the file;
+- `APP_PORT=7070` replaced `9090` from the file;
+- `WELCOME_MESSAGE` remained `Loaded from an environment file` because it was not overridden.
+
+Explicit command-line `-e` values override matching `--env-file` values.
+
+Default-value tests showed:
+
+- an unset `OPTIONAL_SETTING` printed as empty;
+- `${OPTIONAL_SETTING:-safe-default}` produced `safe-default`;
+- after passing `-e OPTIONAL_SETTING=provided`, the expression used `provided`.
+
+`${VAR:-default}` uses a fallback when the value is missing or empty.
+
+### Required variables and fail-fast behaviour
+
+The required-variable expression was:
+
+```bash
+${REQUIRED_SETTING:?REQUIRED_SETTING must be provided}
+```
+
+Without `REQUIRED_SETTING`, the shell reported the error and `docker run` returned exit status `2`. The following `printf` command did not execute.
+
+With `-e REQUIRED_SETTING=ready`, the command printed `ready` and returned exit status `0`.
+
+`${VAR:?error}` stops the shell when a required value is missing or empty. This fail-fast behaviour helps automation stop immediately with a useful configuration error instead of continuing with incomplete settings.
+
+### Configurable Nginx service
+
+I started a real Nginx container from `nginx:alpine` with:
+
+- name: `lesson08-web`;
+- port mapping: `127.0.0.1:8080:80`;
+- `APP_ENV=production`;
+- `PAGE_TITLE="Lesson 08 Environment Variables"`.
+
+The startup shell:
+
+1. Validated `APP_ENV` and `PAGE_TITLE` as required values.
+2. Generated `/usr/share/nginx/html/index.html` from the variables.
+3. Used `exec nginx -g "daemon off;"` to replace the shell with Nginx as the main container process.
+
+Verification showed:
+
+- short container ID: `30961e8591ec`;
+- status: `Up`;
+- `docker inspect` showed `APP_ENV`, `PAGE_TITLE`, and image-provided variables such as `PATH` and `NGINX_VERSION`.
+
+`curl` returned:
+
+```html
+<h1>Lesson 08 Environment Variables</h1>
+<p>Environment: production</p>
+```
+
+`-e` configures a process, while `-p` publishes a port. These settings are independent. `exec` made Nginx replace the startup shell and become the main container process.
+
+### Recreating the same image with different configuration
+
+The temporary file `/tmp/docker-lesson08-web.env` contained:
+
+```text
+APP_ENV=staging
+PAGE_TITLE=Same Image, New Configuration
+```
+
+The first attempt to remove the production container accidentally used:
+
+```text
+docker rm -f lesson08-web\
+```
+
+The trailing backslash continued the command onto the next line, so the following `docker run -d` became part of `docker rm`. Docker returned:
+
+```text
+unknown shorthand flag: 'd' in -d
+```
+
+Removal failed: the old and new inspected IDs were identical, and the original production page remained available.
+
+I corrected the removal command to:
+
+```bash
+docker rm -f lesson08-web
+```
+
+Removal succeeded with exit status `0`, and the filtered container list was empty. I then recreated the service from the same `nginx:alpine` image using the staging environment file.
+
+The new short container ID was `511f5a0a1af0`. The old and new IDs were different, and `curl` returned:
+
+```html
+<h1>Same Image, New Configuration</h1>
+<p>Environment: staging</p>
+```
+
+The same image can be reused for development, staging, and production by supplying different runtime configuration. Applying changed configuration through recreation creates a new container without requiring changes to the image.
+
+A trailing backslash should be used only when intentionally continuing one command across multiple lines.
+
+### Missing-variable troubleshooting challenge
+
+The file `/tmp/docker-lesson08-broken.env` contained only:
+
+```text
+APP_ENV=testing
+```
+
+The intentionally broken container required both `APP_ENV` and `PAGE_TITLE`, but `PAGE_TITLE` was missing.
+
+Verification showed:
+
+- `docker run` returned exit status `2`;
+- short container ID: `fc2a1e0e8ec1`;
+- container status: `Exited (2)`;
+- `.Config.Env` contained `APP_ENV=testing`.
+
+`docker logs` contained:
+
+```text
+sh: PAGE_TITLE: PAGE_TITLE must be provided
+```
+
+Inspection showed:
+
+```text
+Status=exited
+ExitCode=2
+Error=""
+```
+
+Docker successfully created and started the process. The shell inside the container rejected the missing required configuration, so the useful error was in `docker logs`. `.State.Error` remained empty because Docker itself did not fail.
+
+During the first investigation attempt, a trailing backslash after `docker ps` joined several separate commands. The host Bash then expanded the required-variable expression and printed its own `PAGE_TITLE` error. Running `docker ps`, `docker logs`, and `docker inspect` as separate commands produced the correct investigation results.
+
+Final diagnosis:
+
+> The container exited because the required PAGE_TITLE environment variable was missing, so the shell returned exit code 2. Docker successfully created and started the process, so .State.Error remained empty.
+
+### Environment-variable security
+
+- Normal environment variables are configuration, not secure secret storage.
+- Users with Docker access can view configured values using `docker inspect`.
+- Processes inside the container can access their environment.
+- Environment files store values as plain text.
+- Values written directly in commands may remain in shell history.
+- Normal users without Docker permission cannot necessarily inspect containers.
+- Real credentials should use an appropriate dedicated secret-management mechanism.
+
+### Cleanup
+
+I removed these containers:
+
+- `lesson08-env`;
+- `lesson08-web`;
+- `lesson08-broken`.
+
+I removed these temporary host files:
+
+- `/tmp/docker-lesson08.env`;
+- `/tmp/docker-lesson08-web.env`;
+- `/tmp/docker-lesson08-broken.env`.
+
+I also removed `alpine:3.24`, which had been downloaded specifically for this lesson, and unset `LESSON_MESSAGE`, `APP_ENV`, `OLD_ID`, and `NEW_ID`. `nginx:alpine` was intentionally left untouched.
+
+Final practical verification showed:
+
+- `docker ps -a --filter name=lesson08` displayed only headers;
+- `docker image ls alpine` displayed only headers;
+- host port `8080` was not listening;
+- the port-check `grep` returned exit status `1`, meaning no match;
+- `git status --short` was empty before documenting the lesson.
+
+## Next step
+
+The next topic after environment variables in `ROADMAP.md` is Docker Compose:
+
+**Docker Lesson 09 — Docker Compose**
