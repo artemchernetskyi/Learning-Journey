@@ -57,8 +57,8 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01–09 completed
-- Docker Compose: basics, logs, and `exec` completed in Lesson 09
+- Docker: Lessons 01–10 completed
+- Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10
 - Python for DevOps: not started yet
 - CI/CD: not started yet
 - Cloud: not started yet
@@ -74,9 +74,11 @@ Current progress:
 - Linux Lessons 01-19 are completed.
 - Linux Checkpoint 01 and Checkpoint 02 are completed.
 - Bash fundamentals are completed but need continued practice.
-- Docker Lessons 01–09 are completed.
+- Docker Lessons 01–10 are completed.
 - Bind mounts, named volumes, and environment variables are completed.
 - Docker Lesson 09 — Docker Compose basics, logs, and `exec` are completed.
+- Docker Lesson 10 — Multiple Services is completed.
+- Docker Lesson 11 — Docker Networking and Service Discovery is next.
 - The current roadmap phase is Docker and Docker Compose.
 - Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
 
@@ -186,8 +188,7 @@ I can explain what a container is in simple English.
 
 Remaining Docker lessons:
 
-- Lesson 10 — Multiple Services: run and manage more than one service in a Compose project (next lesson).
-- Lesson 11 — Docker Networking and Service Discovery: practise container communication, networks, and service names.
+- Lesson 11 — Docker Networking and Service Discovery: practise container communication, networks, and service names (next lesson).
 - Lesson 12 — Image Optimization and Multi-Stage Builds: build smaller images and separate build steps from runtime.
 
 Portfolio direction:

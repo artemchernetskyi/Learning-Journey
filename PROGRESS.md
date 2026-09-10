@@ -583,3 +583,28 @@ Docker Lessons 01–09 are now completed, including Compose basics, logs, and `e
 **Docker Lesson 10 — Multiple Services**
 
 After Lessons 11–12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.
+
+---
+
+## 2026-09-10 — Docker Lesson 10 — Multiple Services completed
+
+I completed a two-service Compose project with Nginx (`web`) and Redis (`cache`) and practised:
+
+- correcting YAML indentation errors and validating the resolved configuration;
+- starting both services, checking published versus unpublished ports, and verifying HTTP `200 OK` and Redis `PONG`;
+- stopping and starting one service by name while the other remained running;
+- reading combined and service-specific logs, with `--tail` applied to each selected service;
+- comparing desired configuration with runtime state and recreating only `web` to change host port `8080` to `8081`;
+- distinguishing `start`, `restart`, `up -d`, `stop`, and `down`, including recovery after accidentally using `down` instead of `stop`;
+- checking container state, a listening socket, and an application response separately;
+- previewing Compose service-name DNS and distinguishing Redis `PING` from Linux ICMP `ping`.
+
+Final cleanup was verified: both lesson containers, the default network, and `/tmp/docker-lesson10` were removed, with no listener on host port `8081`. The local `nginx:alpine` and `redis:7-alpine` images were intentionally retained and verified for Lesson 11. No repository files were created during the practical lab.
+
+Docker Lessons 01–10 are now completed.
+
+### Next step
+
+**Docker Lesson 11 — Docker Networking and Service Discovery**
+
+Lesson 12 remains Image Optimization and Multi-Stage Builds. After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.

@@ -2607,3 +2607,249 @@ Verified cleanup results:
 **Docker Lesson 10 — Multiple Services**
 
 Continue through Lessons 11–12 in `ROADMAP.md`, then complete one comprehensive Docker checkpoint and one practical Docker project before starting Python for DevOps.
+
+---
+
+## Lesson 10 — Multiple Services
+
+**Date:** 2026-09-10
+
+I completed a Compose project with two services: Nginx (`web`) and Redis (`cache`). I practised managing services separately and together, reading logs, applying configuration changes, recovering the project, and verifying cleanup.
+
+### Two services in one project
+
+The temporary project directory was `/tmp/docker-lesson10`, and the Compose project name was `lesson10`. The corrected initial `compose.yaml` was equivalent to:
+
+```yaml
+name: lesson10
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:8080:80"
+  cache:
+    image: redis:7-alpine
+```
+
+- `web` and `cache` are stable service names under `services`.
+- Nginx container port `80` was initially published on host loopback address `127.0.0.1`, port `8080`.
+- Redis container port `6379` was not published on the Ubuntu host.
+- Compose created `lesson10-web-1`, `lesson10-cache-1`, and the default bridge network `lesson10_default`.
+
+The following Compose commands were run from the temporary project directory.
+
+### YAML indentation troubleshooting
+
+An initial indentation error placed `cache` outside `services`. Running:
+
+```bash
+docker compose config
+```
+
+reported:
+
+```text
+additional properties 'cache' not allowed
+```
+
+A second attempt with inconsistent indentation produced a YAML parser error:
+
+```text
+did not find expected key
+```
+
+I corrected the indentation using spaces so that `web` and `cache` were at the same level inside `services`. `docker compose config` then successfully validated and resolved the configuration.
+
+The resolved configuration showed both services attached to the default network. It also expanded the short port syntax into these fields:
+
+| Field | Initial value | Meaning |
+|---|---|---|
+| `host_ip` | `127.0.0.1` | Host address used for the binding. |
+| `published` | `8080` | Port on the Ubuntu host. |
+| `target` | `80` | Port inside the web container. |
+| `protocol` | `tcp` | Transport protocol. |
+
+### Starting and verifying both services
+
+```bash
+docker compose up -d
+docker compose ps
+curl -I http://127.0.0.1:8080
+docker compose exec cache redis-cli ping
+```
+
+Verified results:
+
+- `up -d` pulled `redis:7-alpine`, created the default network, and started both services;
+- `ps` showed both services `Up`;
+- `web` showed `127.0.0.1:8080->80/tcp`;
+- `cache` showed `6379/tcp`, indicating a container port with no published host mapping;
+- the HTTP HEAD request returned `HTTP/1.1 200 OK` from Nginx `1.31.4`;
+- `redis-cli ping` returned `PONG`.
+
+`docker compose exec cache redis-cli ping` runs the Redis client inside the running cache container. Redis `PING` is an application command; Linux `ping` uses ICMP and is a different check.
+
+### Managing one service by name
+
+```bash
+docker compose stop cache
+docker compose ps -a
+curl -I http://127.0.0.1:8080
+docker compose exec cache redis-cli ping
+```
+
+Only Redis stopped. The web service remained running and continued returning HTTP `200 OK`.
+
+The Redis check failed because `exec` requires a running service container. Compose reported:
+
+```text
+service "cache" is not running
+```
+
+The command returned exit status `1`.
+
+```bash
+docker compose start cache
+docker compose ps
+docker compose exec cache redis-cli ping
+```
+
+`start cache` reused the existing stopped container. Its original creation time remained, while its uptime reset. Redis returned `PONG` again.
+
+Compose resolves the service names `web` and `cache` to their project containers. I can target a service without typing its generated container name.
+
+### Logs from multiple services
+
+```bash
+docker compose logs --tail 5
+docker compose logs --tail 3 cache
+```
+
+The first command displayed recent lines from both services with `web-1` and `cache-1` prefixes. Nginx logs contained successful `HEAD /` requests with HTTP status `200`. Redis logs showed that it was ready to accept TCP connections.
+
+`--tail 5` applies to each selected service; it does not limit the whole project's output to five lines. Adding `cache` selected only Redis logs, with up to three recent lines in the second command.
+
+### Desired configuration versus runtime state
+
+I changed the web port mapping in `compose.yaml` to:
+
+```yaml
+    ports:
+      - "127.0.0.1:8081:80"
+```
+
+```bash
+docker compose config
+docker compose ps
+```
+
+`config` showed desired host port `8081`, while `ps` still showed runtime host port `8080`. Validation reads and resolves configuration; it does not apply changes to running containers.
+
+To apply the change to the web service, I ran:
+
+```bash
+docker compose up -d web
+docker compose ps
+curl -I http://127.0.0.1:8081
+curl -I --max-time 2 http://127.0.0.1:8080
+echo $?
+```
+
+Verified results:
+
+- Compose recreated only `web`;
+- the cache container's creation time and uptime showed that it was neither recreated nor restarted;
+- `ps` showed `127.0.0.1:8081->80/tcp`;
+- port `8081` returned `HTTP/1.1 200 OK`;
+- the request to port `8080` returned curl exit code `7` because nothing was listening there.
+
+The command distinction was reviewed:
+
+| Command | Behaviour |
+|---|---|
+| `docker compose start web` | Starts the existing stopped service container. |
+| `docker compose restart web` | Restarts the existing service container without applying changed Compose configuration. |
+| `docker compose up -d web` | Reconciles runtime state with `compose.yaml`, recreating the service when required, and starts it in the background. |
+
+### Stopping the project and recovering from a mistake
+
+During the first no-hint attempt, I accidentally used `docker compose down` instead of `docker compose stop`. This safely removed both temporary containers and `lesson10_default`.
+
+I recovered the project with `docker compose up -d`. Compose recreated both containers and the default network from `compose.yaml`.
+
+I also completed and verified the intended stop workflow:
+
+```bash
+docker compose stop
+docker compose ps
+docker compose ps -a
+docker network ls --filter name=lesson10
+```
+
+- `stop` stopped both services but kept their containers and the default network;
+- `ps` showed only running services, so no service rows remained;
+- `ps -a` included both stopped containers with `Exited (0)`;
+- the filtered network listing confirmed that `lesson10_default` remained.
+
+This provided practical evidence of the differences:
+
+| Command | Project behaviour in this lab |
+|---|---|
+| `stop` | Stops services and keeps containers and the network. |
+| `down` | Removes project containers and the default network. |
+| `up -d` | Creates or recreates services as needed and starts the desired services. |
+
+### Container, socket, and application checks
+
+Starting only `web` left `cache` stopped:
+
+```bash
+docker compose start web
+docker compose ps -a
+ss -lnt | grep ':8081'
+curl -I http://127.0.0.1:8081
+```
+
+These checks answer different questions:
+
+- `ps -a` showed the container states;
+- `ss -lnt` showed listening TCP sockets, and the filter confirmed a listener on port `8081`;
+- `curl -I` confirmed the HTTP application response with `200 OK`.
+
+### Short preview of service-name DNS
+
+Running `ping cache` on the Ubuntu host failed with:
+
+```text
+Temporary failure in name resolution
+```
+
+Compose service-name DNS is intended for containers attached to the Compose network, not normal host DNS. This host check did not test Redis's application `PING`. Deeper container networking and service discovery are reserved for Lesson 11.
+
+### Cleanup
+
+Final cleanup used `docker compose down`, which removed both lesson containers and `lesson10_default`.
+
+Before removing the temporary directory, verification showed:
+
+- `docker compose ps -a` displayed only headers;
+- `docker network ls --filter name=lesson10` displayed only headers.
+
+After `/tmp/docker-lesson10` was removed, final checks showed:
+
+- `test ! -d /tmp/docker-lesson10` returned exit status `0`;
+- `ss -lnt | grep ':8081'` found no listener and returned exit status `1`;
+- `docker ps -a --filter name=lesson10` displayed only headers;
+- `nginx:alpine` and `redis:7-alpine` were intentionally retained and verified locally for reuse in Lesson 11;
+- no repository files were created during the practical lab.
+
+### My sentence
+
+I can manage multiple Compose services, compare desired configuration with running containers, and verify recovery and cleanup.
+
+## Next step
+
+**Docker Lesson 11 — Docker Networking and Service Discovery**
+
+Lesson 12 remains Image Optimization and Multi-Stage Builds. After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.
