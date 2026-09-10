@@ -525,3 +525,14 @@ I completed Docker Lesson 08 — Environment Variables and practised:
 The next topic after environment variables in `ROADMAP.md` is:
 
 **Docker Lesson 09 — Docker Compose**
+
+---
+
+## 2026-09-10 — Roadmap refreshed
+
+I refreshed the roadmap to keep the learning path practical and focused on junior DevOps skills.
+
+- Docker Lessons 01–08 are complete, including bind mounts, named volumes, and environment variables.
+- Docker Lesson 09 — Docker Compose is next.
+- Python for DevOps is now the next major phase after the full Docker block and final comprehensive Docker checkpoint + practical Docker project.
+- The later phases continue through CI/CD and GitHub Actions, Cloud / Azure, Terraform, Ansible, Kubernetes, monitoring and troubleshooting, and integrated DevOps projects.

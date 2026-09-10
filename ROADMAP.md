@@ -22,10 +22,12 @@ This project combines:
 - Networking basics
 - Docker
 - Docker Compose
+- Python for DevOps
 - CI/CD
 - Cloud
 - Azure
 - Terraform
+- Ansible
 - Kubernetes
 - Monitoring
 - Interview preparation
@@ -46,7 +48,7 @@ It shows all files, including hidden files.
 
 ## Current stage
 
-Updated: 2026-09-04
+Updated: 2026-09-10
 
 Current level:
 
@@ -55,11 +57,13 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01-06 completed
-- Docker Compose: not started yet
+- Docker: Lessons 01–08 completed
+- Docker Compose: Lesson 09 is next
+- Python for DevOps: not started yet
 - CI/CD: not started yet
 - Cloud: not started yet
 - Terraform: not started yet
+- Ansible: not started yet
 - Kubernetes: not started yet
 
 Current progress:
@@ -70,11 +74,28 @@ Current progress:
 - Linux Lessons 01-19 are completed.
 - Linux Checkpoint 01 and Checkpoint 02 are completed.
 - Bash fundamentals are completed but need continued practice.
-- Docker Lessons 01-06 are completed.
-- Bind mounts are completed.
-- The next topic is Docker volumes.
+- Docker Lessons 01–08 are completed.
+- Bind mounts, named volumes, and environment variables are completed.
+- Docker Lesson 09 — Docker Compose is next.
 - The current roadmap phase is Docker and Docker Compose.
+- Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
 
+---
+
+## Learning path after the Linux foundation
+
+Docker (including Docker Compose)
+→ final comprehensive Docker checkpoint + practical Docker project
+→ Python for DevOps
+→ CI/CD + GitHub Actions
+→ Cloud / Azure
+→ Terraform
+→ Ansible
+→ Kubernetes
+→ Monitoring and troubleshooting
+→ Integrated DevOps projects
+
+Complete each phase through practical exercises and a small working result before moving on. Time estimates are flexible; later phases can take longer than the original 12–18 month goal.
 
 ---
 
@@ -151,7 +172,7 @@ Topics:
 - docker run
 - docker ps
 - ports
-- volumes
+- bind mounts and named volumes
 - environment variables
 - Docker Compose
 - simple web application
@@ -165,11 +186,41 @@ I can explain what a container is in simple English.
 
 Portfolio direction:
 
-Start practical DevOps Project 2.
+Finish the full Docker block, then complete a final comprehensive Docker checkpoint and practical Docker project before starting Python for DevOps.
+
+The checkpoint will review images, containers, lifecycle, ports, storage, environment variables, Dockerfiles, Compose, and troubleshooting.
+
+Start practical DevOps Project 2 by building a small Docker Compose application with persistent data and runtime configuration. Verify that it works, troubleshoot a failure, and document how to run it and clean up its resources.
 
 ---
 
-## Phase 4 — CI/CD basics
+## Phase 4 — Python for DevOps
+
+Estimated time: after the full Docker block and final checkpoint/project
+
+Topics:
+
+- Python basics: variables, conditions, loops, and functions
+- lists and dictionaries
+- files and paths
+- reading JSON and YAML configuration
+- command-line arguments and environment variables
+- HTTP requests and simple API use
+- error handling, logging, and exit codes
+- virtual environments and dependencies
+- small automation scripts and basic tests
+
+Expected result:
+
+I can write a Python script to check service health or summarize logs.
+
+I can handle errors, test the result, and document how to run the script.
+
+I can explain when I would use Bash or Python for a small DevOps task.
+
+---
+
+## Phase 5 — CI/CD and GitHub Actions
 
 Estimated time: months 8–11
 
@@ -192,7 +243,7 @@ I can document the pipeline in English.
 
 ---
 
-## Phase 5 — Cloud and Azure basics
+## Phase 6 — Cloud and Azure basics
 
 Estimated time: months 10–14
 
@@ -216,7 +267,7 @@ I can describe basic cloud resources in English.
 
 ---
 
-## Phase 6 — Terraform basics
+## Phase 7 — Terraform basics
 
 Estimated time: months 12–15
 
@@ -240,7 +291,31 @@ I can explain a basic Terraform project in an interview.
 
 ---
 
-## Phase 7 — Kubernetes basics
+## Phase 8 — Ansible basics
+
+Estimated time: after Terraform basics
+
+Topics:
+
+- configuration management
+- SSH connections and inventory
+- playbooks and YAML
+- modules, tasks, variables, and handlers
+- installing packages and configuring services
+- templates and basic roles
+- repeatable changes and checking the result
+
+Expected result:
+
+I can use an Ansible playbook to configure a small Linux test server.
+
+I can run the playbook again and verify that the desired configuration remains in place.
+
+I can explain how Terraform creates infrastructure and Ansible configures it.
+
+---
+
+## Phase 9 — Kubernetes basics
 
 Estimated time: months 14–18
 
@@ -264,11 +339,11 @@ I can explain the difference between Docker and Kubernetes at a junior level.
 
 Important note:
 
-Kubernetes is not the first priority. It comes after Linux, Git, networking, Docker, and Docker Compose.
+Kubernetes is not the first priority. It comes after Linux, Git, networking, Docker, Docker Compose, Python, CI/CD, cloud, Terraform, and Ansible practice.
 
 ---
 
-## Phase 8 — Monitoring and troubleshooting
+## Phase 10 — Monitoring and troubleshooting
 
 Estimated time: later stage
 
@@ -286,6 +361,29 @@ Expected result:
 
 I can explain simple technical problems and how I investigated them.  
 I can write basic troubleshooting notes in English.
+
+---
+
+## Phase 11 — Integrated DevOps projects
+
+Estimated time: after monitoring and troubleshooting basics
+
+Extend the practical project built during earlier phases into a small complete deployment:
+
+- use Python for health checks or operational automation
+- build and test Docker images with GitHub Actions
+- create Azure infrastructure with Terraform
+- configure Linux services with Ansible
+- deploy the application and practise a small Kubernetes deployment where useful
+- add logs, basic metrics, and alerts
+- practise troubleshooting and recovery
+- document setup, architecture, costs, cleanup, and lessons learned
+
+Expected result:
+
+I can demonstrate a working service from source code to deployment.
+
+I can explain each tool's role and investigate a simple failure at a junior DevOps level.
 
 ---
 
@@ -313,7 +411,7 @@ I can show that I learn systematically, document my work, and improve over time.
 
 ### Project 2 — Practical DevOps Project
 
-This will be a technical project built later.
+This starts with the final Docker practical project and grows through the later phases into an integrated DevOps project.
 
 Possible technologies:
 
@@ -321,9 +419,11 @@ Possible technologies:
 - GitHub
 - Docker
 - Docker Compose
+- Python for DevOps
 - CI/CD
 - Azure
 - Terraform
+- Ansible
 - basic monitoring
 - maybe Kubernetes
 
