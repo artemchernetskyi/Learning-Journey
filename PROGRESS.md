@@ -536,3 +536,27 @@ I refreshed the roadmap to keep the learning path practical and focused on junio
 - Docker Lesson 09 — Docker Compose is next.
 - Python for DevOps is now the next major phase after the full Docker block and final comprehensive Docker checkpoint + practical Docker project.
 - The later phases continue through CI/CD and GitHub Actions, Cloud / Azure, Terraform, Ansible, Kubernetes, monitoring and troubleshooting, and integrated DevOps projects.
+
+---
+
+## 2026-09-10 — Docker Lesson 09 — Docker Compose completed
+
+I completed Docker Compose basics with one Nginx service and practised:
+
+- describing the desired container configuration in `compose.yaml` using service `web` and image `nginx:alpine`;
+- reading, validating, and resolving configuration with `docker compose config`, which does not inspect a running container;
+- distinguishing container port `target: 80` from published host ports `8081`, `8082`, and `8083`;
+- creating and starting the service in the background with `docker compose up -d`, which also created the default project network;
+- verifying the service, image, `Up` status, and port mapping with `docker compose ps`;
+- stopping and removing the container and default project network with `docker compose down`, then checking that `ps` was empty;
+- changing the host port, checking the configuration, repeating the workflow, and later selecting all four commands independently.
+
+The understanding check confirmed the purpose of the configuration file and each command, including host port `8083` versus container port `80` in `"8083:80"`.
+
+The lesson was intentionally limited to the basic workflow; advanced Compose topics were postponed. Cleanup completed successfully: `docker compose down` finished, `/tmp/docker-lesson09` was removed, and no lesson resources remained.
+
+Docker Lessons 01–09 are now completed, including Docker Compose basics.
+
+### Next step
+
+Continue the remaining Docker block in `ROADMAP.md`, then complete the final comprehensive Docker checkpoint and practical Docker project before starting Python for DevOps. The roadmap does not yet define the next numbered Docker lesson.

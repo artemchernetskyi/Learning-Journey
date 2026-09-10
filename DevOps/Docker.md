@@ -2405,3 +2405,103 @@ Final practical verification showed:
 The next topic after environment variables in `ROADMAP.md` is Docker Compose:
 
 **Docker Lesson 09 — Docker Compose**
+
+---
+
+## Lesson 09 — Docker Compose
+
+**Date:** 2026-09-10
+
+I completed the basic Docker Compose workflow with one Nginx service. This lesson was intentionally kept simple after an earlier attempt became too complicated. Advanced Compose topics were postponed.
+
+### Purpose of Docker Compose
+
+Instead of putting all container configuration into long `docker run` commands, I can describe it in `compose.yaml`.
+
+For now, I treat a Compose service as the description of a container I want Docker to run. The file stores the desired service/container configuration.
+
+### One Nginx service
+
+The final `compose.yaml` in `/tmp/docker-lesson09` contained:
+
+```yaml
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8083:80"
+```
+
+- `web` is the service name.
+- `nginx:alpine` is the image to use.
+- `8083` is the host port, and `80` is the container port.
+
+### Read and check the configuration
+
+From the lesson directory, I ran:
+
+```bash
+docker compose config
+```
+
+This command reads, validates, and resolves `compose.yaml`. It shows how Compose understands the configuration. It does **not** inspect a running container.
+
+In the resolved port configuration:
+
+- `target: 80` means port `80` inside the container;
+- `published` means the host port: `8081`, `8082`, or `8083` during this practice.
+
+### Start and check the service
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+`docker compose up -d` creates and starts the service in the background. Compose also created its default project network automatically.
+
+`docker compose ps` shows containers belonging to the current Compose project. I verified:
+
+- service: `web`;
+- image: `nginx:alpine`;
+- status: `Up`;
+- port mapping: host `8083` to container `80` (`8083->80` in the mapping).
+
+### Stop and remove the lesson resources
+
+```bash
+docker compose down
+docker compose ps
+```
+
+`docker compose down` stopped and removed the Compose container and removed the automatically created default project network. Afterward, `docker compose ps` showed no containers.
+
+### Repeated practice and independent command selection
+
+I repeated the workflow with host ports `8081`, `8082`, and `8083`, keeping container port `80`. After changing `compose.yaml`, I checked the new configuration with `docker compose config`.
+
+Later, I independently selected the commands for each step:
+
+```bash
+docker compose config
+docker compose up -d
+docker compose ps
+docker compose down
+```
+
+### Understanding check
+
+- `compose.yaml` stores the desired service/container configuration.
+- `config` shows the resolved Compose configuration.
+- `up -d` creates and starts services in the background.
+- `ps` shows the status of containers in the current Compose project.
+- `down` stops and removes the Compose resources used in this lesson.
+- In `"8083:80"`, `8083` is the host port and `80` is the container port.
+
+### Cleanup
+
+`docker compose down` completed successfully, and `/tmp/docker-lesson09` was removed. No lesson containers, default project network, or temporary lesson directory remained.
+
+## Next step
+
+Continue the remaining Docker block in `ROADMAP.md`, then complete the final comprehensive Docker checkpoint and practical Docker project before starting Python for DevOps. The roadmap does not yet define the next numbered Docker lesson.

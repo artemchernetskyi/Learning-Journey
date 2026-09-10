@@ -57,8 +57,8 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01–08 completed
-- Docker Compose: Lesson 09 is next
+- Docker: Lessons 01–09 completed
+- Docker Compose: basics completed in Lesson 09
 - Python for DevOps: not started yet
 - CI/CD: not started yet
 - Cloud: not started yet
@@ -74,9 +74,9 @@ Current progress:
 - Linux Lessons 01-19 are completed.
 - Linux Checkpoint 01 and Checkpoint 02 are completed.
 - Bash fundamentals are completed but need continued practice.
-- Docker Lessons 01–08 are completed.
+- Docker Lessons 01–09 are completed.
 - Bind mounts, named volumes, and environment variables are completed.
-- Docker Lesson 09 — Docker Compose is next.
+- Docker Lesson 09 — Docker Compose basics are completed.
 - The current roadmap phase is Docker and Docker Compose.
 - Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
 
