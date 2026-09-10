@@ -2412,7 +2412,7 @@ The next topic after environment variables in `ROADMAP.md` is Docker Compose:
 
 **Date:** 2026-09-10
 
-I completed the basic Docker Compose workflow with one Nginx service. This lesson was intentionally kept simple after an earlier attempt became too complicated. Advanced Compose topics were postponed.
+I completed the basic Docker Compose workflow with one Nginx service. The initial practice was intentionally kept simple after an earlier attempt became too complicated. Later on the same day, I completed Compose logs and `exec` practice. Multiple services are reserved for Lesson 10, and deeper container networking and service discovery for Lesson 11.
 
 ### Purpose of Docker Compose
 
@@ -2489,6 +2489,89 @@ docker compose ps
 docker compose down
 ```
 
+### Temporary project for logs and exec
+
+For the additional practice on 2026-09-10, I created `/tmp/docker-lesson09-logs` with a `compose.yaml` equivalent to:
+
+```yaml
+name: lesson09-logs
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:8083:80"
+```
+
+The port binding publishes container port `80` on host port `8083`, accessible through host loopback address `127.0.0.1`.
+
+Compose manages services together as a project:
+
+| Name | Meaning |
+|---|---|
+| `lesson09-logs` | Compose project name, set by `name` in the configuration. |
+| `web` | Stable service name defined under `services` in `compose.yaml`. |
+| `lesson09-logs-web-1` | Generated container name for this project's service instance. |
+
+Commands such as `docker compose logs web` and `docker compose exec web ...` accept the service name. Compose resolves `web` to the appropriate container in the current project, so I do not need to type the generated full container name. The following Compose commands were run from the temporary project directory.
+
+### Project and HTTP verification
+
+```bash
+docker compose config
+docker compose up -d
+docker compose ps
+curl -I http://127.0.0.1:8083/
+```
+
+Verified results:
+
+- `config` successfully validated and rendered the resolved configuration;
+- `up -d` created `lesson09-logs_default` and started `lesson09-logs-web-1`;
+- `ps` showed service `web` running with `127.0.0.1:8083->80/tcp`;
+- the HEAD request returned `HTTP/1.1 200 OK`;
+- the Nginx version was `1.31.4`;
+- a request to `/missing` returned HTTP status `404`.
+
+### Compose logs
+
+```bash
+docker compose logs --tail 10 web
+docker compose logs --timestamps --tail 10 web
+```
+
+- `--tail 10` prints the last ten available log lines and then exits.
+- `--timestamps` adds Docker/Compose timestamps to the displayed lines. Nginx messages can also contain their own application timestamps, so a line may show both.
+- `web` limits the output to that service.
+
+The logs showed `HEAD / HTTP/1.1` with status `200` and `GET /missing HTTP/1.1` with status `404`. Nginx also reported that `/usr/share/nginx/html/missing` did not exist. The source address appeared as `172.18.0.1` in this practice.
+
+### Following live logs
+
+In one terminal, I ran:
+
+```bash
+docker compose logs --follow --tail 0 web
+```
+
+`--follow` keeps the local command running and displays new log output in real time. `--tail 0` skips existing history and waits only for new entries.
+
+From a second terminal, I generated a request to `/live-test`. The live output immediately showed the missing-file error and `GET /live-test HTTP/1.1` with status `404`.
+
+**Correction:** Pressing `Ctrl+C` stopped only the local log-following command. It did not stop the `web` container or the Nginx process. A later `docker compose ps` confirmed that the service remained `Up`.
+
+### Compose exec
+
+```bash
+docker compose exec web pwd
+docker compose exec web nginx -v
+docker compose ps
+```
+
+`pwd` returned `/`, and `nginx -v` reported `nginx/1.31.4`. The final `ps` check confirmed that `web` remained running.
+
+`docker compose exec` starts an additional command inside the already-running container for the named service. It does not replace or restart the service's main process.
+
 ### Understanding check
 
 - `compose.yaml` stores the desired service/container configuration.
@@ -2502,6 +2585,25 @@ docker compose down
 
 `docker compose down` completed successfully, and `/tmp/docker-lesson09` was removed. No lesson containers, default project network, or temporary lesson directory remained.
 
+After the additional logs and `exec` practice, I ran:
+
+```bash
+docker compose down
+docker compose ps -a
+```
+
+Verified cleanup results:
+
+- `down` removed `lesson09-logs-web-1` and `lesson09-logs_default`;
+- `ps -a` showed only the headers afterward;
+- the filtered Docker network listing showed no remaining Lesson 09 network;
+- `/tmp/docker-lesson09-logs` was removed, and the directory absence check returned exit status `0`;
+- the port `8083` listening check returned exit status `1`, meaning nothing was listening there;
+- the repository remained clean after the practical work, before this documentation update;
+- the local `nginx:alpine` image was intentionally retained.
+
 ## Next step
 
-Continue the remaining Docker block in `ROADMAP.md`, then complete the final comprehensive Docker checkpoint and practical Docker project before starting Python for DevOps. The roadmap does not yet define the next numbered Docker lesson.
+**Docker Lesson 10 — Multiple Services**
+
+Continue through Lessons 11–12 in `ROADMAP.md`, then complete one comprehensive Docker checkpoint and one practical Docker project before starting Python for DevOps.

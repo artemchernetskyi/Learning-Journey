@@ -58,7 +58,7 @@ Current level:
 - Linux: foundation phase completed
 - Git: basic practical workflow
 - Docker: Lessons 01–09 completed
-- Docker Compose: basics completed in Lesson 09
+- Docker Compose: basics, logs, and `exec` completed in Lesson 09
 - Python for DevOps: not started yet
 - CI/CD: not started yet
 - Cloud: not started yet
@@ -76,7 +76,7 @@ Current progress:
 - Bash fundamentals are completed but need continued practice.
 - Docker Lessons 01–09 are completed.
 - Bind mounts, named volumes, and environment variables are completed.
-- Docker Lesson 09 — Docker Compose basics are completed.
+- Docker Lesson 09 — Docker Compose basics, logs, and `exec` are completed.
 - The current roadmap phase is Docker and Docker Compose.
 - Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
 
@@ -184,9 +184,15 @@ I can containerize a simple application.
 I can run a small project with Docker Compose.  
 I can explain what a container is in simple English.
 
+Remaining Docker lessons:
+
+- Lesson 10 — Multiple Services: run and manage more than one service in a Compose project (next lesson).
+- Lesson 11 — Docker Networking and Service Discovery: practise container communication, networks, and service names.
+- Lesson 12 — Image Optimization and Multi-Stage Builds: build smaller images and separate build steps from runtime.
+
 Portfolio direction:
 
-Finish the full Docker block, then complete a final comprehensive Docker checkpoint and practical Docker project before starting Python for DevOps.
+After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project. Then begin Python for DevOps.
 
 The checkpoint will review images, containers, lifecycle, ports, storage, environment variables, Dockerfiles, Compose, and troubleshooting.
 

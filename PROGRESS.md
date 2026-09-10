@@ -553,10 +553,33 @@ I completed Docker Compose basics with one Nginx service and practised:
 
 The understanding check confirmed the purpose of the configuration file and each command, including host port `8083` versus container port `80` in `"8083:80"`.
 
-The lesson was intentionally limited to the basic workflow; advanced Compose topics were postponed. Cleanup completed successfully: `docker compose down` finished, `/tmp/docker-lesson09` was removed, and no lesson resources remained.
+The initial basic workflow was cleaned up successfully: `docker compose down` finished, `/tmp/docker-lesson09` was removed, and no lesson resources remained.
 
-Docker Lessons 01–09 are now completed, including Docker Compose basics.
+Later on the same day, I completed additional practice in `/tmp/docker-lesson09-logs`:
+
+- viewing service-specific historical logs with `docker compose logs --tail 10 web`;
+- adding Docker timestamps with `--timestamps`, alongside any application timestamps;
+- following real-time output with `--follow --tail 0`, generating a request to `/live-test` from a second terminal, and immediately observing its missing-file error and HTTP `404`;
+- understanding that `Ctrl+C` stops only the local log viewer and verifying that the service remained `Up`;
+- running `pwd` and `nginx -v` through `docker compose exec web`, obtaining `/` and `nginx/1.31.4`, and verifying that the service remained running afterward;
+- using the Compose service name rather than typing the generated container name;
+- removing the temporary container and default network with `docker compose down`, then verifying that `docker compose ps -a` showed only headers and the filtered network listing was empty;
+- removing the temporary directory and confirming its absence (exit status `0`), with no listener on port `8083` (listening check exit status `1`).
+
+The demonstrated understanding now includes:
+
+- Compose manages services as a project: `lesson09-logs` was the project name.
+- `web` is the stable service name from `compose.yaml`; `lesson09-logs-web-1` is a generated container name that Compose resolves for the service.
+- Logs can be viewed historically or followed live; stopping the viewer does not stop the service.
+- `docker compose exec` runs an additional process inside an existing running service container without replacing or restarting its main process.
+- `docker compose down` removes project containers and the default network.
+
+All temporary resources from the additional practice were removed, the repository remained clean before documenting the work, and the local `nginx:alpine` image was intentionally retained.
+
+Docker Lessons 01–09 are now completed, including Compose basics, logs, and `exec`. Multiple services are reserved for Lesson 10; deeper container networking and service discovery are reserved for Lesson 11.
 
 ### Next step
 
-Continue the remaining Docker block in `ROADMAP.md`, then complete the final comprehensive Docker checkpoint and practical Docker project before starting Python for DevOps. The roadmap does not yet define the next numbered Docker lesson.
+**Docker Lesson 10 — Multiple Services**
+
+After Lessons 11–12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.
