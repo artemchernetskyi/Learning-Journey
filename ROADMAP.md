@@ -57,7 +57,7 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01–11 completed
+- Docker: Lessons 01–12 completed; lesson block complete
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
 - Python for DevOps: not started yet
 - CI/CD: not started yet
@@ -74,12 +74,13 @@ Current progress:
 - Linux Lessons 01-19 are completed.
 - Linux Checkpoint 01 and Checkpoint 02 are completed.
 - Bash fundamentals are completed but need continued practice.
-- Docker Lessons 01–11 are completed.
+- Docker Lessons 01–12 are completed; the Docker lesson block is complete.
 - Bind mounts, named volumes, and environment variables are completed.
 - Docker Lesson 09 — Docker Compose basics, logs, and `exec` are completed.
 - Docker Lesson 10 — Multiple Services is completed.
 - Docker Lesson 11 — Docker Networking and Service Discovery is completed.
-- Docker Lesson 12 — Image Optimization and Multi-Stage Builds is next.
+- Docker Lesson 12 — Image Optimization and Multi-Stage Builds is completed.
+- The comprehensive Docker checkpoint is the immediate next step, followed by the practical Docker project. Neither is complete yet.
 - The current roadmap phase is Docker and Docker Compose.
 - Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
 
@@ -189,15 +190,13 @@ I can explain what a container is in simple English.
 
 Docker Lesson 11 — Docker Networking and Service Discovery is completed: default and custom networks, service-name DNS, container ports, protocol troubleshooting, and network isolation.
 
-Remaining Docker lesson:
+Docker Lesson 12 — Image Optimization and Multi-Stage Builds is completed: single-stage versus multi-stage images, image history, build-cache behaviour, build context, and `.dockerignore`.
 
-- Lesson 12 — Image Optimization and Multi-Stage Builds: build smaller images and separate build steps from runtime (next lesson).
-
-The Docker block remains in progress.
+Docker Lessons 01–12 and the Docker lesson block are complete. The comprehensive Docker checkpoint is next; the checkpoint and practical project are not complete yet.
 
 Portfolio direction:
 
-After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project. Then begin Python for DevOps.
+Complete one comprehensive Docker checkpoint, then one practical Docker project. Then begin Python for DevOps.
 
 The checkpoint will review images, containers, lifecycle, ports, storage, environment variables, Dockerfiles, Compose, and troubleshooting.
 

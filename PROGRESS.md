@@ -636,3 +636,32 @@ Docker Lessons 01–11 are now completed. The Docker block remains in progress.
 **Docker Lesson 12 — Image Optimization and Multi-Stage Builds**
 
 After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.
+
+---
+
+## 2026-09-11 — Docker Lesson 12 — Image Optimization and Multi-Stage Builds completed
+
+I completed a Go HTTP application lab in `/tmp/docker-lesson12` and practised:
+
+- separating source code, dependencies, compiler, compiled binary, and runtime image roles; the image build compiled `/app`, while running a container started it without recompiling;
+- comparing `lesson12:single` using `golang:1.26-alpine` with `lesson12:multi` using a Go builder and `alpine:3.22` runtime;
+- copying only `/app` into the runtime stage, reducing disk usage from `489 MB` to `25.8 MB` (approximately `95%`) and compressed content size from `97.3 MB` to `8.44 MB`;
+- verifying the same HTTP response through host ports `8082` and `8083`, both mapped to container port `8080`, and confirming that Go was absent from the final multi-stage image;
+- reading image history to distinguish large toolchain/build-cache layers from the final Alpine and binary layers, and recognising `CMD` and `EXPOSE` as `0 B` configuration metadata;
+- comparing the first single-stage build (`19.7s`), an identical cached multi-stage rebuild (`2.7s`), and a source-change rebuild (`8.6s`, including `6.3s` for compilation);
+- verifying the changed HTTP response and understanding that a cache miss affects the changed step and dependent later steps, while earlier steps can remain cached;
+- discussing dependency-first ordering with `go.mod` and `go.sum` conceptually, without adding module files or external dependencies to this lab;
+- testing `COPY . .` with an unnecessary `20 MB` file: context grew to approximately `20.98 MB`, compilation reran, but the final image stayed `25.8 MB` because only the binary crossed stages;
+- excluding `unnecessary.bin` with `.dockerignore`, reducing context to approximately `194 B` / `172 B`, and verifying cached builds in `2.1s` and then `1.7s` even after the ignored file grew to `30 MB`;
+- distinguishing Docker build context from final-image contents and `.dockerignore` from `.gitignore`; neither removes a secret already tracked in Git history;
+- understanding that smaller runtime images improve transfer/deployment efficiency and reduce unnecessary attack surface without automatically reducing application RAM, CPU, or HTTP response time.
+
+Final cleanup was verified: all lesson containers and the four `lesson12` image tags were removed, `docker image ls lesson12` returned no lesson images, and `/tmp/docker-lesson12` was absent (exit code `0`). Ports `8082` and `8083` had no listeners (grep exit code `1`). `docker system df` showed `3` unused images (`152.1 MB`), `0` containers, `6` unused local volumes (`356 B`), and `21` build-cache entries (`879.4 MB` reclaimable). No global prune was run because it could affect unrelated projects.
+
+Docker Lessons 01–12 and the Docker lesson block are now complete.
+
+### Next step
+
+**Comprehensive Docker checkpoint**
+
+Complete the checkpoint first, then one practical Docker project, then begin Python for DevOps. The checkpoint and practical project are not complete yet.

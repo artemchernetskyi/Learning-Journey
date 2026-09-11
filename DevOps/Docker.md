@@ -3130,3 +3130,223 @@ I can use Compose service names, check DNS, ports, and application protocols sep
 **Docker Lesson 12 — Image Optimization and Multi-Stage Builds**
 
 After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps. The Docker block is not complete yet.
+
+---
+
+## Lesson 12 — Image Optimization and Multi-Stage Builds
+
+**Date:** 2026-09-11
+
+I completed a Go HTTP application lab in `/tmp/docker-lesson12`. I compared single-stage and multi-stage images, inspected image history, tested build-cache behaviour, and reduced the build context with `.dockerignore`.
+
+### Lab application and build process
+
+The small application in `main.go` listened on container port `8080`. Its initial HTTP response was:
+
+```text
+Docker Lesson 12: application is running
+```
+
+The build used:
+
+```bash
+CGO_ENABLED=0 go build -o /app main.go
+```
+
+`CGO_ENABLED=0` disabled cgo for this build. `-o /app` selected the compiled binary's output path, and `main.go` was the source file to compile.
+
+| Part | Role |
+|---|---|
+| Source code | Human-readable instructions in `main.go`. |
+| Dependencies | Libraries used by the application; this lab had no external dependencies. |
+| Compiler and toolchain | Go tools that turn source code into a compiled program. |
+| Compiled binary | The executable `/app` produced by the build. |
+| Runtime image | The filesystem and configuration used to run the compiled program in a container. |
+
+In this lab, `docker build` compiled the application through the Dockerfile's `RUN` instruction and created an image. `docker run` started the already compiled `/app`; it did not compile the source again.
+
+### Single-stage image
+
+`Dockerfile.single` used `golang:1.26-alpine` for both building and runtime. The image tag was `lesson12:single`.
+
+Verified results:
+
+- the first build took `19.7s`;
+- image disk usage was `489 MB`, and compressed content size was `97.3 MB`;
+- `/app` was `8.0 MB`;
+- `/usr/local/go` was `269.1 MB`;
+- `go version` reported `go1.26.8 linux/amd64`;
+- the application worked through `127.0.0.1:8082`, mapped to container port `8080`, and returned the initial HTTP response.
+
+This image retained the Go compiler and toolchain, source/build artifacts, and generated build cache. These were useful during compilation but were unnecessary for running this compiled application.
+
+### Multi-stage image
+
+The builder and runtime stages used these instructions:
+
+```dockerfile
+FROM golang:1.26-alpine AS builder
+```
+
+The builder compiled `main.go` into `/app`. The runtime stage then began with:
+
+```dockerfile
+FROM alpine:3.22
+COPY --from=builder /app /app
+```
+
+The second `FROM` began a new clean stage based on Alpine. It did not inherit the builder's filesystem. `COPY --from=builder /app /app` copied only the selected compiled binary into the runtime image.
+
+| Measurement | `lesson12:single` | `lesson12:multi` |
+|---|---|---|
+| Disk usage | `489 MB` | `25.8 MB` |
+| Compressed content size | `97.3 MB` | `8.44 MB` |
+| `/app` size | `8.0 MB` | Approximately `8.0 MB` |
+| Go compiler in runtime image | Present | Absent |
+| Host-to-container port mapping | `127.0.0.1:8082:8080` | `127.0.0.1:8083:8080` |
+
+Disk usage fell by approximately `95%`: `(489 - 25.8) / 489 × 100`. Disk usage and compressed content size are different measurements and should be compared separately.
+
+In the final multi-stage image, `/app` existed, but `command -v go` returned no path. The Alpine/BusyBox shell used in this check returned exit code `127`.
+
+The smaller image produced the same initial HTTP response through `127.0.0.1:8083` and logged:
+
+```text
+Listening on port 8080
+```
+
+### Image history
+
+I compared the histories of the single-stage and final multi-stage images.
+
+| Image | Important non-zero layer | Approximate size |
+|---|---|---|
+| Single-stage | Inherited Go toolchain | `282 MB` |
+| Single-stage | `RUN go build`, including generated build-cache contents | `99.1 MB` |
+| Single-stage | Alpine base | `9.07 MB` |
+| Multi-stage final image | Alpine base | `8.96 MB` |
+| Multi-stage final image | Copied `/app` | `8.35 MB` |
+
+The build layer contained more than the binary because compilation also generated build-cache contents. The final multi-stage history contained only the important non-zero runtime layers: Alpine and the copied binary.
+
+`CMD` and `EXPOSE` showed `0 B` because they are image configuration metadata rather than filesystem content. The builder appeared in build output and cache, but its layers did not appear in the final image history.
+
+### Build-cache experiment
+
+An identical rebuild reused `WORKDIR`, `COPY`, `RUN go build`, and the final `COPY --from=builder` from cache. The whole build took `2.7s`, while the actual cached steps showed `0.0s`.
+
+I then changed `main.go` so that the HTTP response became:
+
+```text
+Docker Lesson 12: source code was changed
+```
+
+The next build showed:
+
+| Step | Result after the source change |
+|---|---|
+| `WORKDIR` | Remained cached. |
+| `COPY main.go .` | Reran because the source file changed. |
+| `RUN go build` | Reran and took `6.3s`. |
+| `COPY --from=builder /app /app` | Reran because `/app` changed. |
+| Total build | Completed in `8.6s`. |
+
+Running the rebuilt image returned the changed HTTP response. A cache miss invalidates the affected step and dependent later steps, not earlier steps.
+
+For a real Go project with module files, the recommended dependency ordering was explained conceptually:
+
+```dockerfile
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN go build -o /app .
+```
+
+Stable dependency files should be copied before frequently changing source files. This lets Docker reuse dependency downloads when only application source changes. The lab had no `go.mod`, `go.sum`, or external dependencies, so these instructions were not added to the lab.
+
+### Build context and `.dockerignore`
+
+Build context is the set of files made available to the Docker build. It is not the same as final-image contents.
+
+For a deliberate experiment, `Dockerfile.context` changed `COPY main.go .` to `COPY . .`. I created an unnecessary `20 MB` file named `unnecessary.bin`.
+
+Without `.dockerignore`:
+
+- Docker transferred approximately `20.98 MB` of context;
+- `COPY . .` invalidated the builder cache, and `go build` unnecessarily reran;
+- the `lesson12:context-bad` final image still used `25.8 MB` because `unnecessary.bin` stayed in the builder stage and only `/app` crossed into the final stage.
+
+I then created `.dockerignore` with:
+
+```text
+unnecessary.bin
+```
+
+With this exclusion, the transferred context dropped to approximately `194 B` / `172 B`. A repeated build of `lesson12:context-good` reused all relevant cached steps and completed in `2.1s`.
+
+I increased `unnecessary.bin` to `30 MB`. Docker still transferred only `172 B`, all relevant build steps remained cached, and the build completed in `1.7s`. Changes to the ignored file no longer affected the copied build inputs.
+
+`.dockerignore`:
+
+- reduces build context;
+- improves build speed;
+- prevents ignored-file changes from invalidating cache;
+- helps prevent accidental inclusion of unwanted files.
+
+| File | What it controls |
+|---|---|
+| `.dockerignore` | Files included in the Docker build context. |
+| `.gitignore` | Untracked files considered by Git. |
+
+Neither file automatically protects or removes a secret already tracked in Git history.
+
+### Key takeaways
+
+- Building and running are separate operations: this build compiled `/app`, and the container ran it.
+- Source code, dependencies, the compiler, the compiled binary, and the runtime image have different roles.
+- A second `FROM` starts a new stage; multi-stage builds copy only selected artifacts into the runtime image.
+- Build context can contain files that never enter the final image.
+- Copy stable dependency files before frequently changing source files to preserve useful cache.
+- Smaller runtime images improve transfer and deployment efficiency and reduce unnecessary attack surface. They do not automatically reduce application RAM, CPU usage, or HTTP response time.
+
+### Cleanup
+
+Final lab cleanup was verified:
+
+- all `lesson12` containers were removed;
+- tags `lesson12:single`, `lesson12:multi`, `lesson12:context-bad`, and `lesson12:context-good` were removed;
+- `docker image ls lesson12` returned no lesson images;
+- `/tmp/docker-lesson12` was removed, and the directory absence check returned `0`;
+- ports `8082` and `8083` had no listeners; the grep check returned `1`, meaning no matches.
+
+The final `docker system df` output showed:
+
+| Resource | Remaining state |
+|---|---|
+| Images | `3` unused images, `152.1 MB` |
+| Containers | `0` |
+| Local volumes | `6` unused volumes, `356 B` |
+| Build cache | `21` entries, `879.4 MB` reclaimable |
+
+Removing lesson image tags did not remove all build cache. No global prune was run because it could affect cache or resources from unrelated projects.
+
+### Important vocabulary
+
+| English | Ukrainian |
+|---|---|
+| compiler | компілятор |
+| compiled binary | скомпільований виконуваний файл |
+| builder stage | етап збирання |
+| runtime image | образ для запуску програми |
+| build context | контекст збирання |
+| cache invalidation | втрата можливості повторного використання кешу |
+
+### My sentence
+
+I can build a smaller runtime image, explain which files it contains, and use build cache and `.dockerignore` to avoid unnecessary work.
+
+## Next step
+
+**Comprehensive Docker checkpoint**
+
+Docker Lessons 01–12 and the Docker lesson block are complete. The comprehensive Docker checkpoint is the immediate next step, followed by one practical Docker project, then Python for DevOps. The checkpoint and practical project are not complete yet.
