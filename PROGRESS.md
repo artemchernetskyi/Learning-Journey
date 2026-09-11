@@ -608,3 +608,31 @@ Docker Lessons 01–10 are now completed.
 **Docker Lesson 11 — Docker Networking and Service Discovery**
 
 Lesson 12 remains Image Optimization and Multi-Stage Builds. After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.
+
+---
+
+## 2026-09-11 — Docker Lesson 11 — Docker Networking and Service Discovery completed
+
+I completed a three-service Compose lab on Ubuntu 24.04 in `/tmp/docker-lesson11` and practised:
+
+- checking the default bridge network and reading full `docker network inspect` output, including subnet, gateway, container names, and IPv4 addresses;
+- using stable Compose service names instead of runtime IP addresses and verifying ICMP, Nginx HTML, and Redis `PONG` responses;
+- distinguishing published host port `8081` from container port `80`, and exposed Redis image metadata from a published port or running server;
+- separating DNS resolution, TCP connectivity, and application protocols when investigating `bad address`, `Connection refused`, and a deliberate HTTP-to-Redis protocol mismatch;
+- understanding the intentional Redis cross-protocol warning and confirming that the observed `vm.overcommit_memory` warning did not prevent Redis readiness;
+- creating `frontend` and `backend` networks, inspecting membership, and testing communication and isolation in two topologies;
+- applying the final topology with `client` on frontend, `web` on both networks, and `cache` on backend; only `client` and `web` were recreated;
+- verifying that `client` could fetch Nginx but could not resolve `cache`, while `web` could resolve and ping `cache`;
+- understanding that a container on two networks does not automatically route traffic between them;
+- connecting network separation to least privilege, attack surface, and blast radius, while treating runtime secret handling as a separate responsibility;
+- diagnosing an accidental trailing backslash and Bash's `>` continuation prompt.
+
+Final cleanup was verified: all three containers, both custom networks, and `/tmp/docker-lesson11` were removed. Compose and filtered Docker listings returned only headers, the directory absence check returned `0`, and the port `8081` check returned no output with exit code `1`. The local `nginx:alpine` and `redis:7-alpine` images were intentionally retained.
+
+Docker Lessons 01–11 are now completed. The Docker block remains in progress.
+
+### Next step
+
+**Docker Lesson 12 — Image Optimization and Multi-Stage Builds**
+
+After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.

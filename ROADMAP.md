@@ -48,7 +48,7 @@ It shows all files, including hidden files.
 
 ## Current stage
 
-Updated: 2026-09-10
+Updated: 2026-09-11
 
 Current level:
 
@@ -57,8 +57,8 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01–10 completed
-- Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10
+- Docker: Lessons 01–11 completed
+- Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
 - Python for DevOps: not started yet
 - CI/CD: not started yet
 - Cloud: not started yet
@@ -74,11 +74,12 @@ Current progress:
 - Linux Lessons 01-19 are completed.
 - Linux Checkpoint 01 and Checkpoint 02 are completed.
 - Bash fundamentals are completed but need continued practice.
-- Docker Lessons 01–10 are completed.
+- Docker Lessons 01–11 are completed.
 - Bind mounts, named volumes, and environment variables are completed.
 - Docker Lesson 09 — Docker Compose basics, logs, and `exec` are completed.
 - Docker Lesson 10 — Multiple Services is completed.
-- Docker Lesson 11 — Docker Networking and Service Discovery is next.
+- Docker Lesson 11 — Docker Networking and Service Discovery is completed.
+- Docker Lesson 12 — Image Optimization and Multi-Stage Builds is next.
 - The current roadmap phase is Docker and Docker Compose.
 - Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
 
@@ -186,10 +187,13 @@ I can containerize a simple application.
 I can run a small project with Docker Compose.  
 I can explain what a container is in simple English.
 
-Remaining Docker lessons:
+Docker Lesson 11 — Docker Networking and Service Discovery is completed: default and custom networks, service-name DNS, container ports, protocol troubleshooting, and network isolation.
 
-- Lesson 11 — Docker Networking and Service Discovery: practise container communication, networks, and service names (next lesson).
-- Lesson 12 — Image Optimization and Multi-Stage Builds: build smaller images and separate build steps from runtime.
+Remaining Docker lesson:
+
+- Lesson 12 — Image Optimization and Multi-Stage Builds: build smaller images and separate build steps from runtime (next lesson).
+
+The Docker block remains in progress.
 
 Portfolio direction:
 

@@ -2853,3 +2853,280 @@ I can manage multiple Compose services, compare desired configuration with runni
 **Docker Lesson 11 — Docker Networking and Service Discovery**
 
 Lesson 12 remains Image Optimization and Multi-Stage Builds. After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps.
+
+---
+
+## Lesson 11 — Docker Networking and Service Discovery
+
+**Date:** 2026-09-11
+
+I completed this practical lesson on Ubuntu 24.04 using the temporary project `/tmp/docker-lesson11`. I tested default networking, service discovery, ports, application protocols, and custom network isolation. The temporary project was removed afterward.
+
+### Compose default networking
+
+The initial `compose.yaml` was equivalent to:
+
+```yaml
+name: lesson11
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:8081:80"
+  cache:
+    image: redis:7-alpine
+  client:
+    image: redis:7-alpine
+    command: ["sleep", "3600"]
+```
+
+The following Compose commands were run from the temporary project directory:
+
+```bash
+docker compose config
+docker compose up -d
+docker compose ps
+```
+
+Verified results:
+
+- `config` showed all three services attached to the default network, named `lesson11_default`;
+- `up -d` created three containers and one default bridge network;
+- `web` published container port `80` on Ubuntu loopback address `127.0.0.1`, port `8081`;
+- `6379/tcp` shown for the Redis image was exposed image metadata, not a published host port or proof of a listening process;
+- `cache` ran Redis Server, while `client` ran `sleep 3600` instead of Redis Server. The client image still supplied tools such as `redis-cli`.
+
+### Reading full network inspection output
+
+```bash
+docker network inspect lesson11_default
+```
+
+I read the full output instead of using a formatted template. I learned to identify:
+
+| Field | Meaning |
+|---|---|
+| `Name` | Network name, such as `lesson11_default`. |
+| `Driver` | `bridge` for the networks used in this lab. |
+| `IPAM.Config` → `Subnet` | Address range assigned to the network. |
+| `IPAM.Config` → `Gateway` | Gateway address for the network. |
+| `Containers` | Containers attached to the network. |
+| Container `Name` and `IPv4Address` | Container name and its address on that network. |
+
+Container IP addresses are runtime details and may change when containers are recreated. Applications should use stable Compose service names instead of fixed container IP addresses.
+
+### Docker DNS and service discovery
+
+From `client`, `ping web` and `ping cache` both resolved the service names and succeeded. These were Linux ICMP checks, not application-protocol checks.
+
+```bash
+docker compose exec client redis-cli -h cache ping
+docker compose exec client wget -qO- http://web | head -n 5
+```
+
+- `redis-cli -h cache ping` returned `PONG`; `-h cache` selected the Redis host by service name.
+- `wget -qO- http://web | head -n 5` returned Nginx HTML; `-q` reduced output, `-O-` wrote the response body to standard output, and `head -n 5` limited the displayed output to the first five lines.
+
+Docker's service-name DNS resolves these names between containers sharing a Docker network. The Compose names are not normal Ubuntu host DNS names.
+
+### Host ports versus container ports
+
+| Request source | Address used | Result |
+|---|---|---|
+| Ubuntu host | `http://127.0.0.1:8081` | Reached Nginx through the published host port. |
+| Another container on the shared network | `http://web` or `http://web:80` | Reached Nginx directly on container port `80`. |
+| Another container on the shared network | `http://web:8081` | Resolved `web`, then returned `Connection refused`. |
+
+Nginx listened on container port `80`, not `8081`. Port `8081` was only the published host-side port. Containers used `web:80` to reach the service directly.
+
+### DNS, TCP, and application-protocol troubleshooting
+
+I separated troubleshooting into three stages:
+
+1. **DNS/name resolution:** translate the service name into an IP address.
+2. **TCP transport:** connect to the port where the server is listening.
+3. **Application protocol:** exchange messages in the format the application understands, such as HTTP, Redis protocol, PostgreSQL protocol, or SSH.
+
+| Observed failure | Meaning in this lab |
+|---|---|
+| `bad address` | Docker DNS could not resolve the service name, as when the containers shared no network. |
+| `Connection refused` | The name resolved and the destination was reached, but nothing listened on the requested port. |
+| Protocol mismatch | DNS succeeded and the port was reachable, but the client and server spoke different application protocols. |
+
+While `client` and `cache` shared a network, I tested:
+
+```bash
+docker compose exec client wget -qO- http://cache:80
+echo $?
+
+docker compose exec client wget -T 2 -O- http://cache:6379
+echo $?
+
+docker compose exec client redis-cli -h cache -p 6379 ping
+echo $?
+```
+
+Verified differences:
+
+- `wget -qO- http://cache:80` resolved `cache` to its IP address but returned `Connection refused`. Redis did not listen on port `80`.
+- `wget -T 2 -O- http://cache:6379` reached the correct Redis port but failed because `wget` spoke HTTP. `-T 2` set a two-second timeout.
+- Redis logged a `Possible SECURITY ATTACK` / cross-protocol warning after receiving the HTTP `Host` header. This was intentionally caused by the lab request and was not an external attack.
+- `redis-cli -h cache -p 6379 ping` used the correct Redis protocol, returned `PONG`, and exited with code `0`. `-p 6379` explicitly selected the Redis port.
+
+Redis also logged a `vm.overcommit_memory` warning. It did not prevent Redis from reaching `Ready to accept connections` or answering the Redis check.
+
+### Custom networks and isolation
+
+I declared two custom bridge networks:
+
+```yaml
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+```
+
+The first custom topology used these service memberships:
+
+| Service | Networks |
+|---|---|
+| `web` | `frontend` only |
+| `cache` | `backend` only |
+| `client` | `frontend` and `backend` |
+
+```bash
+docker network inspect lesson11_frontend lesson11_backend
+```
+
+The full inspection output confirmed that:
+
+- `lesson11_frontend` contained `web` and `client`;
+- `lesson11_backend` contained `cache` and `client`.
+
+`client` could reach both services because it shared a network with each one. `web` could not resolve `cache` and returned `bad address` because they shared no network.
+
+### Shell command continuation mistake
+
+A trailing backslash accidentally continued `docker network inspect` onto the next line. Bash displayed the `>` continuation prompt. The accidental input was:
+
+```text
+docker network inspect lesson11_frontend \
+> docker network inspect lesson11_backend
+```
+
+Here, `>` is Bash's continuation prompt and was not typed. A trailing `\` continues the same shell command onto another line. The second line did not start a separate Docker command.
+
+The effective command included `docker`, `network`, and `inspect` as extra network-name arguments between the two valid network names. Docker inspected both valid networks and also tried to inspect those invalid names. The corrected single-line command was:
+
+```bash
+docker network inspect lesson11_frontend lesson11_backend
+```
+
+### Final realistic topology
+
+I changed the service network memberships. The final configuration was equivalent to:
+
+```yaml
+name: lesson11
+
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:8081:80"
+    networks:
+      - frontend
+      - backend
+  cache:
+    image: redis:7-alpine
+    networks:
+      - backend
+  client:
+    image: redis:7-alpine
+    command: ["sleep", "3600"]
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+```
+
+```bash
+docker compose up -d
+docker compose exec client wget -qO- http://web | head -n 3
+```
+
+Verified results:
+
+- Compose recreated only `client` and `web` because their network memberships changed;
+- `cache` remained running;
+- `client` successfully fetched Nginx HTML through `web` on `frontend`;
+- `client` could not resolve `cache`, because they no longer shared a network;
+- `web` successfully resolved and pinged `cache` through `backend`.
+
+A container attached to two networks is not automatically a router. It does not automatically forward traffic between those networks. The lab verified Nginx access and network reachability; it did not configure Nginx to use Redis as an application backend.
+
+### Network separation and secrets
+
+Network separation follows least privilege: each service receives only the network access it needs. Preventing unnecessary direct service access reduces attack surface and blast radius, meaning the possible reach and impact of a compromised service.
+
+Network isolation protects access paths to services. It does not directly protect API keys.
+
+Real secrets must not be committed to Markdown, Compose files, source code, images, or Git history. Documentation should use fake placeholders, such as `EXAMPLE_API_KEY`. Real secrets should be injected at runtime through an appropriate secrets mechanism.
+
+### Cleanup
+
+Before removing the temporary project directory, I ran:
+
+```bash
+docker compose down
+docker compose ps -a
+docker network ls --filter name=lesson11
+```
+
+Verified results:
+
+- `down` removed all three containers and both custom networks;
+- `ps -a` returned only headers;
+- the filtered network listing returned only headers.
+
+After `/tmp/docker-lesson11` was removed, the final checks were:
+
+```bash
+test ! -d /tmp/docker-lesson11
+echo $?
+ss -lnt | grep ':8081'
+echo $?
+docker ps -a --filter name=lesson11
+```
+
+- The directory absence check returned `0`.
+- The listening-port check produced no output and returned `1`, meaning no match for port `8081`.
+- The filtered container listing returned only headers.
+- `nginx:alpine` and `redis:7-alpine` images were intentionally retained.
+
+### Important vocabulary
+
+| English | Ukrainian |
+|---|---|
+| service discovery | виявлення сервісів |
+| name resolution | перетворення імені на IP-адресу |
+| shared network | спільна мережа |
+| network isolation | ізоляція мережі |
+| least privilege | принцип найменших привілеїв |
+| application protocol | протокол прикладного рівня |
+
+### My sentence
+
+I can use Compose service names, check DNS, ports, and application protocols separately, and limit direct service access with custom networks.
+
+## Next step
+
+**Docker Lesson 12 — Image Optimization and Multi-Stage Builds**
+
+After Lesson 12, complete one comprehensive Docker checkpoint and one practical Docker project, then begin Python for DevOps. The Docker block is not complete yet.
