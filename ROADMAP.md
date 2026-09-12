@@ -48,7 +48,7 @@ It shows all files, including hidden files.
 
 ## Current stage
 
-Updated: 2026-09-11
+Updated: 2026-09-12
 
 Current level:
 
@@ -57,7 +57,7 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01–12 completed; lesson block complete
+- Docker: Lessons 01–12, comprehensive checkpoint (approximately 7.3/10), and Docker Visitor Counter mini-project completed
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
 - Python for DevOps: not started yet
 - CI/CD: not started yet
@@ -80,9 +80,10 @@ Current progress:
 - Docker Lesson 10 — Multiple Services is completed.
 - Docker Lesson 11 — Docker Networking and Service Discovery is completed.
 - Docker Lesson 12 — Image Optimization and Multi-Stage Builds is completed.
-- The comprehensive Docker checkpoint is the immediate next step, followed by the practical Docker project. Neither is complete yet.
-- The current roadmap phase is Docker and Docker Compose.
-- Python for DevOps is the next major phase after the full Docker block and final Docker checkpoint/project.
+- The comprehensive Docker checkpoint was passed with approximately 7.3/10 on 2026-09-12.
+- The [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) was completed successfully on 2026-09-12.
+- The Docker and Docker Compose phase, including the checkpoint and practical project, is complete.
+- Python for DevOps is the next major learning block; it has not started yet.
 
 ---
 
@@ -192,15 +193,28 @@ Docker Lesson 11 — Docker Networking and Service Discovery is completed: defau
 
 Docker Lesson 12 — Image Optimization and Multi-Stage Builds is completed: single-stage versus multi-stage images, image history, build-cache behaviour, build context, and `.dockerignore`.
 
-Docker Lessons 01–12 and the Docker lesson block are complete. The comprehensive Docker checkpoint is next; the checkpoint and practical project are not complete yet.
+Docker Lessons 01–12 are complete. On 2026-09-12, I passed the comprehensive Docker checkpoint with approximately **7.3/10** and successfully completed the Docker Visitor Counter mini-project. This completes the Docker block.
 
-Portfolio direction:
+Checkpoint strengths:
 
-Complete one comprehensive Docker checkpoint, then one practical Docker project. Then begin Python for DevOps.
+- ports, Compose lifecycle, service-name DNS, and network isolation;
+- multi-stage builds, build context/cache, and `.dockerignore`;
+- logs, persistence, and troubleshooting.
 
-The checkpoint will review images, containers, lifecycle, ports, storage, environment variables, Dockerfiles, Compose, and troubleshooting.
+Areas for continued review:
 
-Start practical DevOps Project 2 by building a small Docker Compose application with persistent data and runtime configuration. Verify that it works, troubleshoot a failure, and document how to run it and clean up its resources.
+- Dockerfile → image → container build sequence;
+- `docker start` preserving container identity;
+- `-v` versus `--mount` missing-path behaviour;
+- environment-variable security;
+- `ENTRYPOINT`, `CMD`, PID 1, and `--rm`;
+- `localhost` inside containers.
+
+Portfolio result:
+
+The [Docker Visitor Counter](Projects/docker-visitor-counter/README.md) connects Nginx, Go, and Redis using two networks, health checks, runtime configuration, and a persistent named volume. HTTP responses, persistence, network isolation, the read-only mount, and final cleanup were verified. Detailed results are recorded in [Docker notes](DevOps/Docker.md) and [progress](PROGRESS.md).
+
+Next: begin Python for DevOps and continue short reviews of the checkpoint gaps.
 
 ---
 
@@ -421,7 +435,7 @@ I can show that I learn systematically, document my work, and improve over time.
 
 ### Project 2 — Practical DevOps Project
 
-This starts with the final Docker practical project and grows through the later phases into an integrated DevOps project.
+The Docker foundation is complete: [Docker Visitor Counter](Projects/docker-visitor-counter/README.md), completed on 2026-09-12. It can grow through later phases into an integrated DevOps project.
 
 Possible technologies:
 

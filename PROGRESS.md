@@ -665,3 +665,58 @@ Docker Lessons 01–12 and the Docker lesson block are now complete.
 **Comprehensive Docker checkpoint**
 
 Complete the checkpoint first, then one practical Docker project, then begin Python for DevOps. The checkpoint and practical project are not complete yet.
+
+---
+
+## 2026-09-12 — Comprehensive Docker checkpoint and mini-project completed
+
+Docker Lessons 01–12 are complete. I passed the comprehensive Docker checkpoint with approximately **7.3/10** and successfully completed the [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md). This completes the Docker block, including its checkpoint and practical project.
+
+### Checkpoint assessment
+
+Strong areas:
+
+- ports and Compose lifecycle;
+- service-name DNS and network isolation;
+- multi-stage builds, build context/cache, and `.dockerignore`;
+- logs, persistence, and troubleshooting.
+
+Areas for continued review:
+
+- Dockerfile → image → container build sequence;
+- `docker start` preserving the same container identity;
+- `-v` versus `--mount` when a bind-mount source path is missing;
+- environment-variable security;
+- `ENTRYPOINT`, `CMD`, PID 1, and `--rm`;
+- `localhost` inside containers.
+
+### Docker Visitor Counter
+
+The request path is host/browser → Nginx (`proxy`) → Go (`app`) → Redis (`cache`). `frontend` connects proxy and app; `backend` connects app and cache. Only Nginx publishes `127.0.0.1:8085`; the app and Redis have no published host ports.
+
+The Go application uses a multi-stage Dockerfile: the final image contains Alpine and the compiled `/app` binary, without the Go compiler or application source. Redis uses append-only persistence in the `cache-data` named volume. Nginx configuration is mounted read-only. Compose supplies `REDIS_ADDR=cache:6379` and `APP_MESSAGE`, and waits for healthy dependencies during startup.
+
+Verified lab results:
+
+| Check | Result |
+|---|---|
+| Application image | `25.8 MB` disk usage and `8.45 MB` content size. |
+| Health checks | All three services passed. |
+| Nginx configuration test | Passed. |
+| Counter requests | `Visits: 1`, then `Visits: 2`. |
+| Named-volume persistence | After `docker compose down` and `up`, the next request returned `Visits: 3`. |
+| Proxy → app | Reached `app:8080`. |
+| Proxy → cache | Could not resolve `cache` because they shared no network; exit code `1`. |
+| App → cache | Connected to `cache:6379`; exit code `0`. |
+| Write to mounted Nginx configuration | Failed with `Read-only file system`; exit code `1`. |
+| Host ports | Only `127.0.0.1:8085` was published. |
+
+The Redis `vm.overcommit_memory` warning was non-blocking in this lab. No host sysctl settings were changed.
+
+Final cleanup removed the three containers, two project networks, named volume, and locally built application image, and released port `8085`. These are results from the completed practical work; the documentation update did not start or recreate the project.
+
+### Next step
+
+**Python for DevOps**
+
+Begin the next major learning block while continuing short reviews of the Docker checkpoint gaps.

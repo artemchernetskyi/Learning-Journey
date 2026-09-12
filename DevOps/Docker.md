@@ -3350,3 +3350,265 @@ I can build a smaller runtime image, explain which files it contains, and use bu
 **Comprehensive Docker checkpoint**
 
 Docker Lessons 01–12 and the Docker lesson block are complete. The comprehensive Docker checkpoint is the immediate next step, followed by one practical Docker project, then Python for DevOps. The checkpoint and practical project are not complete yet.
+
+---
+
+## Comprehensive Docker checkpoint — completed
+
+**Date:** 2026-09-12
+
+I passed the comprehensive Docker checkpoint with approximately **7.3/10** after completing Docker Lessons 01–12.
+
+### Strong areas
+
+- Ports and Compose lifecycle.
+- Service-name DNS and network isolation.
+- Multi-stage builds, build context/cache, and `.dockerignore`.
+- Logs, persistence, and troubleshooting.
+
+### Areas for continued review
+
+| Topic | Point to remember |
+|---|---|
+| Dockerfile → image → container | A Dockerfile describes build instructions; `docker build` creates an image; `docker run` creates and starts a container from an image. This project's build compiles `/app`, and its container runs the compiled binary. |
+| `docker start` | Starts an existing stopped container, preserving its ID, configuration, and writable layer. It does not create a replacement container or rebuild the image. |
+| Missing bind-mount paths | With `docker run`, `-v` creates a missing host source as a directory; `--mount type=bind` fails by default when the source path does not exist. |
+| Environment-variable security | Environment variables are not secure secret storage. Docker inspection, process environments, plain-text environment files, and shell history can expose values. |
+| `ENTRYPOINT` and `CMD` | `ENTRYPOINT` sets the executable when configured; `CMD` supplies its default arguments, or the default command when no entrypoint is set. Exec form avoids an extra shell. |
+| PID 1 and `--rm` | The container's main process runs as PID 1; its exit stops the container. `--rm` automatically removes the container after exit, including its writable layer, but does not delete named volumes. |
+| `localhost` inside containers | Refers to the current container. Reach another Compose service using its service name and container port on a shared network. |
+
+### My sentence
+
+I can investigate Docker problems using ports, networks, logs, and storage checks, and I know which concepts need more practice.
+
+---
+
+## Docker Visitor Counter mini-project — completed
+
+**Date:** 2026-09-12
+
+I successfully completed a containerized visitor counter with Nginx, Go, and Redis. The [project README](../Projects/docker-visitor-counter/README.md) contains the architecture diagram, file descriptions, commands, troubleshooting guidance, and cleanup procedure.
+
+### Finished project structure
+
+```text
+Projects/docker-visitor-counter/
+├── .dockerignore
+├── Dockerfile
+├── compose.yaml
+├── main.go
+├── nginx/
+│   └── default.conf
+└── README.md
+```
+
+### Permanent reference — from a Dockerfile to a running Go application
+
+This reference connects the checkpoint's build-sequence review to the finished project. Lesson 12 above records the earlier image-size and cache experiments; they are not repeated here. The following commands are for future practice and were not run during this documentation update.
+
+`nano Dockerfile.single` opens the file `Dockerfile.single`, or lets me create it by saving if it does not exist. `nano` is a text editor, not part of Docker. `Dockerfile.single` is an optional comparison file, not a file in the finished project structure above. The completed project uses its multi-stage `Dockerfile`.
+
+From the repository root, open the optional file:
+
+```bash
+cd Projects/docker-visitor-counter
+nano Dockerfile.single
+```
+
+Enter this complete single-stage example, then save with `Ctrl+O`, confirm the filename with `Enter`, and exit with `Ctrl+X`:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+
+FROM golang:1.26-alpine
+
+WORKDIR /src
+COPY main.go .
+RUN CGO_ENABLED=0 go build -o /app main.go
+
+EXPOSE 8080
+CMD ["/app"]
+```
+
+| Instruction | Meaning in this example |
+|---|---|
+| `# syntax=docker/dockerfile:1` | Selects the Dockerfile syntax frontend. |
+| `FROM golang:1.26-alpine` | Starts the image stage from Alpine with the Go compiler and toolchain included. |
+| `WORKDIR /src` | Sets the working directory for later instructions, creating it if necessary. |
+| `COPY main.go .` | Copies source `main.go` from the build context into destination `.` inside the image. Because the working directory is `/src`, the destination file is `/src/main.go`. |
+| `RUN CGO_ENABLED=0 go build -o /app main.go` | Compiles the source during image building. `CGO_ENABLED=0` disables cgo, and `-o /app` selects the output binary. |
+| `EXPOSE 8080` | Records the intended container port as image metadata. It does not publish a host port. |
+| `CMD ["/app"]` | Sets the default main process when a container starts. With no entrypoint in this example, `/app` runs directly as PID 1; it does not compile the source again. |
+
+Build and run the comparison image:
+
+```bash
+docker build -f Dockerfile.single -t docker-visitor-app:single .
+docker run -d --name visitor-single -p 127.0.0.1:8086:8080 docker-visitor-app:single
+curl --fail http://127.0.0.1:8086/health
+```
+
+`-f` selects the Dockerfile; `-t` names the image `docker-visitor-app` with tag `single`; the final `.` is the build context. `--name` names the container, `-d` runs it in the background, and `-p` maps localhost host port `8086` to container port `8080`. If the first request arrives before the server starts, check its logs and retry.
+
+This standalone check uses `/health`, which returns `healthy` without Redis. It does not start Redis or attach the container to the Compose backend network. A counter request to `/` requires Redis and returns HTTP `503` when Redis cannot be reached. Use the complete Compose workflow below to test the visitor counter.
+
+Inspect the running container, logs, size, and image contents:
+
+```bash
+docker ps -a --filter name=visitor-single
+docker logs visitor-single
+docker image ls docker-visitor-app:single
+docker image inspect docker-visitor-app:single --format '{{.Size}}'
+docker run --rm docker-visitor-app:single sh -c 'go version; ls -l /src/main.go /app; cat /etc/alpine-release'
+```
+
+Image inspection reports `.Size` in bytes; it is not a compressed content-size measurement. The temporary `--rm` container overrides the default `CMD` with a shell to inspect the image and is removed when that shell exits.
+
+The single-stage image is large because it retains all four parts: the Go toolchain, source code, compiled binary, and Alpine runtime filesystem. Generated build cache can also remain in its build layer.
+
+After this optional exercise, remove its container and image:
+
+```bash
+docker stop visitor-single
+docker rm visitor-single
+docker image rm docker-visitor-app:single
+```
+
+### Comparison with the completed multi-stage build
+
+The project's `Dockerfile` starts with `FROM golang:1.26-alpine AS builder`. This builder stage contains Go and the source and compiles `/app`. The runtime stage starts clean with `FROM alpine:3.22`; it does not inherit the builder filesystem. `COPY --from=builder /app /app` copies source `/app` from the builder to destination `/app` in the runtime stage, transferring only the compiled binary.
+
+The final image contains neither the Go compiler nor `main.go`. Its measured result was **25.8 MB disk usage** and **8.45 MB content size**, as recorded for this completed project. The builder's tools and cache can still exist in Docker's build cache without becoming part of the final image.
+
+### Architecture and configuration
+
+The request path is host/browser → Nginx proxy → Go application → Redis.
+
+| Service | Network membership | Role |
+|---|---|---|
+| `proxy` | `frontend` | Nginx publishes `127.0.0.1:8085:80` and forwards HTTP to `app:8080`. |
+| `app` | `frontend`, `backend` | Go serves HTTP on `8080` and increments the Redis `visits` key. No published host port. |
+| `cache` | `backend` | Redis listens on `6379`. No published host port. |
+
+`.dockerignore` excludes Git metadata, Markdown, Compose configuration, and Nginx configuration from the build context.
+
+Redis runs with append-only persistence and stores data in `/data` on the `cache-data` named volume. Nginx configuration is mounted read-only. The Go application receives `REDIS_ADDR=cache:6379` and `APP_MESSAGE="Docker visitor counter is running"` through Compose.
+
+### Health checks and dependency ordering
+
+Redis is checked with `redis-cli ping`, Go through `/health`, and Nginx through `/nginx-health`. All checks use a `5s` interval, `3s` timeout, and `5` retries.
+
+`depends_on` with `service_healthy` makes the app wait for healthy Redis and the proxy wait for a healthy app at startup. This does not continuously restart dependent services after a dependency failure. The Go health endpoint does not check Redis, and the Nginx health endpoint does not check Go. Counter requests test the complete application path; health requests do not increment visits.
+
+### Complete mini-project command reference
+
+Run these commands from `Projects/docker-visitor-counter` during a future lab. They describe the complete workflow; the cleaned-up project was not restarted for this documentation update. Resource names below assume the default Compose project name `docker-visitor-counter`.
+
+Validate, build, start, and inspect health and logs:
+
+```bash
+docker compose config --quiet
+docker compose up -d --build --wait
+docker compose ps
+docker compose ps -q | xargs -r docker inspect --format '{{.Name}} {{json .State.Health}}'
+docker compose logs --tail 30 proxy app cache
+docker compose exec proxy nginx -t
+```
+
+`config --quiet` only validates configuration. `up --wait` waits for healthy services. The inspection command shows each container's health status and recent check output.
+
+Send two counter requests and inspect the application's non-secret configuration:
+
+```bash
+curl --fail http://127.0.0.1:8085/
+curl --fail http://127.0.0.1:8085/
+docker compose exec app printenv REDIS_ADDR APP_MESSAGE
+```
+
+With a fresh volume and no other counter requests, the responses contain `Visits: 1` and `Visits: 2`. Browser requests to other paths can also increment the count. Inspect only the needed variables; environment output can expose secrets in other projects.
+
+Test Redis persistence by removing and recreating the containers while keeping the named volume:
+
+```bash
+docker compose down
+docker compose up -d --wait
+curl --fail http://127.0.0.1:8085/
+docker compose exec cache redis-cli GET visits
+```
+
+The next request returns `Visits: 3`, and Redis reports `3`, if no extra counter requests occurred. Do not add `--volumes` to the persistence-test `down` command.
+
+Check network membership, connectivity, and isolation:
+
+```bash
+docker network inspect docker-visitor-counter_frontend docker-visitor-counter_backend
+docker compose exec proxy wget -qO- http://app:8080/health
+docker compose exec proxy nslookup cache
+echo $?
+docker compose exec app nc -z -w 2 cache 6379
+echo $?
+```
+
+The proxy reaches the app's health endpoint without changing the counter. Resolving `cache` from the proxy fails with exit code `1`; connecting from the app to `cache:6379` succeeds with exit code `0`.
+
+Verify the read-only Nginx bind mount:
+
+```bash
+docker compose ps -q proxy | xargs -r docker inspect --format '{{json .Mounts}}'
+docker compose exec proxy sh -c ': >> /etc/nginx/conf.d/default.conf'
+echo $?
+```
+
+Inspection should show the configuration mount with `RW: false`. The second command attempts to open the file for append without writing any content. The read-only filesystem rejects the open with `Read-only file system` and exit code `1`.
+
+Finally, delete the project's saved counter and clean up its resources:
+
+```bash
+docker compose down --volumes
+docker image rm docker-visitor-app:1.0
+docker compose ps -a
+docker network ls --filter label=com.docker.compose.project=docker-visitor-counter
+docker volume ls --filter label=com.docker.compose.project=docker-visitor-counter
+docker image ls docker-visitor-app:1.0
+ss -lnt 'sport = :8085'
+```
+
+`--volumes` deletes the named volume and its data. The final listings should show no matching containers, project networks, volume, app image, or listener on port `8085`. No global prune or host sysctl change is part of this workflow.
+
+### Verified practical results
+
+| Check | Recorded result |
+|---|---|
+| Application image | `25.8 MB` disk usage and `8.45 MB` content size; these are separate measurements. |
+| Health status | `proxy`, `app`, and `cache` all passed their checks. |
+| Nginx configuration | `nginx -t` passed. |
+| First two counter requests | Returned `Visits: 1` and `Visits: 2`. |
+| Persistence after `docker compose down` and `up` | The named volume preserved the counter; the next request returned `Visits: 3`. |
+| Proxy → app | Reached `app:8080`. |
+| Proxy → cache DNS | Could not resolve `cache` because they shared no network; exit code `1`. |
+| App → cache | Connected to `cache:6379`; exit code `0`. |
+| Writing to mounted Nginx configuration | Failed with `Read-only file system`; exit code `1`. |
+| Host port publication | Only `127.0.0.1:8085`; no app or Redis host ports. |
+
+### Troubleshooting lessons
+
+- A host-port conflict concerns the published host port, not the port used between containers.
+- Service-name DNS requires shared network membership; the proxy's failure to resolve Redis demonstrated the intended isolation.
+- `localhost` inside the app cannot address Redis; `cache:6379` selects the correct service.
+- Health checks and logs help locate failures, but separate component health checks do not prove the full request path works.
+- Redis logged a non-blocking `vm.overcommit_memory` warning. It became healthy, and the persistence test passed. No host sysctl settings were changed.
+
+### Cleanup
+
+Final cleanup removed all three containers, both project networks, the named volume, and the locally built application image. Port `8085` was released. These results came from the completed practical lab; the documentation update did not start or recreate the cleaned-up project.
+
+### My sentence
+
+I can connect a proxy, an application, and a database with Docker Compose, verify persistence and network isolation, and clean up the project's resources.
+
+## Next step
+
+**Python for DevOps**
+
+Docker Lessons 01–12, the comprehensive checkpoint, and the Docker Visitor Counter mini-project are complete. Begin Python for DevOps while continuing short reviews of the checkpoint gaps.

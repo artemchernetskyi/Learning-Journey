@@ -43,7 +43,9 @@ My focus is on understanding how systems work in practice rather than only learn
 - GitHub remote repositories
 
 ### Docker
-Currently learning Docker through hands-on labs, including:
+Completed Docker Lessons 01–12, passed the comprehensive checkpoint (approximately 7.3/10), and completed the [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) on 2026-09-12.
+
+Practical skills include:
 
 - Images and containers
 - Container lifecycle
@@ -51,10 +53,13 @@ Currently learning Docker through hands-on labs, including:
 - Inspecting containers
 - Bind mounts
 - Persistent data concepts
+- Compose services, health checks, and service-name DNS
+- Network isolation and Redis persistence
+- Multi-stage builds, build cache, and `.dockerignore`
 
 ## Current focus
 
-My current focus is Docker and container fundamentals while continuing to strengthen Linux, Bash, networking, and troubleshooting skills.
+My next major learning block is Python for DevOps, while continuing to strengthen Linux, Bash, networking, and troubleshooting skills and review Docker checkpoint gaps.
 
 ## Learning approach
 
