@@ -670,7 +670,7 @@ Complete the checkpoint first, then one practical Docker project, then begin Pyt
 
 ## 2026-09-12 — Comprehensive Docker checkpoint and mini-project completed
 
-Docker Lessons 01–12 are complete. I passed the comprehensive Docker checkpoint with approximately **7.3/10** and successfully completed the [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md). This completes the Docker block, including its checkpoint and practical project.
+Docker Lessons 01–12 are complete. I passed the comprehensive Docker checkpoint with approximately **9/10** and successfully completed the [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md). This completes the Docker block, including its checkpoint and practical project.
 
 ### Checkpoint assessment
 

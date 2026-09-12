@@ -43,7 +43,7 @@ My focus is on understanding how systems work in practice rather than only learn
 - GitHub remote repositories
 
 ### Docker
-Completed Docker Lessons 01–12, passed the comprehensive checkpoint (approximately 7.3/10), and completed the [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) on 2026-09-12.
+Completed Docker Lessons 01–12, passed the comprehensive checkpoint (approximately 9/10), and completed the [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) on 2026-09-12.
 
 Practical skills include:
 

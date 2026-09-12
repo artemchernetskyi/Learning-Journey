@@ -57,7 +57,7 @@ Current level:
 - IT / DevOps: beginner with practical Linux and Docker experience
 - Linux: foundation phase completed
 - Git: basic practical workflow
-- Docker: Lessons 01–12, comprehensive checkpoint (approximately 7.3/10), and Docker Visitor Counter mini-project completed
+- Docker: Lessons 01–12, comprehensive checkpoint (approximately 9/10), and Docker Visitor Counter mini-project completed
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
 - Python for DevOps: not started yet
 - CI/CD: not started yet
@@ -80,7 +80,7 @@ Current progress:
 - Docker Lesson 10 — Multiple Services is completed.
 - Docker Lesson 11 — Docker Networking and Service Discovery is completed.
 - Docker Lesson 12 — Image Optimization and Multi-Stage Builds is completed.
-- The comprehensive Docker checkpoint was passed with approximately 7.3/10 on 2026-09-12.
+- The comprehensive Docker checkpoint was passed with approximately 9/10 on 2026-09-12.
 - The [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) was completed successfully on 2026-09-12.
 - The Docker and Docker Compose phase, including the checkpoint and practical project, is complete.
 - Python for DevOps is the next major learning block; it has not started yet.
@@ -193,7 +193,7 @@ Docker Lesson 11 — Docker Networking and Service Discovery is completed: defau
 
 Docker Lesson 12 — Image Optimization and Multi-Stage Builds is completed: single-stage versus multi-stage images, image history, build-cache behaviour, build context, and `.dockerignore`.
 
-Docker Lessons 01–12 are complete. On 2026-09-12, I passed the comprehensive Docker checkpoint with approximately **7.3/10** and successfully completed the Docker Visitor Counter mini-project. This completes the Docker block.
+Docker Lessons 01–12 are complete. On 2026-09-12, I passed the comprehensive Docker checkpoint with approximately **9/10** and successfully completed the Docker Visitor Counter mini-project. This completes the Docker block.
 
 Checkpoint strengths:
 

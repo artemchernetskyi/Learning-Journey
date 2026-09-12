@@ -184,4 +184,4 @@ These results were verified during the completed practical lab. The project was 
 | Final cleanup | Three containers, two project networks, named volume, and locally built app image removed; port `8085` released. |
 | Host configuration | No sysctl settings changed. |
 
-Docker Lessons 01–12 are complete, the comprehensive checkpoint was passed with approximately **7.3/10**, and this mini-project completed the Docker block. The next major learning block is **Python for DevOps**. See the [Docker notes](../../DevOps/Docker.md) for checkpoint strengths and review areas.
+Docker Lessons 01–12 are complete, the comprehensive checkpoint was passed with approximately **9/10**, and this mini-project completed the Docker block. The next major learning block is **Python for DevOps**. See the [Docker notes](../../DevOps/Docker.md) for checkpoint strengths and review areas.

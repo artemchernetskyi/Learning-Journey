@@ -3357,7 +3357,7 @@ Docker Lessons 01–12 and the Docker lesson block are complete. The comprehensi
 
 **Date:** 2026-09-12
 
-I passed the comprehensive Docker checkpoint with approximately **7.3/10** after completing Docker Lessons 01–12.
+I passed the comprehensive Docker checkpoint with approximately **9/10** after completing Docker Lessons 01–12.
 
 ### Strong areas
 
