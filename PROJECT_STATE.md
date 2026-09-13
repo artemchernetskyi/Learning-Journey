@@ -5,7 +5,7 @@ Last updated: 2026-09-13
 ## Purpose
 
 This file is the short, current source of truth for the Learning Journey.
-Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `PROGRESS.md`, and `ROADMAP.md`.
+Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PROGRESS.md`, and `ROADMAP.md`.
 
 ---
 
@@ -13,8 +13,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `PROGRESS.md`, and `ROA
 
 - **Main track:** DevOps
 - **Current technology:** Python for DevOps
-- **Current step:** Python Setup / Lesson 00
-- **Next lesson after setup:** Python Lesson 01
+- **Completed setup:** Python Setup / Lesson 00 on 2026-09-13
+- **Next learning step:** Python Lesson 01 (not started)
 
 ---
 
@@ -26,6 +26,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `PROGRESS.md`, and `ROA
 - Comprehensive Docker checkpoint passed with approximately **9/10**.
 - [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) completed on **2026-09-12**.
 - The entire Docker block, including the checkpoint and mini-project, is complete.
+- [Python Setup / Lesson 00](DevOps/Python.md) completed on **2026-09-13**: uv `0.12.13`, repository `.venv` based on system Python `3.12.3`, REPL practice, and the first program verified in the terminal and VS Code. No third-party Python packages were installed; the system package environment was unchanged.
 
 ---
 
@@ -71,7 +72,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `PROGRESS.md`, and `ROA
 
 ## Next action
 
-Continue **Python Setup / Lesson 00**, then start **Python Lesson 01**.
+Start **Python Lesson 01** using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 is complete; `uv init` and `pyproject.toml` were intentionally deferred.
 
 After each completed lesson, update the relevant lesson notes, `PROGRESS.md`, and `PROJECT_STATE.md`; follow the Git workflow above and push to GitHub unless instructed otherwise.
 

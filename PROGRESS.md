@@ -720,3 +720,28 @@ Final cleanup removed the three containers, two project networks, named volume, 
 **Python for DevOps**
 
 Begin the next major learning block while continuing short reviews of the Docker checkpoint gaps.
+
+---
+
+## 2026-09-13 — Python Setup / Lesson 00 completed
+
+I completed [Python Setup / Lesson 00](DevOps/Python.md) and practised:
+
+- checking Ubuntu 24.04, system Python 3.12.3 at `/usr/bin/python3`, system pip 24.0, and venv availability;
+- installing uv 0.12.13 with the official Astral standalone installer, without sudo or global pip;
+- creating the repository `.venv` with `uv venv --python /usr/bin/python3` and activating it with `source .venv/bin/activate`;
+- verifying the environment's executable, Python version, `sys.prefix`, and `sys.base_prefix`, and confirming that `.venv/` is ignored by Git;
+- assigning integer variables for 19 Linux and 12 Docker lessons, adding them to obtain 31, using `print()` and an f-string in the REPL, and leaving it with `exit()`;
+- creating [first_program.py](DevOps/Python/lesson_00/first_program.py) and running it successfully with the virtual-environment interpreter;
+- installing the official Microsoft Python extension, selecting `./.venv/bin/python` in VS Code, and running the same file successfully;
+- distinguishing VS Code and Nano as editors, the Python extension as editor tooling, and `.venv/bin/python` as the executable that runs the program.
+
+The system Python is the base interpreter; its package environment was not modified. No third-party Python packages were installed. We intentionally did not run `uv init` or create `pyproject.toml` yet.
+
+The documentation check preserved the existing first program and reran it successfully: it printed the repository interpreter path, `Completed lessons: 31`, and `Python for DevOps starts now.`
+
+### Next step
+
+**Python Lesson 01** (not started).
+
+The short optional Linux administration refresher remains after **Python Lesson 05**, covering `chmod`, `chown`, permissions, processes, services, logs, and SSH.

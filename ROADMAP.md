@@ -57,7 +57,7 @@ Current level:
 - Git: basic practical workflow
 - Docker: Lessons 01–12, comprehensive checkpoint (approximately 9/10), and Docker Visitor Counter mini-project completed
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
-- Python for DevOps: Python Setup / Lesson 00 in progress.
+- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lesson 01 is next.
 - CI/CD: not started yet
 - Cloud: not started yet
 - Terraform: not started yet
@@ -80,7 +80,7 @@ Current progress:
 - The comprehensive Docker checkpoint was passed with approximately 9/10 on 2026-09-12.
 - The [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) was completed successfully on 2026-09-12.
 - The Docker and Docker Compose phase, including the checkpoint and practical project, is complete.
-- Python for DevOps: Python Setup / Lesson 00 in progress.
+- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lesson 01 is next.
 
 ---
 
@@ -220,9 +220,11 @@ Next: begin Python for DevOps and continue short reviews of the checkpoint gaps.
 
 Estimated time: after the full Docker block and final checkpoint/project
 
-Current step: **Python Setup / Lesson 00 in progress.** Next: **Python Lesson 01**.
+Completed: **Python Setup / Lesson 00 on 2026-09-13.** Next: **Python Lesson 01** (not started).
 
 Local Python project management will use `uv`, while basic `pip` and `venv` concepts should still be understood. The current Ubuntu system has Python **3.12.3**.
+
+Setup verified uv **0.12.13**, the repository `.venv` based on `/usr/bin/python3`, REPL practice, and the first program in the terminal and VS Code using `./.venv/bin/python`. No third-party Python packages were installed or system packages changed. `uv init` and `pyproject.toml` were intentionally deferred. Detailed results: [Python notes](DevOps/Python.md).
 
 Topics:
 
