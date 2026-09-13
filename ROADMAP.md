@@ -25,9 +25,7 @@ This project combines:
 - Python for DevOps
 - CI/CD
 - Cloud
-- Azure
 - Terraform
-- Ansible
 - Kubernetes
 - Monitoring
 - Interview preparation
@@ -48,7 +46,7 @@ It shows all files, including hidden files.
 
 ## Current stage
 
-Updated: 2026-09-12
+Updated: 2026-09-13
 
 Current level:
 
@@ -59,11 +57,10 @@ Current level:
 - Git: basic practical workflow
 - Docker: Lessons 01–12, comprehensive checkpoint (approximately 9/10), and Docker Visitor Counter mini-project completed
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
-- Python for DevOps: not started yet
+- Python for DevOps: Python Setup / Lesson 00 in progress.
 - CI/CD: not started yet
 - Cloud: not started yet
 - Terraform: not started yet
-- Ansible: not started yet
 - Kubernetes: not started yet
 
 Current progress:
@@ -83,7 +80,7 @@ Current progress:
 - The comprehensive Docker checkpoint was passed with approximately 9/10 on 2026-09-12.
 - The [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) was completed successfully on 2026-09-12.
 - The Docker and Docker Compose phase, including the checkpoint and practical project, is complete.
-- Python for DevOps is the next major learning block; it has not started yet.
+- Python for DevOps: Python Setup / Lesson 00 in progress.
 
 ---
 
@@ -93,14 +90,15 @@ Docker (including Docker Compose)
 → final comprehensive Docker checkpoint + practical Docker project
 → Python for DevOps
 → CI/CD + GitHub Actions
-→ Cloud / Azure
+→ Cloud fundamentals and provider decision
 → Terraform
-→ Ansible
 → Kubernetes
 → Monitoring and troubleshooting
 → Integrated DevOps projects
 
 Complete each phase through practical exercises and a small working result before moving on. Time estimates are flexible; later phases can take longer than the original 12–18 month goal.
+
+Optional: Ansible/configuration management can be revisited later only if relevant job vacancies or a real project require it. It is not a current priority.
 
 ---
 
@@ -222,6 +220,10 @@ Next: begin Python for DevOps and continue short reviews of the checkpoint gaps.
 
 Estimated time: after the full Docker block and final checkpoint/project
 
+Current step: **Python Setup / Lesson 00 in progress.** Next: **Python Lesson 01**.
+
+Local Python project management will use `uv`, while basic `pip` and `venv` concepts should still be understood. The current Ubuntu system has Python **3.12.3**.
+
 Topics:
 
 - Python basics: variables, conditions, loops, and functions
@@ -233,6 +235,8 @@ Topics:
 - error handling, logging, and exit codes
 - virtual environments and dependencies
 - small automation scripts and basic tests
+
+Planned checkpoint: after **Python Lesson 05**, complete a short optional Linux refresher covering `chmod`, `chown`, permissions, processes, services, logs, and SSH.
 
 Expected result:
 
@@ -267,15 +271,17 @@ I can document the pipeline in English.
 
 ---
 
-## Phase 6 — Cloud and Azure basics
+## Phase 6 — Cloud fundamentals and provider decision
 
 Estimated time: months 10–14
+
+After Python and CI/CD, choose one primary cloud provider based on relevant entry-level vacancies in Poland. Candidate providers are Azure and AWS; GCP may be considered if job-market evidence supports it. No provider is chosen yet.
 
 Topics:
 
 - cloud basics
-- Azure basics
-- resource groups
+- selected primary provider basics
+- resource organization in the selected provider
 - virtual machines
 - networking basics in cloud
 - storage basics
@@ -286,7 +292,7 @@ Topics:
 Expected result:
 
 I understand the basic idea of cloud infrastructure.  
-I can deploy a simple service or VM in Azure.  
+I can deploy a simple service or VM in the selected primary cloud provider.
 I can describe basic cloud resources in English.
 
 ---
@@ -304,7 +310,7 @@ Topics:
 - variables
 - outputs
 - state
-- simple Azure infrastructure
+- simple infrastructure in the selected primary cloud provider
 - documentation
 
 Expected result:
@@ -315,31 +321,7 @@ I can explain a basic Terraform project in an interview.
 
 ---
 
-## Phase 8 — Ansible basics
-
-Estimated time: after Terraform basics
-
-Topics:
-
-- configuration management
-- SSH connections and inventory
-- playbooks and YAML
-- modules, tasks, variables, and handlers
-- installing packages and configuring services
-- templates and basic roles
-- repeatable changes and checking the result
-
-Expected result:
-
-I can use an Ansible playbook to configure a small Linux test server.
-
-I can run the playbook again and verify that the desired configuration remains in place.
-
-I can explain how Terraform creates infrastructure and Ansible configures it.
-
----
-
-## Phase 9 — Kubernetes basics
+## Phase 8 — Kubernetes basics
 
 Estimated time: months 14–18
 
@@ -363,11 +345,11 @@ I can explain the difference between Docker and Kubernetes at a junior level.
 
 Important note:
 
-Kubernetes is not the first priority. It comes after Linux, Git, networking, Docker, Docker Compose, Python, CI/CD, cloud, Terraform, and Ansible practice.
+Kubernetes is not the first priority. It comes after Linux, Git, networking, Docker, Docker Compose, Python, CI/CD, cloud, and Terraform practice.
 
 ---
 
-## Phase 10 — Monitoring and troubleshooting
+## Phase 9 — Monitoring and troubleshooting
 
 Estimated time: later stage
 
@@ -388,7 +370,7 @@ I can write basic troubleshooting notes in English.
 
 ---
 
-## Phase 11 — Integrated DevOps projects
+## Phase 10 — Integrated DevOps projects
 
 Estimated time: after monitoring and troubleshooting basics
 
@@ -396,8 +378,7 @@ Extend the practical project built during earlier phases into a small complete d
 
 - use Python for health checks or operational automation
 - build and test Docker images with GitHub Actions
-- create Azure infrastructure with Terraform
-- configure Linux services with Ansible
+- create infrastructure in the selected primary cloud provider with Terraform
 - deploy the application and practise a small Kubernetes deployment where useful
 - add logs, basic metrics, and alerts
 - practise troubleshooting and recovery
@@ -445,9 +426,8 @@ Possible technologies:
 - Docker Compose
 - Python for DevOps
 - CI/CD
-- Azure
+- selected primary cloud provider
 - Terraform
-- Ansible
 - basic monitoring
 - maybe Kubernetes
 
