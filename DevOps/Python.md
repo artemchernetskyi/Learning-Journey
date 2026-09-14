@@ -225,3 +225,334 @@ These are mistakes to avoid, not a record of additional failed commands:
 ### My sentence
 
 I set up a virtual environment and ran my first Python program with the project interpreter.
+
+---
+
+## Python Lesson 01 — Variables, Data Types, Input, Conversion, and Arithmetic Operators
+
+Date: `2026-09-14`
+
+Status: **Completed**
+
+Today I learned how to store values, inspect their types, convert text input to numbers, and calculate simple DevOps results.
+
+### Objective
+
+Use variables, basic data types, `input()`, conversion, `print()`, f-strings, comparisons, and arithmetic operators to write two small programs about servers and containers.
+
+### Environment
+
+- Used the existing repository interpreter: `.venv/bin/python`.
+- Python version: `3.12.3`.
+- VS Code selected **Learning-Journey (3.12.3)**.
+- No packages were installed, no system Python packages were modified, and no network requests were made.
+- No `uv init` was run and no `pyproject.toml` was created.
+
+During documentation, this command confirmed the interpreter version:
+
+```bash
+.venv/bin/python --version
+```
+
+```text
+Python 3.12.3
+```
+
+### Variables and basic data types
+
+A variable is a name that refers to a value. Assignment uses `=`. `type()` shows the type of a value.
+
+Examples matching the completed practice:
+
+```python
+name = "Artem"
+age = 19
+docker_score = 9.0
+monitoring_enabled = True
+
+print(type(name))
+print(type(age))
+print(type(docker_score))
+print(type(monitoring_enabled))
+```
+
+Results:
+
+```text
+<class 'str'>
+<class 'int'>
+<class 'float'>
+<class 'bool'>
+```
+
+| Type | Example | Meaning |
+|---|---|---|
+| `str` | `"Artem"` | Text, also called a string. |
+| `int` | `19` | A whole number. |
+| `float` | `9.0` | A floating-point number. |
+| `bool` | `True` | A Boolean value: `True` or `False`. |
+
+Python uses **dynamic typing**: I do not declare a fixed type for a variable, and I can reassign it to a value of another type. Values have types. `True` and `False` are Boolean values; `"True"` with quotation marks is a string.
+
+### Strings, numbers, and conversion
+
+I reassigned `docker_score` from the float `9.0` to the string `"9.0"`:
+
+```python
+docker_score = 9.0
+docker_score = "9.0"
+print(docker_score + " points")
+```
+
+Result:
+
+```text
+9.0 points
+```
+
+Here, `+` concatenates (joins) two strings. The intentional attempt to add an integer to that string failed:
+
+```python
+docker_score + 1
+```
+
+```text
+TypeError: can only concatenate str (not "int") to str
+```
+
+I converted the string with `float()` and then added `1`:
+
+```python
+print(float(docker_score))
+print(float(docker_score) + 1)
+print(type(docker_score))
+```
+
+Results:
+
+```text
+9.0
+10.0
+<class 'str'>
+```
+
+Conversion returns a new value. Calling `float(docker_score)` does not automatically change the original variable; `docker_score` still refers to the string `"9.0"`. To retain a converted value, assign the result to a variable.
+
+### input(), conversion, and readable output
+
+`input()` always returns `str`, even when I type digits. In the server program:
+
+```python
+running_containers_text = input("Enter the number of running containers: ")
+running_containers = int(running_containers_text)
+```
+
+Typing `3` gives the string `"3"`; `int(running_containers_text)` converts it from **str → int**. Disk usage is converted in the same way. The text variable remains a string, and the new variable stores the integer.
+
+`print()` displays output. An f-string inserts values inside `{}` into readable text:
+
+```python
+print(f"Running containers: {running_containers}")
+```
+
+With `running_containers = 3`, this prints `Running containers: 3`. A standalone `print()` prints a blank line.
+
+### Independent DevOps practice — variables and input
+
+File: [variables_and_input.py](Python/lesson_01/variables_and_input.py)
+
+My program asks for a server name and running-container count, converts the count to an integer, stores `monitoring_enabled = True`, and calculates the count after one additional deployment. It then asks for disk usage, converts it to an integer, and compares it with `warning_threshold = 80` using `>=`.
+
+This uses entered example values; it does not inspect a real server or deploy a container.
+
+Complete source, preserved from my existing file:
+
+```python
+server_name = input("Enter the server name: ")
+running_containers_text = input("Enter the number of running containers: ")
+
+running_containers = int(running_containers_text)
+monitoring_enabled = True
+containers_after_deployment = running_containers + 1
+
+print(f"Server: {server_name}")
+print(f"Running containers: {running_containers}")
+print(f"Monitoring enabled: {monitoring_enabled}")
+print(f"Containers after deployment: {containers_after_deployment}")
+
+print()
+
+disk_usage_text = input("Enter disk usage percentage: ")
+disk_usage = int(disk_usage_text)
+warning_threshold = 80
+disk_warning = disk_usage >= warning_threshold
+
+print(f"Disk usage: {disk_usage}%")
+print(f"Warning threshold: {warning_threshold}%")
+print(f"Disk warning: {disk_warning}")
+```
+
+Run interactively from the repository root:
+
+```bash
+.venv/bin/python DevOps/Python/lesson_01/variables_and_input.py
+```
+
+Verified lesson results:
+
+| Server | Running containers | After deployment | Disk usage | Threshold | Disk warning |
+|---|---|---|---|---|---|
+| `web-01` | `3` | `4` | `85%` | `80%` | `True` |
+| `web-01` | `3` | `4` | `80%` | `80%` | `True` |
+
+During documentation, the boundary test was rerun safely with:
+
+```bash
+printf 'web-01\n3\n80\n' | .venv/bin/python DevOps/Python/lesson_01/variables_and_input.py
+```
+
+**Linux review:** `printf` supplies three newline-separated answers, and the pipe passes them to the program's standard input. Piped answers are not echoed like typed terminal input, so prompts appear on the same lines as later output.
+
+Exact verified output, with exit code `0`:
+
+```text
+Enter the server name: Enter the number of running containers: Server: web-01
+Running containers: 3
+Monitoring enabled: True
+Containers after deployment: 4
+
+Enter disk usage percentage: Disk usage: 80%
+Warning threshold: 80%
+Disk warning: True
+```
+
+I initially thought `80 >= 80` would be `False`. The correction is **True**: `>=` means **greater than or equal to**, so the threshold itself triggers the warning.
+
+### Arithmetic operators
+
+File: [arithmetic_operators.py](Python/lesson_01/arithmetic_operators.py)
+
+I used `cpu_cores = 4`, `containers_per_core = 3`, and `running_containers = 10` to calculate capacity and distribute containers into groups.
+
+| Operator | Meaning | Lesson calculation | Result |
+|---|---|---|---|
+| `*` | Multiplication | `4 * 3` | `12` total capacity |
+| `-` | Subtraction | `12 - 10` | `2` free slots |
+| `/` | Regular division | `10 / 4` | `2.5` average per core |
+| `//` | Floor division | `10 // 4` | `2` complete groups |
+| `%` | Remainder | `10 % 4` | `2` remaining items |
+
+Floor division rounds the quotient down. For these positive integers, it gives the number of complete groups. The remainder is the number of items left after forming those groups:
+
+```text
+10 / 4 = 2.5
+10 // 4 = 2 complete groups
+10 % 4 = 2 remaining items
+10 = (4 * 2) + 2
+```
+
+I initially confused the fractional part `0.5` with the remainder. **0.5 is not numerically equal to 2.** Half of a group of four corresponds to two remaining containers: `0.5 * 4 = 2`.
+
+Complete source, preserved from my existing file:
+
+```python
+cpu_cores = 4
+containers_per_core = 3
+running_containers = 10
+
+total_capacity = cpu_cores * containers_per_core
+free_slots = total_capacity - running_containers
+average_per_core = running_containers / cpu_cores
+full_groups = running_containers // cpu_cores
+remaining_containers = running_containers % cpu_cores
+
+print(f"Total capacity: {total_capacity}")
+print(f"Free slots: {free_slots}")
+print(f"Average per core: {average_per_core}")
+print(f"Full groups: {full_groups}")
+print(f"Remaining containers: {remaining_containers}")
+```
+
+Run from the repository root:
+
+```bash
+.venv/bin/python DevOps/Python/lesson_01/arithmetic_operators.py
+```
+
+Exact verified output during documentation, with exit code `0`:
+
+```text
+Total capacity: 12
+Free slots: 2
+Average per core: 2.5
+Full groups: 2
+Remaining containers: 2
+```
+
+### Assessment and corrections
+
+Final knowledge check: **4/5 before correction**.
+
+Correct knowledge confirmed during the check:
+
+- `"12"` is `str`.
+- `12` is `int`.
+- `12.0` is `float`.
+- `False` is `bool`.
+- `input()` returns `str`.
+- Conversion creates a new value; it does not automatically change the original variable.
+- `80 >= 80` is `True`.
+
+The only final-check mistake was describing `int()` in the wrong direction. For this program, `int(running_containers_text)` converts **str → int**, not int → str.
+
+The arithmetic explanation was correct after clarifying the difference between the fractional part of a quotient and the remainder. The earlier threshold and remainder misconceptions were corrected during the lesson; they are separate from the one final-check mistake.
+
+### Important vocabulary
+
+| Word or phrase | Simple meaning | Ukrainian |
+|---|---|---|
+| variable | A name that refers to a value. | змінна |
+| data type | The kind of value, such as text or an integer. | тип даних |
+| string | Text represented by `str`. | рядок |
+| integer | A whole number. | ціле число |
+| floating-point number | A number represented by `float`, such as `9.0`. | число з рухомою комою |
+| Boolean | A `True` or `False` value. | булеве значення |
+| dynamic typing | A variable can be reassigned to values of different types. | динамічна типізація |
+| concatenate | Join strings together. | об'єднувати рядки |
+| convert | Produce a value of another type. | перетворювати |
+| input / output | Data entered into / displayed by a program. | введення / виведення |
+| threshold | A limit used for a comparison or warning. | поріг |
+| greater than or equal to | At least the compared value: `>=`. | більше або дорівнює |
+| floor division | Division with the quotient rounded down. | ділення з округленням донизу |
+| remainder | Items left after forming complete groups. | остача |
+| deployment | Putting an application into service. | розгортання |
+
+Useful technical-English sentences:
+
+- `input() returns a string.`
+- `I converted the container count from a string to an integer.`
+- `The disk warning is true because disk usage is greater than or equal to the threshold.`
+- `Ten containers form two complete groups of four, with two containers remaining.`
+
+### Completion checklist
+
+- [x] Use the existing repository Python 3.12.3 environment.
+- [x] Practise `str`, `int`, `float`, `bool`, and `type()`.
+- [x] Explain dynamic typing and Boolean values versus quoted strings.
+- [x] Reassign a value, concatenate strings, and explain the intentional `TypeError`.
+- [x] Convert `"9.0"` with `float()` and obtain `10.0` after adding `1`.
+- [x] Explain that conversion returns a new value.
+- [x] Use `input()`, `int()`, `print()`, and f-strings in independent practice.
+- [x] Verify the disk warning at `85%` and at the exact `80%` threshold.
+- [x] Practise `*`, `-`, `/`, `//`, and `%` and explain the verified results.
+- [x] Complete the final knowledge check with `4/5` before correction and correct the conversion direction.
+- [x] Inspect and rerun both source files successfully during documentation, preserving their contents.
+- [x] Install nothing and leave system Python packages unchanged.
+
+### Next step
+
+**Python Lesson 02** is next and has not started. The short optional Linux administration refresher remains after **Python Lesson 05**.
+
+### My sentence
+
+I used Python variables, converted text input to integers, and calculated container capacity and a disk warning.

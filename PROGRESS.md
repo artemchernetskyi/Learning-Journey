@@ -745,3 +745,33 @@ The documentation check preserved the existing first program and reran it succes
 **Python Lesson 01** (not started).
 
 The short optional Linux administration refresher remains after **Python Lesson 05**, covering `chmod`, `chown`, permissions, processes, services, logs, and SSH.
+
+---
+
+## 2026-09-14 — Python Lesson 01 completed
+
+I completed **Python Lesson 01 — Variables, Data Types, Input, Conversion, and Arithmetic Operators**. Detailed examples, complete source files, outputs, corrections, vocabulary, and the completion checklist are in [Python notes](DevOps/Python.md#python-lesson-01--variables-data-types-input-conversion-and-arithmetic-operators).
+
+I practised:
+
+- variables, dynamic typing, `str`, `int`, `float`, `bool`, and `type()`;
+- reassigning `docker_score` from `9.0` to `"9.0"`, concatenating strings, and explaining the intentional string-plus-integer `TypeError`;
+- converting `"9.0"` with `float()` and adding `1` to obtain `10.0`, while understanding that conversion returns a new value;
+- using `input()` (which returns `str`), `int()`, `print()`, and f-strings;
+- independently writing [variables_and_input.py](DevOps/Python/lesson_01/variables_and_input.py) to report a server name, container count, monitoring state, count after one deployment, and a disk warning;
+- verifying `Disk warning: True` for `web-01` with `3` containers at both `85%` and exactly `80%` disk usage;
+- writing [arithmetic_operators.py](DevOps/Python/lesson_01/arithmetic_operators.py) with `*`, `-`, `/`, `//`, and `%`: total capacity `12`, free slots `2`, average per core `2.5`, full groups `2`, and remaining containers `2`.
+
+I corrected the initial misconceptions about `80 >= 80` (it is `True`) and the remainder of `10 / 4` (`10 % 4` is `2`, not `0.5`). The relationship is `10 = (4 * 2) + 2`; half of a group of four corresponds to two remaining containers.
+
+Final knowledge check: **4/5 before correction**. The only final-check mistake was describing `int()` in the wrong direction; I corrected it to **str → int**. The arithmetic explanation was correct after the remainder clarification.
+
+The lesson used `.venv/bin/python`, Python `3.12.3`, and VS Code's **Learning-Journey (3.12.3)** interpreter selection. No packages were installed, no system Python packages were modified, and no network requests were made. No `uv init` was run or `pyproject.toml` created.
+
+During documentation, both existing source files were inspected and preserved. The `80%` boundary test and arithmetic program were rerun with `.venv/bin/python`; both exited with code `0` and matched the recorded outputs.
+
+### Next step
+
+**Python Lesson 02** (not started).
+
+The short optional Linux administration refresher remains after **Python Lesson 05**.

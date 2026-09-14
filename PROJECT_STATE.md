@@ -1,6 +1,6 @@
 # Project State — Learning Journey
 
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 ## Purpose
 
@@ -14,7 +14,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - **Main track:** DevOps
 - **Current technology:** Python for DevOps
 - **Completed setup:** Python Setup / Lesson 00 on 2026-09-13
-- **Next learning step:** Python Lesson 01 (not started)
+- **Latest completed lesson:** Python Lesson 01 on 2026-09-14
+- **Next learning step:** Python Lesson 02 (not started)
 
 ---
 
@@ -27,6 +28,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) completed on **2026-09-12**.
 - The entire Docker block, including the checkpoint and mini-project, is complete.
 - [Python Setup / Lesson 00](DevOps/Python.md) completed on **2026-09-13**: uv `0.12.13`, repository `.venv` based on system Python `3.12.3`, REPL practice, and the first program verified in the terminal and VS Code. No third-party Python packages were installed; the system package environment was unchanged.
+
+- [Python Lesson 01](DevOps/Python.md#python-lesson-01--variables-data-types-input-conversion-and-arithmetic-operators) completed on **2026-09-14**: variables, basic data types, dynamic typing, input, conversion, f-strings, comparisons, and arithmetic operators. Both programs were verified, including the `80%` disk-warning boundary and `10 % 4 = 2`. Final knowledge check: **4/5 before correction**; conversion direction corrected to **str → int**. Existing Python `3.12.3` environment used; no packages installed or network requests made.
 
 ---
 
@@ -72,7 +75,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 
 ## Next action
 
-Start **Python Lesson 01** using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 is complete; `uv init` and `pyproject.toml` were intentionally deferred.
+Start **Python Lesson 02** using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lesson 01 are complete; `uv init` and `pyproject.toml` were intentionally deferred.
 
 After each completed lesson, update the relevant lesson notes, `PROGRESS.md`, and `PROJECT_STATE.md`; follow the Git workflow above and push to GitHub unless instructed otherwise.
 
