@@ -57,7 +57,7 @@ Current level:
 - Git: basic practical workflow
 - Docker: Lessons 01–12, comprehensive checkpoint (approximately 9/10), and Docker Visitor Counter mini-project completed
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
-- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lesson 01 completed on 2026-09-14; Python Lesson 02 is next.
+- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lessons 01–02 completed on 2026-09-14; Python Lesson 03 is next (not started).
 - CI/CD: not started yet
 - Cloud: not started yet
 - Terraform: not started yet
@@ -80,7 +80,7 @@ Current progress:
 - The comprehensive Docker checkpoint was passed with approximately 9/10 on 2026-09-12.
 - The [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) was completed successfully on 2026-09-12.
 - The Docker and Docker Compose phase, including the checkpoint and practical project, is complete.
-- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lesson 01 completed on 2026-09-14; Python Lesson 02 is next.
+- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lessons 01–02 completed on 2026-09-14; Python Lesson 03 is next (not started).
 
 ---
 
@@ -220,7 +220,9 @@ Next: begin Python for DevOps and continue short reviews of the checkpoint gaps.
 
 Estimated time: after the full Docker block and final checkpoint/project
 
-Completed: **Python Setup / Lesson 00 on 2026-09-13** and **Python Lesson 01 on 2026-09-14** (variables, data types, input, conversion, and arithmetic operators). Next: **Python Lesson 02** (not started).
+Completed: **Python Setup / Lesson 00 on 2026-09-13**, **Python Lesson 01 on 2026-09-14** (variables, data types, input, conversion, and arithmetic operators), and **Python Lesson 02 on 2026-09-14** (conditional statements and Boolean logic). Next: **Python Lesson 03** (not started).
+
+Lesson 02 final documentation verification reproduced the expected disk and service results; all six runs exited `0`. The final service source has `maintenance_mode = False` after the temporary branch-priority test. Both source files were preserved during correction verification. Detailed results are recorded in [Python notes](DevOps/Python.md#python-lesson-02--conditional-statements-and-boolean-logic).
 
 Local Python project management will use `uv`, while basic `pip` and `venv` concepts should still be understood. The current Ubuntu system has Python **3.12.3**.
 

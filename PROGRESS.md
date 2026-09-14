@@ -775,3 +775,21 @@ During documentation, both existing source files were inspected and preserved. T
 **Python Lesson 02** (not started).
 
 The short optional Linux administration refresher remains after **Python Lesson 05**.
+
+---
+
+## 2026-09-14 — Python Lesson 02 completed
+
+I completed **Python Lesson 02 — Conditional Statements and Boolean Logic**: `if`/`elif`/`else`, colons and indentation, first-match priority, comparisons, and `and`/`or`/`not`. I practised disk/resource status and service health, Boolean variables, assignment versus comparison, and dynamic service names in f-strings. Detailed results, corrected misconceptions, workspace-path cleanup history, vocabulary, and examples are in [Python notes](DevOps/Python.md#python-lesson-02--conditional-statements-and-boolean-logic).
+
+Final knowledge check: **4/5 before clarification**, with notes allowed and understanding prioritized over memorization. Branches, priority, thresholds, and service cases were understood correctly. Boolean composition and `=` versus `==` required clarification; afterward I identified `is_ready` as `bool` and explained the core logic correctly.
+
+Final documentation verification used only the repository `.venv/bin/python`. All six runs exited `0` and matched expected outputs: disk inputs `70/75`, `85/75`, and `70/95` produced OK, WARNING, and CRITICAL. Service inputs `web-api/3/5`, `web-api/2/5`, and `web-api/0/5` produced `True` and OK, `False` and WARNING, and `False` and CRITICAL, respectively. During the lesson, maintenance mode was temporarily `True`; `0` replicas and error rate `99` still produced MAINTENANCE because that branch had priority. It was restored to `False` afterward, as confirmed in the final source. The temporary maintenance test was not repeated during documentation.
+
+Both sources were inspected completely and their SHA-256 hashes were unchanged after verification. Nothing was installed, no network requests were made, and nothing was staged, committed, or pushed.
+
+### Next step
+
+**Python Lesson 03** (not started).
+
+The short optional Linux administration refresher remains after **Python Lesson 05**.

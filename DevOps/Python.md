@@ -556,3 +556,243 @@ Useful technical-English sentences:
 ### My sentence
 
 I used Python variables, converted text input to integers, and calculated container capacity and a disk warning.
+
+---
+
+## Python Lesson 02 — Conditional Statements and Boolean Logic
+
+Date: `2026-09-14`
+
+Status: **Completed**.
+
+Today I learned how to combine conditions and choose a resource or service status. The final disk and service verification runs matched the completed lesson results below.
+
+### Objective
+
+Use `if`, `elif`, `else`, comparisons, and Boolean logic in [disk_status.py](Python/lesson_02/disk_status.py) and [service_health.py](Python/lesson_02/service_health.py). These programs use entered example values rather than checking live infrastructure.
+
+### Conditional statements and priority
+
+`if` checks the first condition. `elif` checks another condition if earlier conditions were false. `else` runs when none of the preceding conditions matched.
+
+The colon `:` introduces a block. Indentation is Python syntax: this lesson uses four spaces to indent each block. Python checks an `if`/`elif`/`else` chain from top to bottom. Only the first true branch executes; later branches are skipped even if their conditions would also be true. Condition order therefore establishes status priority.
+
+```python
+disk_usage = 95
+if disk_usage >= 90:
+    print("CRITICAL")
+elif disk_usage >= 80:
+    print("WARNING")
+else:
+    print("OK")
+```
+
+Expected output: `CRITICAL`. Both comparisons would be true, but the first matching branch prevents the warning branch from executing.
+
+### Comparisons, assignment, and Boolean expressions
+
+The lesson conditions evaluate to Boolean `True` or `False`.
+
+| Operator | Meaning | Example | Result |
+|---|---|---|---|
+| `<` | Is less than | `75 < 80` | `True` |
+| `>=` | Is greater than or equal to | `80 >= 80` | `True` |
+| `==` | Is equal to | `0 == 0` | `True` |
+
+`=` assigns/stores a value. `==` compares two values and returns `True` or `False`. A comparison does not change the compared variable. Its result can be assigned to a separate Boolean variable:
+
+```python
+running_replicas = 3
+is_ready = running_replicas == 3
+print(running_replicas)
+print(is_ready)
+print(type(is_ready))
+```
+
+Expected output:
+
+```text
+3
+True
+<class 'bool'>
+```
+
+| Boolean operator | Meaning for Boolean conditions | Example | Result |
+|---|---|---|---|
+| `and` | All connected conditions must be true. | `False and True` | `False` |
+| `or` | At least one connected condition must be true. | `False or True` | `True` |
+| `not` | Reverses a Boolean value. | `not False` | `True` |
+
+A Boolean expression can be assigned to a variable such as `service_healthy`. For Boolean variables, `if maintenance_mode:` and `elif not service_healthy:` are clearer than explicitly writing `is True` or `is False`.
+
+Ordinary assignment and `print()` statements execute from top to bottom. A preceding Boolean variable does not automatically control them; a conditional statement and its indented block provide that control.
+
+### Disk and resource exercise
+
+Both `disk_usage` and `cpu_usage` use `int(input(...))` to convert input strings to integers.
+
+The source calculates:
+
+```python
+both_resources_normal = disk_usage < 80 and cpu_usage < 80
+maintenance_mode = False
+alerts_enabled = not maintenance_mode
+```
+
+Both resources must be below `80` for `both_resources_normal` to be `True`. `alerts_enabled` is `True` because `not False` is `True`.
+
+**Alerts enabled** means the alerting mechanism is active; it does not mean a warning was triggered. In this script, `alerts_enabled` is printed but does not guard the status block. The disk status chain checks resource usage directly.
+
+The CRITICAL threshold is `90`; the WARNING threshold is `80`. Either resource reaching a threshold is sufficient because the conditions use `or`. CRITICAL is checked before WARNING, followed by the `else` OK branch.
+
+Lesson results, also verified during documentation:
+
+| Disk | CPU | `both_resources_normal` | `alerts_enabled` | Exact status message |
+|---|---|---|---|---|
+| `70` | `75` | `True` | `True` | `OK: Resource usage is normal.` |
+| `85` | `75` | `False` | `True` | `WARNING: Resource usage is high.` |
+| `70` | `95` | `False` | `True` | `CRITICAL: Resource usage is very high.` |
+
+For `70` disk and `95` CPU, the critical condition is `70 >= 90 or 95 >= 90`: `False or True` is `True`.
+
+Expected result lines for `70` and `75`, excluding input prompts:
+
+```text
+Both resources normal: True
+Alerts enabled: True
+OK: Resource usage is normal.
+```
+
+### Service-health exercise
+
+The program reads `service_name` as a string and converts `running_replicas` and `error_rate` to integers. Health requires at least three replicas, an error rate below ten, and maintenance mode disabled:
+
+```python
+service_healthy = running_replicas >= 3 and error_rate < 10 and not maintenance_mode
+```
+
+All three conditions must be true. Service status priority is:
+
+1. **MAINTENANCE** when `maintenance_mode` is true.
+2. **CRITICAL** when `running_replicas == 0 or error_rate >= 50`.
+3. **WARNING** when `not service_healthy`.
+4. **OK/HEALTHY** in the final `else` block.
+
+The lesson called the successful outcome HEALTHY; the inspected source prints `OK: Service web-api is healthy.` for that branch. F-strings insert the dynamic `service_name` into the service display and CRITICAL, WARNING, and OK messages instead of hard-coding `web-api`. The maintenance message is simply `MAINTENANCE.`.
+
+Reported completed lesson results for service `web-api`:
+
+| Replicas | Error rate | Maintenance mode | `service_healthy` | Status |
+|---|---|---|---|---|
+| `3` | `5` | `False` | `True` | HEALTHY (`OK: Service web-api is healthy.`) |
+| `2` | `5` | `False` | `False` | `WARNING: Service web-api is experiencing issues.` |
+| `0` | `5` | `False` | `False` | `CRITICAL: Service web-api requires immediate attention.` |
+| `0` | `99` | Temporarily `True` | `False` | `MAINTENANCE.` |
+
+During the lesson, `maintenance_mode` was temporarily set to `True`. Even with `0` replicas and error rate `99`, the result was `MAINTENANCE.`: maintenance was the first true branch, so it prevented the later critical branch from executing. This temporary test was not recreated during documentation.
+
+`maintenance_mode` was restored to `False` afterward. Reinspection confirmed `maintenance_mode = False` in the final `service_health.py`. The three final non-maintenance verification cases reproduced the expected OK, WARNING, and CRITICAL results. Neither Python source file was modified during this documentation correction.
+
+### Workspace-path correction
+
+During the lesson, the first copies were accidentally created under `/home/artem/DevOps` because VS Code was opened from the home directory. Those copies used `/usr/bin/python3`.
+
+The correct files were copied into the Learning-Journey repository and run using `/home/artem/Projects/Learning-Journey/.venv/bin/python`. The two accidental external copies were moved to Ubuntu Trash and the empty `/home/artem/DevOps` directory was removed. Only the repository files remain relevant.
+
+This is the reported cleanup history. Documentation work stayed inside the repository and did not inspect or repeat the external cleanup.
+
+### Assessment and corrected misconceptions
+
+Final knowledge check: **4/5 before clarification**. Notes were allowed; the assessment focused on understanding rather than memorization.
+
+I correctly understood conditional branches, status priority, thresholds, and the service-status cases. Boolean-expression composition and the exact distinction between `=` and `==` required clarification. After correction, I correctly identified `is_ready` as `bool` and explained the core logic.
+
+Corrections to retain:
+
+- An enabled alerting mechanism does not mean an alert has fired.
+- A Boolean variable does not automatically control the assignments or print statements after it.
+- `False and True` is `False`; `False or True` is `True`; `not False` is `True`.
+- Comparisons return a result without changing the compared variable; the result can be stored separately.
+- The first matching branch prevents later true branches from executing.
+- Use **condition**, rather than “equals,” to describe a Boolean expression.
+- Say **is less than** for numeric `<` and **Python executes the block** when explaining control flow.
+
+### Documentation verification
+
+Both source files were inspected completely and hashed with `sha256sum` before execution. All runs used only `/home/artem/Projects/Learning-Journey/.venv/bin/python`, with `-I` for isolated execution and `-B` to prevent bytecode-cache writes. Newline-separated input was supplied non-interactively.
+
+Example command from the repository root:
+
+```bash
+printf '70\n75\n' | /home/artem/Projects/Learning-Journey/.venv/bin/python -I -B DevOps/Python/lesson_02/disk_status.py
+```
+
+**Linux review:** the pipe passes `printf` output to the script's standard input. Input prompts appear together because piped answers are not echoed as typed terminal input.
+
+| Script | Inputs | Exit code | Rerun result |
+|---|---|---|---|
+| `disk_status.py` | `70`, `75` | `0` | `True`, alerts `True`, OK; matches lesson. |
+| `disk_status.py` | `85`, `75` | `0` | `False`, alerts `True`, WARNING; matches lesson. |
+| `disk_status.py` | `70`, `95` | `0` | `False`, alerts `True`, CRITICAL; matches lesson. |
+| `service_health.py` | `web-api`, `3`, `5` | `0` | `True`, OK; matches lesson. |
+| `service_health.py` | `web-api`, `2`, `5` | `0` | `False`, WARNING; matches lesson. |
+| `service_health.py` | `web-api`, `0`, `5` | `0` | `False`, CRITICAL; matches lesson. |
+
+Exact final service output for `web-api`, `3`, and `5`:
+
+```text
+service_name: running_replicas: error_rate: Service: web-api
+Service healthy: True
+OK: Service web-api is healthy.
+```
+
+SHA-256 values of the current source files before correction verification, unchanged afterward:
+
+```text
+e1ccaef4c2fbff7c03ee69752904c9b1a245d8864787a6e872cf8285bc9fdcf4  DevOps/Python/lesson_02/disk_status.py
+26f9f488d661411aa4deb6f18ff8a17ae15e0f3c905c35e9b6038aeb973241bf  DevOps/Python/lesson_02/service_health.py
+```
+
+No source files were modified. Nothing was installed, no network requests were made, and nothing was staged, committed, or pushed. `source-backup.tar.gz` was not inspected or modified.
+
+### Important vocabulary
+
+| Word or phrase | Simple meaning | Ukrainian |
+|---|---|---|
+| condition | An expression checked to decide what happens. | умова |
+| branch | One possible path through conditional code. | гілка |
+| colon | The `:` character that introduces the block here. | двокрапка |
+| indentation | Spaces at the start of a line that mark a block. | відступ |
+| Boolean expression | An expression that produces `True` or `False` here. | булевий вираз |
+| assignment | Storing a value using `=`. | присвоєння |
+| comparison | Comparing values using operators such as `<` or `==`. | порівняння |
+| threshold | A boundary used to select a status. | поріг |
+| priority | Which condition is checked first. | пріоритет |
+| maintenance mode | A state used during planned service work. | режим обслуговування |
+| replica | A running copy of a service. | репліка / копія сервісу |
+| enabled | Active or switched on. | увімкнений |
+
+### Completion checklist
+
+- [x] Practise `if`, `elif`, `else`, colons, and four-space indentation.
+- [x] Explain comparisons, Boolean values, `and`, `or`, and `not`.
+- [x] Distinguish assignment `=` from comparison `==`.
+- [x] Explain the `80 >= 80` boundary and first-match status priority.
+- [x] Complete disk/resource and service-health exercises and review the maintenance case.
+- [x] Use dynamic service names in f-strings.
+- [x] Correct the workspace path and record the reported external-copy cleanup.
+- [x] Complete the knowledge check at `4/5` before clarification and explain the corrected logic.
+- [x] Inspect both sources, run six cases with exit code `0`, and preserve both SHA-256 hashes.
+- [x] Confirm `maintenance_mode = False` in the final service source and reproduce the expected OK, WARNING, and CRITICAL results.
+
+### My sentence
+
+- Python checks each condition from top to bottom and executes the block for the first true condition.
+- Both resources are normal when disk usage is less than 80 and CPU usage is less than 80.
+- Alerts are enabled, but this does not mean a warning was triggered.
+- The service is healthy when it has at least three replicas, its error rate is below ten, and maintenance mode is disabled.
+- I use `=` to assign a value and `==` to compare two values. The comparison result is a Boolean.
+
+### Next step
+
+**Python Lesson 03** is next and has not started. The short optional Linux administration refresher remains after **Python Lesson 05**.
