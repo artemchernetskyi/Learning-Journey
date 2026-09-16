@@ -1,6 +1,6 @@
 # Project State — Learning Journey
 
-Last updated: 2026-09-14
+Last updated: 2026-09-16
 
 ## Purpose
 
@@ -14,8 +14,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - **Main track:** DevOps
 - **Current technology:** Python for DevOps
 - **Completed setup:** Python Setup / Lesson 00 on 2026-09-13
-- **Latest completed lesson:** Python Lesson 02 on 2026-09-14
-- **Next learning step:** Python Lesson 03 (not started)
+- **Latest completed lesson:** Python Lesson 03 on 2026-09-16
+- **Next learning step:** Python Lesson 04 (not started)
 
 ---
 
@@ -32,6 +32,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - [Python Lesson 01](DevOps/Python.md#python-lesson-01--variables-data-types-input-conversion-and-arithmetic-operators) completed on **2026-09-14**: variables, basic data types, dynamic typing, input, conversion, f-strings, comparisons, and arithmetic operators. Both programs were verified, including the `80%` disk-warning boundary and `10 % 4 = 2`. Final knowledge check: **4/5 before correction**; conversion direction corrected to **str → int**. Existing Python `3.12.3` environment used; no packages installed or network requests made.
 
 - Python Lesson 02 — Conditional Statements and Boolean Logic completed on **2026-09-14**: first-match priority, comparisons, `and`/`or`/`not`, disk/resource and service-health exercises. Knowledge check: **4/5 before clarification**; Boolean composition and `=` versus `==` clarified. All six final documentation runs exited `0` and matched expected disk and service results. Maintenance mode was temporarily `True` to test priority, then restored to `False`, confirmed in the final source. Both source hashes were unchanged during correction verification. See [lesson notes](DevOps/Python.md#python-lesson-02--conditional-statements-and-boolean-logic).
+
+- Python Lesson 03 — Collections and DevOps Data Structures completed on **2026-09-16**: lists, tuples, sets, dictionaries, nested collections, and a practical deployment validator across seven source files. The final validator reports BLOCKED because `git` is missing; the temporary READY path was also observed. Knowledge check: approximately **4.5/6 before clarification**, then passed after corrections. All seven final scripts exited `0`, and their source hashes were preserved. See [lesson notes](DevOps/Python.md#python-lesson-03--collections-and-devops-data-structures).
 
 ---
 
@@ -78,7 +80,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 
 ## Next action
 
-The next lesson is **Python Lesson 03** (not started), using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lessons 01–02 are complete; `uv init` and `pyproject.toml` were intentionally deferred.
+The next lesson is **Python Lesson 04** (not started), using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lessons 01–03 are complete; `uv init` and `pyproject.toml` were intentionally deferred.
 
 After each completed lesson, update the relevant lesson notes, `PROGRESS.md`, and `PROJECT_STATE.md`; follow the Git workflow above and push to GitHub unless instructed otherwise.
 

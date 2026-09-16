@@ -796,3 +796,368 @@ No source files were modified. Nothing was installed, no network requests were m
 ### Next step
 
 **Python Lesson 03** is next and has not started. The short optional Linux administration refresher remains after **Python Lesson 05**.
+
+---
+
+## Python Lesson 03 — Collections and DevOps Data Structures
+
+Date: `2026-09-16`
+
+Status: **Completed**
+
+Today I learned how to choose and use lists, tuples, sets, dictionaries, and nested collections for DevOps data. I combined all four collection types in an independent deployment validator.
+
+### Objective
+
+Store changing sequences, fixed allowed values, unique package names, keyed service configuration, and nested server data in suitable Python collections. Use indexing, slicing, membership, collection methods, set operations, and Boolean expressions to validate a deployment.
+
+### Collection comparison
+
+| Collection | Syntax example | Ordered | Mutable | Duplicates | Main access style | Good lesson use |
+|---|---|---|---|---|---|---|
+| List | `["web-01", "db-01"]` | Yes | Yes | Yes | Numeric index or slice | A changing deployment queue |
+| Tuple | `("staging", "production")` | Yes | No | Yes | Numeric index or slice | Fixed allowed environments |
+| Set | `{"docker", "curl"}` | No reliable order | Yes, through methods | No | Membership and set operations | Unique installed packages |
+| Dictionary | `{"name": "web-01", "active": True}` | Preserves insertion order | Yes | Keys must be unique | Key | Named server settings |
+
+### Lists
+
+A list is ordered and mutable, and it supports duplicate values. Lists use square brackets. Indexing begins at `0`, and the negative index `-1` accesses the final element. Indexing returns one element, while slicing returns a new list.
+
+```python
+servers = ["web-01", "web-02", "db-01"]
+first_server = servers[0]
+last_server = servers[-1]
+first_two = servers[0:2]
+```
+
+The slice `[0:2]` includes the elements at indexes `0` and `1`, but excludes index `2`. `len(servers)` returns the number of elements. The expression `"db-01" in servers` performs a membership check and returns a Boolean. `append()` adds an element to the end, and `remove()` removes a matching value.
+
+Accessing an index that does not exist would raise `IndexError`. A list with four elements has indexes `0` through `3`; it has four elements, not “four indexes.” List changes happen sequentially, so each mutation affects later results.
+
+#### Server inventory
+
+File: [server_inventory.py](Python/lesson_03/server_inventory.py)
+
+The initial list was `web-01`, `web-02`, and `db-01`. The program printed the complete list, its list type, and the elements at indexes `0`, `1`, and `2`.
+
+It then replaced `web-02` with `web-02-prod` and appended `cache-01`. At that point, the list contained four elements. The program removed `db-01` only after confirming that it was present. The later membership check stored `False` in `db_server_active`.
+
+The remaining list contained `web-01`, `web-02-prod`, and `cache-01`. The first element was `web-01`, the last element accessed with `-1` was `cache-01`, and the `[0:2]` slice returned `web-01` and `web-02-prod`.
+
+Expected final result lines:
+
+```text
+['web-01', 'web-02-prod', 'cache-01']
+Is db-01 active: False
+Total servers: 3
+First server: web-01
+Last server: cache-01
+Web servers: ['web-01', 'web-02-prod']
+```
+
+#### Deployment queue
+
+File: [deployment_queue.py](Python/lesson_03/deployment_queue.py)
+
+This was an independent list exercise completed without receiving a full solution. The initial targets were `dev-01`, `staging-01`, and `prod-01`. I replaced the first target with `dev-02`, appended `backup-01`, and removed `staging-01` after a membership check.
+
+`production_available` became `True`. The final list was `dev-02`, `prod-01`, and `backup-01`. The first target was `dev-02`, the last target was `backup-01`, the first-two slice contained `dev-02` and `prod-01`, and the length was `3`.
+
+```text
+Removed server: staging-01
+Is prod-01 available: True
+First target: dev-02
+Last target: backup-01
+Priority targets: ['dev-02', 'prod-01']
+Total targets: 3
+```
+
+I initially used the generic variable name `servers` instead of the requested `deployment_targets`. After clarification, I used VS Code **Rename Symbol** to rename every occurrence correctly. Exact variable-name requirements matter in real automation because other code, tests, configuration, or team members may depend on an agreed interface.
+
+### Tuples
+
+A tuple is ordered and indexed like a list, but it is immutable. Tuples use parentheses. They support indexing, negative indexing, `len()`, slicing, and membership checks. Existing tuple elements cannot be replaced, added, or removed.
+
+File: [infrastructure_config.py](Python/lesson_03/infrastructure_config.py)
+
+```python
+environments = ("development", "staging", "production")
+```
+
+The first environment was `development`, the last was `production`, the count was `3`, and the membership check for `production` was `True`.
+
+The intentional line:
+
+```python
+environments[0] = "dev"
+```
+
+produced:
+
+```text
+TypeError: 'tuple' object does not support item assignment
+```
+
+The line attempted to replace an existing element; it did not attempt to add an element. The failing line was then kept as a comment with an explanation, so the final program exits successfully.
+
+Expected final output:
+
+```text
+('development', 'staging', 'production')
+<class 'tuple'>
+First environment: development
+Last environment: production
+Environment count: 3
+Production exists: True
+```
+
+### Sets
+
+A set contains unique values. Sets are unordered, so their printed order may vary, and they do not support indexing. Duplicate source values are automatically collapsed. Sets are mutable through methods such as `add()` and `discard()`.
+
+`discard()` safely does nothing when a value is absent. By contrast, `remove()` can raise an error when the requested value is absent. `len()` counts unique values.
+
+```python
+missing = required_packages - installed_packages  # In required, but not installed
+common = installed_packages & required_packages   # In both sets
+all_packages = installed_packages | required_packages  # In either set
+```
+
+An empty set displays as `set()`. The syntax `{}` creates an empty dictionary, not an empty set.
+
+#### Package sets
+
+File: [package_sets.py](Python/lesson_03/package_sets.py)
+
+`installed_packages` initially included `nginx` twice in the source, plus `docker` and `curl`. The duplicate was stored only once, so the initial unique count was `3`. Docker membership was `True`.
+
+`required_packages` contained `docker`, `curl`, `git`, and `python3`. The set calculations produced these semantic results; the printed order is allowed to vary:
+
+| Calculation | Result |
+|---|---|
+| Required minus installed | `git`, `python3` |
+| Installed minus required | `nginx` |
+| Intersection | `docker`, `curl` |
+| Union | `nginx`, `docker`, `curl`, `git`, `python3` |
+
+The program later added `git` to `installed_packages` and discarded `nginx`. The updated installed set contained `docker`, `curl`, and `git`.
+
+The original `missing_packages` variable still contained `git` and `python3` because it stored the earlier calculation. Python variables are not automatically updating spreadsheet formulas. A new calculation stored only `python3` in `updated_missing_packages`.
+
+Representative output, with set order allowed to differ:
+
+```text
+Package count: 3
+Docker installed: True
+Missing packages: {'git', 'python3'}
+Extra packages: {'nginx'}
+Common packages: {'docker', 'curl'}
+Updated installed packages: {'docker', 'curl', 'git'}
+Original missing packages: {'git', 'python3'}
+Updated missing packages: {'python3'}
+```
+
+### Dictionaries
+
+A dictionary stores key-value pairs. Dictionaries use braces, colons between keys and values, and commas between pairs. Values may have different data types. Data is accessed by keys rather than numeric indexes.
+
+```python
+server = {"name": "web-01", "port": 8080, "active": True}
+server["port"] = 9090
+region = server.get("region", "not configured")
+```
+
+`len(dictionary)` counts key-value pairs. Assigning to an existing key updates its value, while assigning to a new key adds a pair. `in` checks key membership. `get(key, default)` safely returns the default when a key is absent. Direct access to an absent key would raise `KeyError`. `pop(key)` removes the pair and returns its value.
+
+#### Server configuration
+
+File: [server_config.py](Python/lesson_03/server_config.py)
+
+The initial fields were name `web-01`, IP `10.0.0.10`, port `8080`, and active `True`. The initial dictionary length was `4`.
+
+The program updated the port to `9090`, updated active to `False`, and added environment `production`. Updating existing keys did not increase the length; adding `environment` increased it to `5`. The comparison stored Boolean `True` in `is_production`, not the string `"production"`.
+
+`get()` returned `not configured` for the absent `region` key. IP membership was `True` before removal. `pop("ip")` removed the pair and returned the string `10.0.0.10`. IP membership was `False` afterward, and the final dictionary length was `4`.
+
+Expected result lines:
+
+```text
+Server name: web-01
+Server IP: 10.0.0.10
+Server port: 8080
+Server active: True
+Configuration fields: 4
+Updated port: 9090
+Server active: False
+Environment: production
+Is production: True
+Configuration fields: 5
+Region: not configured
+IP existed before removal: True
+Removed IP: 10.0.0.10
+IP exists after removal: False
+Configuration fields: 4
+```
+
+### Nested collections
+
+A list can contain dictionaries. In `server_fleet[0]["name"]`, Python first selects the list element at index `0` and then accesses the `name` key in that dictionary.
+
+File: [server_fleet.py](Python/lesson_03/server_fleet.py)
+
+`server_fleet` was a list, and `server_fleet[0]` was a dictionary. The primary server was `web-01`, the database server was `db-01`, and `database_ready` was `False`. Therefore, the `else` branch printed `Database status: WARNING`.
+
+```text
+<class 'list'>
+<class 'dict'>
+Primary server: web-01
+Database server: db-01
+Database ready: False
+Database status: WARNING
+```
+
+A collection's contents and the result of `type()` are different: printing `server_fleet` shows its contents, while `type(server_fleet)` returns its data type.
+
+### Deployment validator
+
+File: [deployment_validator.py](Python/lesson_03/deployment_validator.py)
+
+The deployment validator was the Lesson 03 practical integration task. I completed it independently without loops, functions, or imports.
+
+Its data is:
+
+- `allowed_environments`: a tuple containing `staging` and `production`;
+- `required_packages`: a set containing `docker`, `curl`, and `git`;
+- final `installed_packages`: a set containing `docker`, `curl`, and `nginx`;
+- `deployment_queue`: a list containing `web-api`, `worker`, and `cache`;
+- `service`: a dictionary with name `web-api`, environment `production`, `3` running replicas, `2` required replicas, and active `True`.
+
+The program calculates `missing_packages` with set difference. `environment_allowed` uses tuple membership. `replicas_ready` compares running and required replicas. `packages_ready` checks whether `len(missing_packages) == 0`. `service_queued` uses list membership.
+
+The final check combines every result and `service["active"]` with `and`:
+
+```python
+deployment_ready = (
+    environment_allowed
+    and replicas_ready
+    and packages_ready
+    and service_queued
+    and service["active"]
+)
+```
+
+All connected conditions must be `True`. In the final scenario, `packages_ready` is `False`, so one false value makes the entire `and` expression `False`.
+
+Final expected result, with the one-element set representing missing `git`:
+
+```text
+Missing packages: {'git'}
+Environment allowed: True
+Replicas ready: True
+Packages ready: False
+Service queued: True
+Deployment ready: False
+Deployment status: BLOCKED
+```
+
+During the lesson, `git` was temporarily added to `installed_packages`. The observed READY-path test produced:
+
+```text
+Missing packages: set()
+Packages ready: True
+Deployment ready: True
+Deployment status: READY
+```
+
+`git` was then removed again to restore the final BLOCKED scenario. The final source includes a comment explaining that `git` can be added to test READY. The long `deployment_ready` expression was reformatted across multiple lines, diagnostic output was placed before the final READY/BLOCKED status, and unnecessary f-string prefixes were removed from the static status messages.
+
+### Corrected misconceptions and clarifications
+
+- Set duplicates are stored only once, so four source entries can produce a length of `3`.
+- Sets do not have reliable indexes.
+- Intersection means values present in both sets, not all values.
+- A tuple item assignment attempts to replace an element; it does not add an element.
+- Use **elements**, rather than “variables,” when describing tuple contents.
+- `len(dictionary)` returns the number of key-value pairs, not the dictionary's values.
+- `pop()` returns the removed value, not a Boolean.
+- A comparison such as `environment == "production"` returns `True` or `False`.
+- `type(collection)` returns the data type, not the collection contents.
+- List modifications happen sequentially and change later results.
+- A list suits a changing deployment queue; a tuple suits fixed allowed values.
+- An empty set is `set()`, while `{}` is an empty dictionary.
+- Variables keep calculated results until they are explicitly recalculated.
+
+### Assessment
+
+The final deployment validator was completed independently and produced correct results. The initial final knowledge-check result was approximately **4.5/6 before clarification**. Notes and existing lesson files were allowed; the assessment focused on understanding rather than memorization.
+
+Strong areas:
+
+- set difference, intersection, and union after correction;
+- tuple immutability;
+- nested list/dictionary access;
+- membership checks;
+- combining Boolean checks into deployment status;
+- understanding why the deployment was blocked and how adding `git` changed it to READY.
+
+Clarification was needed for:
+
+- mapping a list versus a tuple to changing versus fixed data;
+- distinguishing `type()` results from collection contents;
+- calculating the final list after sequential mutations;
+- remembering that `len(dictionary)` returns a number;
+- remembering that `pop()` returns the removed value;
+- recognizing that `is_production` stores a Boolean.
+
+After targeted corrections, I correctly explained that a deployment queue requires a list because `staging-01` could be removed, while a tuple would be immutable. The Lesson 03 knowledge check was **passed after clarification**.
+
+### Parallel course note
+
+I purchased the Udemy course **Python for DevOps: Mastering Real-World Automation**. I will use it as parallel reinforcement, while the Learning-Journey lessons remain my primary structured practice. Course exercises should remain separate unless I independently rewrite them into original portfolio work.
+
+### Important vocabulary
+
+| Word or phrase | Simple meaning | Ukrainian |
+|---|---|---|
+| collection | A value that groups other values. | колекція |
+| element | One value stored in a collection. | елемент |
+| ordered | Stored with a defined sequence. | впорядкований |
+| mutable | Can be changed after creation. | змінюваний |
+| immutable | Cannot be changed after creation. | незмінюваний |
+| index | A numeric position in an ordered collection. | індекс |
+| slice | A new sequence selected from part of another sequence. | зріз |
+| membership | Whether a value or key is present. | належність / наявність |
+| unique | Present only once. | унікальний |
+| intersection | Values present in both sets. | перетин |
+| union | Values present in either set. | об'єднання |
+| key-value pair | A named key and its associated value. | пара ключ-значення |
+| nested collection | A collection stored inside another collection. | вкладена колекція |
+| recalculate | Calculate again using current values. | перерахувати |
+
+### My sentences
+
+- A set stores only unique values, is unordered, and does not support indexing.
+- After a tuple is created, we cannot replace, add, or remove its elements.
+- Deployment is blocked because `git` is required but is not installed.
+- We need to add `git` to `installed_packages` to make the deployment ready.
+- We removed `staging-01` from the deployment queue. We could not do this with a tuple because tuples are immutable.
+- The comparison returns a Boolean, and assignment stores that result in the variable.
+
+### Completion checklist
+
+- [x] Practise list indexing, negative indexing, slicing, membership, mutation, `append()`, `remove()`, and `len()`.
+- [x] Complete the independent deployment-queue exercise and correct the requested variable name.
+- [x] Practise tuple access and explain the intentional immutability `TypeError`.
+- [x] Practise unique set values, membership, `add()`, `discard()`, difference, intersection, and union.
+- [x] Explain why an earlier set calculation does not update automatically.
+- [x] Practise dictionary access, updates, additions, `get()`, `pop()`, membership, and length.
+- [x] Access dictionaries nested inside a list and select the WARNING branch.
+- [x] Complete the deployment validator independently and explain every Boolean check.
+- [x] Observe both the BLOCKED final path and the temporary READY path.
+- [x] Pass the Lesson 03 knowledge check after targeted clarification.
+- [x] Inspect all seven final source files, verify successful execution, and preserve their contents and SHA-256 hashes.
+
+### Next step
+
+**Python Lesson 04** is next and has not started. The short optional Linux administration refresher remains after **Python Lesson 05**.

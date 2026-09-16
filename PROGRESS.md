@@ -793,3 +793,21 @@ Both sources were inspected completely and their SHA-256 hashes were unchanged a
 **Python Lesson 03** (not started).
 
 The short optional Linux administration refresher remains after **Python Lesson 05**.
+
+---
+
+## 2026-09-16 — Python Lesson 03 completed
+
+I completed **Python Lesson 03 — Collections and DevOps Data Structures**. I practised lists, tuples, sets, dictionaries, nested collections, indexing, slicing, membership, mutation, set operations, and dictionary methods in seven source files. Detailed concepts, results, corrections, expected outputs, and vocabulary are in [Python notes](DevOps/Python.md#python-lesson-03--collections-and-devops-data-structures).
+
+The independent deployment validator combined a tuple of allowed environments, sets of required and installed packages, a deployment-queue list, a service dictionary, and Boolean readiness checks. The final source correctly reports missing `git` and a BLOCKED deployment. During the lesson, adding `git` temporarily produced `set()` for missing packages, `Packages ready: True`, `Deployment ready: True`, and READY; `git` was removed afterward to restore the final BLOCKED scenario.
+
+All seven final scripts were inspected and verified with the repository virtual-environment interpreter. Each exited with code `0`, all expected results matched, set output was checked without relying on order, and all seven SHA-256 source hashes remained unchanged. No generated files were added.
+
+The initial final knowledge-check result was approximately **4.5/6 before clarification**. After targeted corrections about choosing lists versus tuples, sequential list mutations, `type()`, dictionary length, `pop()`, and Boolean comparison results, I explained the concepts correctly and **passed the Lesson 03 knowledge check**.
+
+### Next step
+
+**Python Lesson 04** is next and has not started.
+
+The short optional Linux administration refresher remains after **Python Lesson 05**.
