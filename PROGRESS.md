@@ -831,3 +831,27 @@ An initial workspace-path mistake was corrected: `server_checks.py` was copied i
 **Python Lesson 05** is next and has not started.
 
 The short optional Linux administration refresher remains planned after **Python Lesson 05**.
+
+---
+
+## 2026-09-17 — Optional Linux administration refresher completed
+
+Before finishing Python Lesson 05, I completed the planned short Linux administration refresher. I reviewed `chmod`, `chown`, and permissions; processes with `pgrep` and `kill`; systemd services and logs with `systemctl` and `journalctl`; and the SSH client/server distinction with basic `systemctl` and `ss` troubleshooting.
+
+No persistent practice files were created for this refresher.
+
+---
+
+## 2026-09-17 — Python Lesson 05 completed
+
+I completed **Python Lesson 05 — Functions**. I practised defining and calling functions; parameters and arguments; returning strings and Booleans; `print()` versus `return`; storing and reusing returned values; required, positional, keyword, and default arguments; local scope; multiple return paths; immediate function exit; and condition priority. Detailed concepts, outputs, scope behaviour, vocabulary, and the completion checklist are in [Python notes](DevOps/Python.md#python-lesson-05--functions).
+
+The intentional scope test in `function_scope.py` produced `NameError` when code outside the function tried to access the local `status` variable. The final saved script comments out that failing line, prints the returned message, and exits successfully.
+
+I passed service dictionaries into a function and combined returned status strings with lists, dictionaries, loops, `enumerate()`, counters, and a problem-services accumulator. I completed the final deployment summary independently. It classified `web-api` as READY, `worker` as WARNING, `database` as CRITICAL, and `cache` as SKIPPED. All four counters were `1`, and `problem_services` was `['worker', 'database']`.
+
+I passed the final Lesson 05 knowledge check. All seven scripts were run with `./.venv/bin/python -I -B`; every script exited successfully. The final SHA-256 check reported `OK` for all seven source files, confirming that they were unchanged during documentation.
+
+### Next step
+
+Continue Python for DevOps with **files and paths**, the next Python topic in the roadmap.

@@ -14,8 +14,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - **Main track:** DevOps
 - **Current technology:** Python for DevOps
 - **Completed setup:** Python Setup / Lesson 00 on 2026-09-13
-- **Latest completed lesson:** Python Lesson 04 on 2026-09-17
-- **Next learning step:** Python Lesson 05 (not started)
+- **Latest completed lesson:** Python Lesson 05 on 2026-09-17
+- **Next learning step:** Python files and paths
 
 ---
 
@@ -37,6 +37,10 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 
 - Python Lesson 04 — Loops and Iteration completed on **2026-09-17**: `for` and `while` loops, conditions, counters, accumulators, `range()`, `enumerate()`, dictionary iteration, `append()`, `break`, `continue`, nested data, and DevOps-style status classification across eight source files. The final monitor produced one READY, WARNING, CRITICAL, and SKIPPED service and collected `['worker', 'database']`. Knowledge check: approximately **4.5/7 before clarification**, then passed after corrections. All eight scripts exited `0`, and their source hashes were preserved. See [lesson notes](DevOps/Python.md#python-lesson-04--loops-and-iteration).
 
+- Python Lesson 05 — Functions completed on **2026-09-17**: function definitions and calls, parameters and arguments, returned strings and Booleans, `print()` versus `return`, argument styles and defaults, local scope, multiple return paths, condition priority, dictionaries passed into functions, and a final deployment summary across seven source files. The practical task was completed independently, and the final knowledge check was passed. All seven scripts exited successfully, and their source hashes were preserved. See [lesson notes](DevOps/Python.md#python-lesson-05--functions).
+
+- The short optional Linux administration refresher was completed earlier on **2026-09-17** before Lesson 05. It reviewed permissions and ownership, processes and signals, systemd services and logs, and SSH client/server troubleshooting. No persistent practice files were created.
+
 ---
 
 ## Review focus
@@ -44,7 +48,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - Continue practising Boolean-expression composition and assignment versus comparison.
 - Continue practising exact loop state: accumulator contents, generated positions versus indexes, and final condition-variable values.
 - Practise combining Bash variables, conditions, arrays, loops, functions, return codes, and counters into complete scripts without examples.
-- After **Python Lesson 05**, plan a short optional Linux refresher: `chmod`, `chown`, permissions, processes, services, logs, and SSH.
+- Continue practising Linux permissions, processes, services, logs, and SSH during later reviews.
 - Continue brief reviews of Docker checkpoint gaps: Dockerfile → image → container; `docker start` preserving container identity; `-v` versus `--mount` with missing bind-mount paths; environment-variable security; `ENTRYPOINT`, `CMD`, PID 1, and `--rm`; container `localhost`.
 
 ---
@@ -83,7 +87,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 
 ## Next action
 
-The next lesson is **Python Lesson 05** (not started), using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lessons 01–04 are complete; `uv init` and `pyproject.toml` were intentionally deferred. The optional Linux administration refresher remains planned after Python Lesson 05.
+The next Python milestone is **files and paths**, using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lessons 01–05 are complete; `uv init` and `pyproject.toml` were intentionally deferred. The short optional Linux administration refresher is also complete.
 
 After each completed lesson, update the relevant lesson notes, `PROGRESS.md`, and `PROJECT_STATE.md`; follow the Git workflow above and push to GitHub unless instructed otherwise.
 

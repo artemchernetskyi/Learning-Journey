@@ -1386,3 +1386,220 @@ After clarification, I explained these points correctly and **passed the Lesson 
 ### Next step
 
 **Python Lesson 05** is next and has not started. The short optional Linux administration refresher remains planned after **Python Lesson 05**.
+
+---
+
+## Python Lesson 05 — Functions
+
+Date: `2026-09-17`
+
+Status: **Completed**
+
+Today I learned how to define reusable functions, pass data into them, return results, and combine them with conditions, lists, dictionaries, loops, counters, and accumulators in a deployment summary.
+
+### Objective
+
+Define and call functions, use different argument styles, return strings and Booleans, understand local scope and immediate function exit, and reuse function results in DevOps-style service reporting.
+
+### Defining and calling functions
+
+A function is a named block of reusable code. `def` defines the function, parameters receive input inside the function, and a function call supplies arguments.
+
+File: [function_basics.py](Python/lesson_05/function_basics.py)
+
+`check_service(name)` accepts a service name and prints two messages. The function is defined first and called later for `web-api` and `database`. Defining a function does not run its body; the body runs when the function is called.
+
+Verified output:
+
+```text
+Starting service checks...
+Checking web-api...
+web-api: check completed
+Checking database...
+database: check completed
+All service checks completed.
+```
+
+### `print()` versus `return`
+
+`print()` displays information in the terminal. `return` sends a value back to the caller so that the program can store, compare, print, or reuse it later.
+
+A returned value can be assigned to a variable:
+
+```python
+web_ready = replicas_ready(3, 2)
+```
+
+File: [replica_check.py](Python/lesson_05/replica_check.py)
+
+`replicas_ready()` compares running and required replicas and returns a Boolean. The returned `True` and `False` values were stored in `web_ready` and `database_ready`, printed, and reused in later `if` conditions.
+
+```text
+Web ready: True
+Database ready: False
+Web deployment can continue.
+Database deployment is blocked.
+```
+
+### Required, positional, keyword, and default arguments
+
+File: [default_arguments.py](Python/lesson_05/default_arguments.py)
+
+In `deployment_target(service, environment="staging")`, `service` is required and `environment` has the default value `staging`.
+
+- `deployment_target("web-api")` supplies one positional argument and uses the default environment.
+- `deployment_target("worker", "production")` supplies both arguments by position.
+- `deployment_target(environment="development", service="cache")` supplies keyword arguments by parameter name, so their written order can differ.
+
+The returned strings were stored before being printed:
+
+```text
+web-api -> staging
+worker -> production
+cache -> development
+```
+
+### Local function scope
+
+File: [function_scope.py](Python/lesson_05/function_scope.py)
+
+The variables `status` and `message` are local to `build_status()`. The returned message can be stored in `result` outside the function, but the local variable `status` cannot be accessed there.
+
+During practice, the intentional `print(status)` line produced `NameError` because `status` did not exist in the global scope. The final saved script keeps that teaching example commented out:
+
+```python
+# print(status)
+```
+
+The final script prints `web-api: READY` and exits successfully.
+
+### Multiple return paths and condition priority
+
+File: [status_function.py](Python/lesson_05/status_function.py)
+
+`service_health()` has multiple return paths. When Python reaches `return`, the function exits immediately, so lower conditions are not checked. Condition order establishes priority:
+
+1. maintenance returns `SKIPPED`;
+2. stopped status or zero replicas returns `CRITICAL`;
+3. too few replicas returns `WARNING`;
+4. otherwise the function returns `READY`.
+
+This order ensures that a maintenance service is skipped before later health conditions can classify it differently.
+
+```text
+Web: READY
+Worker: WARNING
+Database: CRITICAL
+Cache: SKIPPED
+```
+
+### Passing dictionaries into functions
+
+File: [service_report.py](Python/lesson_05/service_report.py)
+
+The program passes each service dictionary into `service_health(service)`. The function reads `status`, `replicas`, and `required_replicas` through dictionary keys and returns a status string.
+
+A `for` loop processes the list of dictionaries. Each returned value is stored in `health`, printed, and checked. WARNING and CRITICAL service names are appended to `problem_services`.
+
+```text
+web-api: READY
+worker: WARNING
+database: CRITICAL
+Problem services: ['worker', 'database']
+```
+
+### Final deployment summary
+
+File: [deployment_summary.py](Python/lesson_05/deployment_summary.py)
+
+I completed the final practical task independently. It combines a function with a list of dictionaries, condition priority, multiple return paths, `enumerate(start=1)`, a loop, four counters, and problem-service collection.
+
+The function returns one classification for each dictionary. The loop stores the returned value, prints the numbered result, updates the matching counter, and collects WARNING and CRITICAL services.
+
+Exact verified output:
+
+```text
+1. web-api: READY
+2. worker: WARNING
+3. database: CRITICAL
+4. cache: SKIPPED
+Ready services: 1
+Warning services: 1
+Critical services: 1
+Skipped services: 1
+Problem services: ['worker', 'database']
+```
+
+### Assessment
+
+I completed the practical task independently and passed the final Lesson 05 knowledge check. I correctly explained:
+
+- the roles of a function definition and a function call;
+- parameters versus arguments;
+- `print()` versus `return`;
+- storing and reusing returned strings and Booleans;
+- required, positional, keyword, and default arguments;
+- local scope and the observed `NameError`;
+- immediate function exit at `return`;
+- why condition order controls status priority;
+- passing dictionaries into functions and combining results with loops and accumulators.
+
+### Optional Linux administration refresher
+
+Earlier on `2026-09-17`, before completing Lesson 05, I completed the planned short Linux administration refresher. It reviewed:
+
+- `chmod`, `chown`, and permissions;
+- processes with `pgrep` and `kill`;
+- systemd services and logs with `systemctl` and `journalctl`;
+- the SSH client/server distinction and basic troubleshooting with `systemctl` and `ss`.
+
+No persistent practice files were created for this refresher.
+
+### Documentation verification
+
+All seven Lesson 05 scripts were inspected completely and run with the repository interpreter using `-I` for isolated execution and `-B` to prevent bytecode-cache writes. Every script exited successfully. The final SHA-256 check reported `OK` for all seven files, confirming that documentation work did not change the lesson sources.
+
+Nothing was staged, committed, or pushed. `source-backup.tar.gz` was not modified.
+
+### Important vocabulary
+
+| Word or phrase | Simple meaning | Ukrainian |
+|---|---|---|
+| function | A named reusable block of code. | функція |
+| parameter | A name in a function definition that receives a value. | параметр |
+| argument | A value supplied in a function call. | аргумент |
+| return value | A result sent back to the caller. | повернене значення |
+| default argument | A parameter value used when the caller does not provide one. | аргумент за замовчуванням |
+| positional argument | An argument matched by its position. | позиційний аргумент |
+| keyword argument | An argument matched by its parameter name. | іменований аргумент |
+| local scope | The area inside a function where its local names exist. | локальна область видимості |
+| return path | A route through a function that ends with a returned result. | шлях повернення |
+| caller | Code that calls a function. | код, що викликає функцію |
+
+### My sentences
+
+- A function lets me reuse the same logic with different arguments.
+- `print()` displays a value, while `return` sends a value back to the caller.
+- A local variable cannot be accessed outside its function.
+- The first matching condition returns a status and immediately exits the function.
+- I passed each service dictionary into a function and reused the returned status in the deployment summary.
+
+### Completion checklist
+
+- [x] Define and call functions with parameters and arguments.
+- [x] Return and reuse strings and Booleans.
+- [x] Explain the difference between `print()` and `return`.
+- [x] Use required, positional, keyword, and default arguments.
+- [x] Observe the intentional local-scope `NameError` and preserve the final successful script.
+- [x] Use multiple return paths and explain immediate function exit.
+- [x] Apply condition priority inside a status function.
+- [x] Pass dictionaries into a function.
+- [x] Combine functions with lists, dictionaries, loops, `enumerate()`, counters, and a problem-services list.
+- [x] Complete the final deployment summary independently.
+- [x] Pass the final knowledge check.
+- [x] Run all seven scripts successfully and preserve all seven SHA-256 source hashes.
+- [x] Complete the short optional Linux administration refresher without persistent practice files.
+
+### Next step
+
+Continue Python for DevOps with **files and paths**, the next Python topic in the roadmap.
