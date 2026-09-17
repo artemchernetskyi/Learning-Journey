@@ -1161,3 +1161,228 @@ I purchased the Udemy course **Python for DevOps: Mastering Real-World Automatio
 ### Next step
 
 **Python Lesson 04** is next and has not started. The short optional Linux administration refresher remains after **Python Lesson 05**.
+
+---
+
+## Python Lesson 04 — Loops and Iteration
+
+Date: `2026-09-17`
+
+Status: **Completed**
+
+Today I learned how Python repeats work with `for` and `while` loops. I used loops with lists, dictionaries, ranges, conditions, counters, accumulators, `enumerate()`, `break`, and `continue`, then combined these concepts in a DevOps-style deployment monitor.
+
+### Objective
+
+Process every element in a collection, repeat work with generated numbers or a condition, count and collect results, control loop execution, and classify nested service data.
+
+### For loops and iteration
+
+A `for` loop takes values from an iterable one at a time. One pass through the loop body is one iteration. When a list contains three elements, a normal `for` loop runs three iterations unless `break` exits it early.
+
+```python
+for server in servers:
+    print(server)
+```
+
+The loop variable stores the current element. A condition inside the loop can choose different work for different elements. Counters and accumulators must be initialized before the loop so that every iteration can update the same stored result.
+
+#### Server checks
+
+File: [server_checks.py](Python/lesson_04/server_checks.py)
+
+The program iterated over three server names. The condition classified `db-01` as a warning and the other servers as OK. `ok_count` and `warning_count` started at `0` before the loop and were updated during the iterations.
+
+```text
+web-01: OK
+db-01: WARNING
+cache-01: OK
+OK servers: 2
+Warning servers: 1
+```
+
+This demonstrated one iteration per list element, a condition inside a loop, and counters that accumulate a summary across all iterations.
+
+### `range()`
+
+`range()` generates integers for iteration. The stop value is always excluded.
+
+| Form | Meaning | Example result |
+|---|---|---|
+| `range(stop)` | Start at `0` and stop before `stop`. | `range(3)` produces `0`, `1`, `2`. |
+| `range(start, stop)` | Start at `start` and stop before `stop`. | `range(1, 4)` produces `1`, `2`, `3`. |
+| `range(start, stop, step)` | Start at `start`, change by `step`, and stop before `stop`. | `range(2, 8, 2)` produces `2`, `4`, `6`. |
+
+File: [retry_attempts.py](Python/lesson_04/retry_attempts.py)
+
+`range(1, max_attempts + 1)` printed attempts `1`, `2`, and `3`. The expression used `max_attempts + 1` because the stop value was excluded. The second loop used `range(2, 8, 2)` and printed retry delays of `2`, `4`, and `6` seconds; it did not include `8`.
+
+### `enumerate()`
+
+`enumerate()` provides both a generated counter and the current collection element. By default, the generated counter starts at `0`. `enumerate(collection, start=1)` changes the displayed counter to begin at `1`.
+
+File: [deployment_order.py](Python/lesson_04/deployment_order.py)
+
+The deployment positions were:
+
+```text
+1. Deploy database
+2. Deploy backend
+3. Deploy frontend
+```
+
+The generated position for `database` was `1`, but its real list index remained `0`. The `start=1` argument changes only the counter produced by `enumerate()`; it does not change the list's indexes.
+
+### Dictionary iteration and list accumulation
+
+Calling `.items()` on a dictionary provides each key and value together. A list can be initialized before a loop and used as an accumulator; `append()` adds each problem found during iteration.
+
+File: [service_statuses.py](Python/lesson_04/service_statuses.py)
+
+The loop iterated over each service and status with `.items()`. `web-api` and `cache` were healthy, while `database` was unhealthy. The healthy count was `2/3`, and the final accumulator was:
+
+```text
+Unhealthy services: ['database']
+```
+
+### `while` loops
+
+A `while` loop repeats while its condition is `True`. It is useful when repetition depends on a changing condition rather than directly on the elements of a collection.
+
+File: [while_retry.py](Python/lesson_04/while_retry.py)
+
+The loop printed attempts `1`, `2`, and `3`. Each iteration ran `attempt += 1`, so after the third iteration the value became `4`. The condition `attempt <= max_attempts` was then false, and the loop stopped.
+
+```text
+Attempt 1 of 3
+Attempt 2 of 3
+Attempt 3 of 3
+Final attempt value: 4
+```
+
+Removing `attempt += 1` would leave `attempt` equal to `1`, so the condition would remain true and create an infinite loop. An accidental infinite loop running in the terminal can be interrupted with `Ctrl+C`.
+
+### `break` and `continue`
+
+`break` exits the entire current loop. `continue` skips the remaining statements in the current iteration and then allows the loop to continue with the next element.
+
+File: [loop_control.py](Python/lesson_04/loop_control.py)
+
+In the first loop, the scan checked `web-api` and then reached `database`. `break` stopped the complete scan after the critical database message, so `cache` was not checked. The statement after the loop still ran:
+
+```text
+Service scan ended.
+```
+
+In the deployment loop, `continue` skipped only the `database` deployment. The program deployed `web-api`, skipped `database`, and then deployed `cache`. Its statement after the loop also ran:
+
+```text
+Deployment loop ended.
+```
+
+### Nested data and status classification
+
+A list of dictionaries is a nested collection. A loop can process each dictionary, read its keyed values, classify it with `if`/`elif`/`else`, and update counters.
+
+File: [resource_report.py](Python/lesson_04/resource_report.py)
+
+The CPU report used the most serious condition first:
+
+```text
+web-01: CPU 45% - OK
+db-01: CPU 92% - CRITICAL
+cache-01: CPU 75% - WARNING
+OK: 1
+WARNING: 1
+CRITICAL: 1
+```
+
+The final counts were one OK, one WARNING, and one CRITICAL server.
+
+### Deployment monitor
+
+File: [deployment_monitor.py](Python/lesson_04/deployment_monitor.py)
+
+The final practical task combined loops, conditions, counters, a problem-services list, nested dictionaries, `enumerate()`, `continue`, comparisons, and Boolean expressions.
+
+The maintenance condition was checked first. A maintenance service was counted as skipped and `continue` prevented later CRITICAL or WARNING checks from running for that service. Therefore, skipped maintenance services were not added to `problem_services`.
+
+The verified classifications were:
+
+```text
+1. web-api: READY
+2. worker: WARNING
+3. database: CRITICAL
+4. cache: SKIPPED (maintenance)
+Problem services: ['worker', 'database']
+Ready services: 1
+Warning services: 1
+Critical services: 1
+Skipped services: 1
+```
+
+The READY, WARNING, CRITICAL, and SKIPPED counts were all `1`.
+
+### Corrected workspace path
+
+An initial workspace-path mistake was corrected during the lesson. `server_checks.py` was copied into this repository and verified with the project `.venv`. The accidental external `/home/artem/DevOps` directory tree was removed. All eight final Lesson 04 source files are located only under `DevOps/Python/lesson_04/`.
+
+### Assessment
+
+The initial Lesson 04 knowledge-check result was approximately **4.5/7 before clarification**. Notes were allowed because the assessment focused on understanding, not memorization.
+
+Targeted clarification covered:
+
+- the exact final contents of counters and accumulators;
+- generated `enumerate()` positions versus real list indexes;
+- the stopping condition and final variable value after a `while` loop;
+- the different output produced by `continue` and `break`;
+- choosing a `for` loop for collection elements and a `while` loop for condition-controlled repetition.
+
+After clarification, I explained these points correctly and **passed the Lesson 04 knowledge check**.
+
+### Important vocabulary
+
+| Word or phrase | Simple meaning | Ukrainian |
+|---|---|---|
+| iteration | One execution of a loop body. | ітерація / один прохід циклу |
+| iterable | A value whose elements can be processed one at a time. | ітерований об'єкт |
+| loop | Code that repeats. | цикл |
+| counter | A variable that counts events or iterations. | лічильник |
+| accumulator | A variable or collection that gathers results over time. | накопичувач |
+| range | A generated sequence of integers used for iteration. | діапазон |
+| start | The first generated value. | початок |
+| stop | The excluded boundary where generation stops. | межа зупинки |
+| step | The amount added between generated values. | крок |
+| enumerate | A function that provides a counter and an element together. | нумерувати / перелічувати |
+| infinite loop | A loop that does not reach a stopping condition. | нескінченний цикл |
+| break | Exit the entire current loop. | перервати цикл |
+| continue | Skip the rest of the current iteration. | перейти до наступної ітерації |
+
+### My sentences
+
+- A `for` loop is useful when I want to process each service in a collection.
+- A `while` loop is useful when repetition depends on a changing condition.
+- The stop value in `range()` is excluded.
+- `break` exits the loop, while `continue` skips only the current iteration.
+- The deployment monitor collects warning and critical services, but it does not add maintenance services to the problem list.
+
+### Completion checklist
+
+- [x] Iterate once over each element in a list and use conditions inside a loop.
+- [x] Initialize and update counters and accumulators outside and inside loops.
+- [x] Practise all three `range()` forms and explain the excluded stop value.
+- [x] Use `enumerate()` with `start=1` and distinguish its counter from real indexes.
+- [x] Iterate over dictionary key-value pairs with `.items()`.
+- [x] Build a list of problem services with `append()`.
+- [x] Use a condition-controlled `while` loop and update its condition variable.
+- [x] Explain the final value after the `while` loop and how to stop an infinite loop.
+- [x] Compare `break` and `continue` using verified output.
+- [x] Process nested list/dictionary data with `if`/`elif`/`else` classification.
+- [x] Complete and explain the DevOps-style deployment monitor.
+- [x] Pass the Lesson 04 knowledge check after targeted clarification.
+- [x] Verify all eight final scripts and preserve their SHA-256 source hashes.
+
+### Next step
+
+**Python Lesson 05** is next and has not started. The short optional Linux administration refresher remains planned after **Python Lesson 05**.

@@ -811,3 +811,23 @@ The initial final knowledge-check result was approximately **4.5/6 before clarif
 **Python Lesson 04** is next and has not started.
 
 The short optional Linux administration refresher remains after **Python Lesson 05**.
+
+---
+
+## 2026-09-17 — Python Lesson 04 completed
+
+I completed **Python Lesson 04 — Loops and Iteration**. I practised `for` loops over lists, one iteration per element, conditions inside loops, counters and accumulators, all three `range()` forms, the excluded stop value, `enumerate()`, dictionary `.items()`, list `append()`, condition-controlled `while` loops, `break`, `continue`, and nested list/dictionary processing. Detailed concepts, verified outputs, assessment results, and vocabulary are in [Python notes](DevOps/Python.md#python-lesson-04--loops-and-iteration).
+
+The practical scripts produced the expected results: server checks counted two OK and one warning; retry ranges produced attempts `1`–`3` and delays `2`, `4`, and `6`; deployment order used positions `1`–`3` while the first real list index remained `0`; service status iteration found two healthy services and `['database']` as unhealthy; and the `while` retry stopped with final attempt value `4`.
+
+The loop-control exercise showed that `break` stopped the scan at `database`, while `continue` skipped only the database deployment and allowed `cache` to deploy. The resource report classified one server each as OK, WARNING, and CRITICAL. The final deployment monitor classified `web-api` as READY, `worker` as WARNING, `database` as CRITICAL, and `cache` as SKIPPED for maintenance. `problem_services` was `['worker', 'database']`, and all four status counts were `1`.
+
+The initial knowledge-check result was approximately **4.5/7 before clarification**. Notes were allowed, and the assessment focused on understanding rather than memorization. After targeted clarification, I correctly explained accumulator contents, `enumerate()` counters versus list indexes, the final `while` state, `continue` versus `break`, and choosing `for` versus `while`. I **passed the Lesson 04 knowledge check**.
+
+An initial workspace-path mistake was corrected: `server_checks.py` was copied into the repository and verified with the project `.venv`, and the accidental external `/home/artem/DevOps` directory tree was removed. All eight final source files are located only under `DevOps/Python/lesson_04/`. All eight scripts exited `0` during final verification, and all source hashes matched the pre-documentation manifest.
+
+### Next step
+
+**Python Lesson 05** is next and has not started.
+
+The short optional Linux administration refresher remains planned after **Python Lesson 05**.
