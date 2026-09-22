@@ -1,0 +1,2 @@
+Ready services (2): web-api, cache
+Problem services (2): worker, database

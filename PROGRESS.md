@@ -855,3 +855,17 @@ I passed the final Lesson 05 knowledge check. All seven scripts were run with `.
 ### Next step
 
 Continue Python for DevOps with **files and paths**, the next Python topic in the roadmap.
+
+---
+
+## 2026-09-22 — Python Lesson 06 completed
+
+I completed **Python Lesson 06 — Files and Paths**. I practised `pathlib` and `Path` objects; the current working directory; relative and absolute paths; `resolve()`, `exists()`, `is_absolute()`, `name`, `stem`, `suffix`, and `parent`; reading with `read_text()` and `splitlines()`; overwriting with `write_text()`; appending with `open("a")`; and preventing duplicate updates. I also created a reports directory with `mkdir(parents=True, exist_ok=True)`, scanned Python files with `glob()`, learned the recursive `rglob()` variant, built portable paths from `Path(__file__).resolve().parent`, parsed report lines with `split(..., maxsplit=1)`, and used `join()` to generate a service summary. Detailed examples and results are in [Python notes](DevOps/Python.md#python-lesson-06--files-and-paths).
+
+The final deployment report contained four services: `web-api: READY`, `worker: WARNING`, `database: CRITICAL`, and `cache: READY`. The summary reported two ready services (`web-api`, `cache`) and two problem services (`worker`, `database`). The second append run added no duplicate, and the second analyzer run produced the same summary.
+
+All seven scripts were inspected and verified with `./.venv/bin/python -I -B` in the required order; the append and analyzer scripts were each run twice. `portable_reader.py` and `report_analyzer.py` also worked from `/tmp`, confirming that their report paths do not depend on the current working directory. Both TXT files matched the expected content exactly, and SHA-256 hashes of all Lesson 06 Python and TXT files matched their pre-verification values.
+
+### Next step
+
+Continue Python for DevOps with **reading JSON and YAML configuration**, the next topic in the roadmap.

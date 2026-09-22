@@ -1,6 +1,6 @@
 # Project State — Learning Journey
 
-Last updated: 2026-09-17
+Last updated: 2026-09-22
 
 ## Purpose
 
@@ -14,8 +14,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - **Main track:** DevOps
 - **Current technology:** Python for DevOps
 - **Completed setup:** Python Setup / Lesson 00 on 2026-09-13
-- **Latest completed lesson:** Python Lesson 05 on 2026-09-17
-- **Next learning step:** Python files and paths
+- **Latest completed lesson:** Python Lesson 06 on 2026-09-22
+- **Next learning step:** Reading JSON and YAML configuration
 
 ---
 
@@ -38,6 +38,8 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 - Python Lesson 04 — Loops and Iteration completed on **2026-09-17**: `for` and `while` loops, conditions, counters, accumulators, `range()`, `enumerate()`, dictionary iteration, `append()`, `break`, `continue`, nested data, and DevOps-style status classification across eight source files. The final monitor produced one READY, WARNING, CRITICAL, and SKIPPED service and collected `['worker', 'database']`. Knowledge check: approximately **4.5/7 before clarification**, then passed after corrections. All eight scripts exited `0`, and their source hashes were preserved. See [lesson notes](DevOps/Python.md#python-lesson-04--loops-and-iteration).
 
 - Python Lesson 05 — Functions completed on **2026-09-17**: function definitions and calls, parameters and arguments, returned strings and Booleans, `print()` versus `return`, argument styles and defaults, local scope, multiple return paths, condition priority, dictionaries passed into functions, and a final deployment summary across seven source files. The practical task was completed independently, and the final knowledge check was passed. All seven scripts exited successfully, and their source hashes were preserved. See [lesson notes](DevOps/Python.md#python-lesson-05--functions).
+
+- Python Lesson 06 — Files and Paths completed on **2026-09-22**: `pathlib` and `Path`, current working directory, relative and absolute paths, file reading, overwriting and idempotent appending, directory creation and scanning, portable paths based on `__file__`, report parsing, and an idempotent service summary. All seven scripts ran successfully with the repository `.venv` in the required order. The final report and summary matched the expected content, both portable scripts worked from `/tmp`, and all Lesson 06 Python and TXT hashes were preserved. See [lesson notes](DevOps/Python.md#python-lesson-06--files-and-paths).
 
 - The short optional Linux administration refresher was completed earlier on **2026-09-17** before Lesson 05. It reviewed permissions and ownership, processes and signals, systemd services and logs, and SSH client/server troubleshooting. No persistent practice files were created.
 
@@ -87,7 +89,7 @@ Detailed context: `DevOps/Linux.md`, `DevOps/Docker.md`, `DevOps/Python.md`, `PR
 
 ## Next action
 
-The next Python milestone is **files and paths**, using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lessons 01–05 are complete; `uv init` and `pyproject.toml` were intentionally deferred. The short optional Linux administration refresher is also complete.
+The next Python milestone is **reading JSON and YAML configuration**, using the existing repository `.venv` and selected VS Code interpreter `./.venv/bin/python`. Setup / Lesson 00 and Python Lessons 01–06 are complete; `uv init` and `pyproject.toml` were intentionally deferred. The short optional Linux administration refresher is also complete.
 
 After each completed lesson, update the relevant lesson notes, `PROGRESS.md`, and `PROJECT_STATE.md`; follow the Git workflow above and push to GitHub unless instructed otherwise.
 

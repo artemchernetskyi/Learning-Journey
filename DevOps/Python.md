@@ -1603,3 +1603,105 @@ Nothing was staged, committed, or pushed. `source-backup.tar.gz` was not modifie
 ### Next step
 
 Continue Python for DevOps with **files and paths**, the next Python topic in the roadmap.
+
+---
+
+## Python Lesson 06 — Files and Paths
+
+Date: `2026-09-22`
+
+Status: **Completed**
+
+Today I practised finding files, reading and updating a deployment report, scanning a directory, and generating a service summary with Python's `pathlib` module.
+
+### Objective
+
+Use `Path` objects for files and directories, understand which relative paths depend on the current working directory, and build a report reader and analyzer that work from another directory.
+
+### Paths and file information
+
+File: [path_basics.py](Python/lesson_06/path_basics.py)
+
+`Path.cwd()` showed the repository root during verification. `Path("DevOps") / "Python" / "lesson_06"` built a relative path. `is_absolute()` returned `False` for that path; `resolve()` produced an absolute path. Joining the current directory to the script path produced the same absolute path as `resolve()`.
+
+`exists()` confirmed that the lesson directory and script were present. The script also showed `name` (`path_basics.py`), `stem` (`path_basics`), `suffix` (`.py`), and `parent` (`DevOps/Python/lesson_06`).
+
+### Writing, appending, and reading the report
+
+Files: [file_write.py](Python/lesson_06/file_write.py), [file_append.py](Python/lesson_06/file_append.py), and [file_read.py](Python/lesson_06/file_read.py)
+
+`write_text()` wrote three service lines and overwrote the existing report. The append script used `read_text().splitlines()` to check for `cache: READY` before opening the file with `"a"`. Its first run added the line; its second run printed `Already exists: cache: READY` and did not add a duplicate. This is an **idempotent update**: repeating the operation leaves the same file content.
+
+The reader found four lines and printed each service. The final [deployment_report.txt](Python/lesson_06/deployment_report.txt) was verified exactly:
+
+```text
+web-api: READY
+worker: WARNING
+database: CRITICAL
+cache: READY
+```
+
+### Directory scanning and portable paths
+
+File: [directory_scan.py](Python/lesson_06/directory_scan.py)
+
+`mkdir(parents=True, exist_ok=True)` ensured that the `reports` directory existed. `glob("*.py")` found the seven Python files directly inside the lesson directory; `sorted()` gave stable output. `rglob()` is the related method for searching through subdirectories recursively.
+
+Files: [portable_reader.py](Python/lesson_06/portable_reader.py) and [report_analyzer.py](Python/lesson_06/report_analyzer.py)
+
+Both scripts set `script_directory = Path(__file__).resolve().parent` and build paths from that directory. They were run successfully from the repository root and from `/tmp`; neither depends on the current working directory to find the report. The other introductory scripts use paths relative to the repository root and were run there.
+
+### Service summary
+
+File: [report_analyzer.py](Python/lesson_06/report_analyzer.py)
+
+The analyzer reads report lines with `read_text().splitlines()`. For each line, `split(": ", maxsplit=1)` separates the service name from its status at the first separator. READY services go into one list; other statuses go into a problem-services list. `", ".join(...)` combines the names for output.
+
+The script creates the reports directory if needed and uses `write_text()` to produce [service_summary.txt](Python/lesson_06/reports/service_summary.txt). Two consecutive runs produced the same output and summary content:
+
+```text
+Ready services (2): web-api, cache
+Problem services (2): worker, database
+```
+
+### Verification
+
+All seven Lesson 06 scripts were inspected and run with the repository `.venv/bin/python -I -B` in this order: `path_basics.py`, `file_write.py`, `file_append.py` twice, `file_read.py`, `directory_scan.py`, `portable_reader.py`, and `report_analyzer.py` twice. Every run exited successfully. The final report and summary matched the expected text exactly. The two script-relative programs also succeeded from `/tmp`. SHA-256 hashes of all seven Python files and both TXT artifacts matched their values before verification.
+
+### Important vocabulary
+
+| Word or phrase | Simple meaning | Ukrainian |
+|---|---|---|
+| current working directory | The directory from which a command runs. | поточний робочий каталог |
+| relative path | A path interpreted from a starting directory. | відносний шлях |
+| absolute path | A path that starts from the filesystem root. | абсолютний шлях |
+| parent | The directory containing a path. | батьківський каталог |
+| append | Add data to the end of a file. | додати в кінець файлу |
+| idempotent | Repeating an operation leaves the same final result. | ідемпотентний |
+| glob | Find paths matching a pattern in one directory. | пошук шляхів за шаблоном |
+| rglob | Find matching paths recursively. | рекурсивний пошук шляхів |
+
+### My sentences
+
+- A relative path can depend on the current working directory.
+- `Path(__file__).resolve().parent` lets a script find files beside itself.
+- The append script checks the report before adding a service, so a second run does not create a duplicate.
+- The analyzer joins service names and writes the same summary when it runs again.
+
+### Completion checklist
+
+- [x] Create `Path` objects and inspect the current working directory.
+- [x] Compare relative and absolute paths with `resolve()`, `exists()`, and `is_absolute()`.
+- [x] Inspect `name`, `stem`, `suffix`, and `parent`.
+- [x] Read with `read_text()` and split content into lines with `splitlines()`.
+- [x] Write and overwrite with `write_text()`; append with `open("a")`.
+- [x] Prevent a duplicate report line on a repeated append.
+- [x] Create a directory with `mkdir(parents=True, exist_ok=True)` and scan with `glob()`; learn when `rglob()` is useful.
+- [x] Build portable report paths from `Path(__file__).resolve().parent`.
+- [x] Parse report lines with `split(..., maxsplit=1)` and combine names with `join()`.
+- [x] Generate and verify an idempotent service summary.
+- [x] Run every script successfully and preserve all Lesson 06 Python and TXT file hashes.
+
+### Next step
+
+Continue Python for DevOps with **reading JSON and YAML configuration**, the next topic in the roadmap.

@@ -46,7 +46,7 @@ It shows all files, including hidden files.
 
 ## Current stage
 
-Updated: 2026-09-17
+Updated: 2026-09-22
 
 Current level:
 
@@ -57,7 +57,7 @@ Current level:
 - Git: basic practical workflow
 - Docker: Lessons 01–12, comprehensive checkpoint (approximately 9/10), and Docker Visitor Counter mini-project completed
 - Docker Compose: basics, logs, and `exec` completed in Lesson 09; multiple services completed in Lesson 10; networking and service discovery completed in Lesson 11
-- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lessons 01–02 completed on 2026-09-14; Python Lesson 03 completed on 2026-09-16; Python Lessons 04–05 completed on 2026-09-17; files and paths are next.
+- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lessons 01–02 completed on 2026-09-14; Python Lesson 03 completed on 2026-09-16; Python Lessons 04–05 completed on 2026-09-17; Python Lesson 06 completed on 2026-09-22; reading JSON and YAML configuration is next.
 - CI/CD: not started yet
 - Cloud: not started yet
 - Terraform: not started yet
@@ -80,7 +80,7 @@ Current progress:
 - The comprehensive Docker checkpoint was passed with approximately 9/10 on 2026-09-12.
 - The [Docker Visitor Counter mini-project](Projects/docker-visitor-counter/README.md) was completed successfully on 2026-09-12.
 - The Docker and Docker Compose phase, including the checkpoint and practical project, is complete.
-- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lessons 01–02 completed on 2026-09-14; Python Lesson 03 completed on 2026-09-16; Python Lessons 04–05 completed on 2026-09-17; files and paths are next.
+- Python for DevOps: Python Setup / Lesson 00 completed on 2026-09-13; Python Lessons 01–02 completed on 2026-09-14; Python Lesson 03 completed on 2026-09-16; Python Lessons 04–05 completed on 2026-09-17; Python Lesson 06 completed on 2026-09-22; reading JSON and YAML configuration is next.
 
 ---
 
@@ -220,7 +220,7 @@ Next: begin Python for DevOps and continue short reviews of the checkpoint gaps.
 
 Estimated time: after the full Docker block and final checkpoint/project
 
-Completed: **Python Setup / Lesson 00 on 2026-09-13**, **Python Lesson 01 on 2026-09-14** (variables, data types, input, conversion, and arithmetic operators), **Python Lesson 02 on 2026-09-14** (conditional statements and Boolean logic), **Python Lesson 03 on 2026-09-16** (collections and DevOps data structures), **Python Lesson 04 on 2026-09-17** (loops and iteration), and **Python Lesson 05 on 2026-09-17** (functions). Next Python milestone: **files and paths**.
+Completed: **Python Setup / Lesson 00 on 2026-09-13**, **Python Lesson 01 on 2026-09-14** (variables, data types, input, conversion, and arithmetic operators), **Python Lesson 02 on 2026-09-14** (conditional statements and Boolean logic), **Python Lesson 03 on 2026-09-16** (collections and DevOps data structures), **Python Lesson 04 on 2026-09-17** (loops and iteration), **Python Lesson 05 on 2026-09-17** (functions), and **Python Lesson 06 on 2026-09-22** (files and paths). Next Python milestone: **reading JSON and YAML configuration**.
 
 Lesson 02 final documentation verification reproduced the expected disk and service results; all six runs exited `0`. The final service source has `maintenance_mode = False` after the temporary branch-priority test. Both source files were preserved during correction verification. Detailed results are recorded in [Python notes](DevOps/Python.md#python-lesson-02--conditional-statements-and-boolean-logic).
 
@@ -229,6 +229,8 @@ Lesson 03 covered lists, tuples, sets, dictionaries, nested collections, and an 
 Lesson 04 covered `for` and `while` loops, `range()`, `enumerate()`, dictionary iteration, counters and accumulators, `break`, `continue`, nested data, and status classification across eight source files. The final deployment monitor reported one READY, WARNING, CRITICAL, and SKIPPED service. The knowledge check was passed after clarification, all eight scripts exited successfully, and all final source hashes were preserved. Detailed results are recorded in [Python notes](DevOps/Python.md#python-lesson-04--loops-and-iteration).
 
 Lesson 05 covered function definitions and calls, parameters and arguments, returned strings and Booleans, `print()` versus `return`, argument styles and defaults, local scope, multiple return paths, condition priority, dictionaries passed into functions, and a final deployment summary across seven source files. The final task was completed independently, the knowledge check was passed, all seven scripts exited successfully, and all final source hashes were preserved. Detailed results are recorded in [Python notes](DevOps/Python.md#python-lesson-05--functions).
+
+Lesson 06 covered `pathlib` paths, reading, overwriting and appending text, idempotent updates, directory creation and scanning, portable script-relative paths, and a service summary. All seven scripts ran successfully in the required order, both repeated runs preserved the expected results, and the two portable scripts worked from another directory. All seven Python and both TXT file hashes were preserved. Detailed results are recorded in [Python notes](DevOps/Python.md#python-lesson-06--files-and-paths).
 
 Local Python project management will use `uv`, while basic `pip` and `venv` concepts should still be understood. The current Ubuntu system has Python **3.12.3**.
 
