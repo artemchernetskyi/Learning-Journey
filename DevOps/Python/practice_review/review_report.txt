@@ -1,0 +1,4 @@
+web-api: READY
+worker: WARNING
+database: CRITICAL
+cache: READY
